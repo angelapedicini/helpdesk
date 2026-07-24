@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+    schemas  = ["tracking"]
+}
+
+
+model Role {
+  role  String @id
+  users User[]
+
+  @@schema("tracking")
+}
+
+model User {
+  id        Int    @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String @unique
+  password  String
+
+  role     Role   @relation(fields: [roleName], references: [role])
+  roleName String @default("ADMIN")
+
+  refreshTokens RefreshToken[]
+  items          Item[]
+
+
+  @@schema("tracking")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@schema("tracking")
+}
+
+model Item {
+  id            Int       @id @default(autoincrement())
+  string        String
+  optionalEasy  String?
+  //scrivere anche il numero di interi e decimali fattibili
+  numberDecimal Decimal   @db.Decimal(10, 2)
+  //per qualChe strana ragione non esiste solo date in prisma
+  data          DateTime
+  dataOptional  DateTime?
+  userId        Int
+  //on cascade elimina tutti gli item collegati ad uno user in caso che lo user venga eliminato
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enum          Enum      @default(ATTESA)
+
+  @@schema("tracking")
+}
+
+enum Enum {
+  ACCETTATO
+  RIFIUTATO
+  ATTESA
+
+  @@schema("tracking")
+}
