@@ -2,7 +2,7 @@
 "use client";
 
 import { z } from "zod";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -18,10 +18,19 @@ import {
   IconButton,
   InputAdornment,
   Stack,
+  MenuItem,
 } from "@mui/material";
 import { RegisterSchema } from "@/lib/validators/auth.schema";
 import { REGISTER } from "@/lib/apollo-client/queries/auth/register/register.mutation";
 import { useAppMutation } from "@/lib/apollo-client/hooks/mutation-hook";
+
+const DEPARTMENT_OPTIONS = [
+  { value: "HR", label: "Risorse Umane" },
+  { value: "IT", label: "IT" },
+  { value: "FINANCE", label: "Finance" },
+  { value: "SALES", label: "Sales" },
+  { value: "MARKETING", label: "Marketing" },
+] as const;
 
 const RegisterFormSchema = RegisterSchema.extend({
   confirmPassword: z.string().min(8, "Deve contenere almeno 8 caratteri"),
@@ -46,6 +55,7 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<RegisterFormInput, unknown, RegisterFormOutput>({
     resolver: zodResolver(RegisterFormSchema),
@@ -115,6 +125,27 @@ export default function RegisterPage() {
             {...register("email")}
             error={!!errors.email}
             helperText={errors.email?.message}
+          />
+
+          <Controller
+            name="department"
+            control={control}
+            defaultValue={"" as RegisterFormInput["department"]}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                select
+                label="Reparto"
+                error={!!errors.department}
+                helperText={errors.department?.message}
+              >
+                {DEPARTMENT_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
           />
 
           <TextField

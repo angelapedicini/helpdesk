@@ -39,6 +39,8 @@ export const registerResolvers = {
           lastName: input.lastName,
           email: input.email,
           password: hashedPassword,
+          role: "EMPLOYEE",
+          department: input.department, 
         },
       });
     },

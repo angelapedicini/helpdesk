@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import type { Role } from "@/app/generated/prisma/client";
 
 //si prendono i segreti dalla env 
 const accessSecret = new TextEncoder().encode(process.env.JWT_SECRET!);
@@ -7,7 +8,7 @@ const refreshSecret = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET!);
 //tipo di payload che mettiamo dentro l'access token, con userId e role
 export type AccessTokenPayload = {
   userId: number;
-  role: string;
+  role: Role;
 };
 
 //creazione effettiva di access token 
@@ -41,7 +42,7 @@ export async function signRefreshToken(userId: number) {
   return new SignJWT({ userId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("35s")
+    .setExpirationTime("7d")
     .sign(refreshSecret);
 }
 

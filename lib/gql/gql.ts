@@ -17,21 +17,13 @@ type Documents = {
     "\n  mutation Login($input: LoginInput!) {\n    login(input: $input) {\n      user {\n        id\n        email\n        firstName\n        lastName\n      }\n    }\n  }\n": typeof types.LoginDocument,
     "\n  mutation Logout {\n    logout {\n      success\n    }\n  }\n": typeof types.LogoutDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n": typeof types.CreateUserDocument,
-    "\n  mutation CreateItem($input: CreateItemInput!) {\n    createItem(input: $input) {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n": typeof types.CreateItemDocument,
-    "\n  mutation UpdateItem($id: Int!, $input: UpdateItemInput!) {\n    updateItem(id: $id, input: $input) {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n": typeof types.UpdateItemDocument,
-    "\n  mutation DeleteItem($id: Int!) {\n    deleteItem(id: $id) {\n      id\n    }\n  }\n": typeof types.DeleteItemDocument,
-    "\n  query Items {\n    items {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n": typeof types.ItemsDocument,
-    "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      roleName\n    }\n  }\n": typeof types.MeDocument,
+    "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      role\n      department\n    }\n  }\n": typeof types.MeDocument,
 };
 const documents: Documents = {
     "\n  mutation Login($input: LoginInput!) {\n    login(input: $input) {\n      user {\n        id\n        email\n        firstName\n        lastName\n      }\n    }\n  }\n": types.LoginDocument,
     "\n  mutation Logout {\n    logout {\n      success\n    }\n  }\n": types.LogoutDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n": types.CreateUserDocument,
-    "\n  mutation CreateItem($input: CreateItemInput!) {\n    createItem(input: $input) {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n": types.CreateItemDocument,
-    "\n  mutation UpdateItem($id: Int!, $input: UpdateItemInput!) {\n    updateItem(id: $id, input: $input) {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n": types.UpdateItemDocument,
-    "\n  mutation DeleteItem($id: Int!) {\n    deleteItem(id: $id) {\n      id\n    }\n  }\n": types.DeleteItemDocument,
-    "\n  query Items {\n    items {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n": types.ItemsDocument,
-    "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      roleName\n    }\n  }\n": types.MeDocument,
+    "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      role\n      department\n    }\n  }\n": types.MeDocument,
 };
 
 /**
@@ -63,23 +55,7 @@ export function graphql(source: "\n  mutation CreateUser($input: CreateUserInput
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation CreateItem($input: CreateItemInput!) {\n    createItem(input: $input) {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation CreateItem($input: CreateItemInput!) {\n    createItem(input: $input) {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation UpdateItem($id: Int!, $input: UpdateItemInput!) {\n    updateItem(id: $id, input: $input) {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation UpdateItem($id: Int!, $input: UpdateItemInput!) {\n    updateItem(id: $id, input: $input) {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation DeleteItem($id: Int!) {\n    deleteItem(id: $id) {\n      id\n    }\n  }\n"): (typeof documents)["\n  mutation DeleteItem($id: Int!) {\n    deleteItem(id: $id) {\n      id\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query Items {\n    items {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n"): (typeof documents)["\n  query Items {\n    items {\n      id\n      string\n      optionalEasy\n      numberDecimal\n      data\n      dataOptional\n      enum\n      user {\n        id\n        firstName\n        lastName\n      }\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      roleName\n    }\n  }\n"): (typeof documents)["\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      roleName\n    }\n  }\n"];
+export function graphql(source: "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      role\n      department\n    }\n  }\n"): (typeof documents)["\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      role\n      department\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

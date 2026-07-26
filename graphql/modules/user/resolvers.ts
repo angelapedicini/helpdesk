@@ -14,7 +14,8 @@ export const userResolvers = {
           firstName: true,
           lastName: true,
           email: true,
-          roleName: true,
+          role: true,
+          department: true,
         },
       });
     },

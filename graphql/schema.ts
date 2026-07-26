@@ -1,6 +1,4 @@
 import { rootTypeDefs } from "./root";
-import { itemTypeDefs } from "./modules/item/typeDefs";
-import { itemResolvers } from "./modules/item/resolvers";
 // schema/index.ts
 import { userTypeDefs } from "./modules/user/typeDefs";
 import { userResolvers } from "./modules/user/resolvers";
@@ -16,7 +14,6 @@ import { logoutResolvers } from "./modules/auth/logout/resolvers";
 
 export const typeDefs = [
   rootTypeDefs,
-  itemTypeDefs,
   userTypeDefs,
   registerTypeDefs,
   loginTypeDefs,
@@ -26,11 +23,9 @@ export const typeDefs = [
 
 export const resolvers = {
   Query: {
-    ...itemResolvers.Query,
     ...userResolvers.Query,
   },
   Mutation: {
-    ...itemResolvers.Mutation,
     ...registerResolvers.Mutation,
     ...loginResolvers.Mutation,
     ...refreshResolvers.Mutation,

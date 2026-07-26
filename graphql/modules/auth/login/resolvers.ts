@@ -36,7 +36,7 @@ export const loginResolvers = {
 
       const accessToken = await signAccessToken({
         userId: existing.id,
-        role: existing.roleName,
+        role: existing.role,  
       });
       const refreshToken = await signRefreshToken(existing.id);
 

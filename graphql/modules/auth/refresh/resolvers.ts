@@ -45,7 +45,7 @@ export const refreshResolvers = {
 
       const newAccessToken = await signAccessToken({
         userId: storedToken.user.id,
-        role: storedToken.user.roleName,
+        role: storedToken.user.role,
       });
       const newRefreshToken = await signRefreshToken(storedToken.user.id);
 

@@ -1,6 +1,5 @@
 import { graphql } from "@/lib/gql";
 
-
 export const ME_QUERY = graphql(`
   query Me {
     me {
@@ -8,7 +7,8 @@ export const ME_QUERY = graphql(`
       firstName
       lastName
       email
-      roleName
+      role
+      department
     }
   }
 `);

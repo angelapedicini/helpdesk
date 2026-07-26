@@ -45,7 +45,7 @@ export default function NavUser() {
         <Typography variant="body2" className="hidden md:block">
           {user.firstName} {user.lastName}
         </Typography>
-        <Chip label={user.roleName} size="small" color="primary" />
+        <Chip label={user.role} size="small" color="primary" />
         <IconButton color="inherit" size="small">
           <AccountCircleIcon />
         </IconButton>

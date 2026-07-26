@@ -4,7 +4,14 @@ export const userTypeDefs = `#graphql
     firstName: String!
     lastName: String!
     email: String!
-    roleName: String!
+    role: Role!
+    department: Department!
+  }
+
+  enum Role {
+    ADMIN
+    TECHNICIAN
+    EMPLOYEE
   }
 
   extend type Query {

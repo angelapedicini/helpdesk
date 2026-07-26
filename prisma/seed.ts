@@ -1,3 +1,4 @@
+// prisma/seed.ts
 import { PrismaClient } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
@@ -9,99 +10,150 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
+const DEPARTMENT_CATEGORIES: Record<
+  "HR" | "IT" | "FINANCE" | "SALES" | "MARKETING",
+  string[]
+> = {
+  IT: ["Hardware", "Bug", "Nuovo software"],
+  HR: ["Contratti", "Buste paga", "Onboarding"],
+  FINANCE: ["Fatture", "Revisione contratti"],
+  SALES: ["Lead", "Richiesta contratto"],
+  MARKETING: ["Correzione dati cliente", "Richiesta campagna"],
+};
+
+const DEPARTMENTS = Object.keys(DEPARTMENT_CATEGORIES) as Array<
+  keyof typeof DEPARTMENT_CATEGORIES
+>;
+
+const firstNames = [
+  "Mario", "Giuseppe", "Anna", "Luca", "Sara", "Marco", "Elena", "Paolo", "Chiara", "Davide",
+  "Francesca", "Alessandro", "Giulia", "Matteo", "Valentina", "Simone", "Laura", "Andrea", "Martina", "Roberto",
+  "Federica", "Stefano", "Silvia", "Fabio", "Claudia", "Riccardo", "Ilaria", "Nicola", "Serena", "Antonio",
+  "Beatrice", "Emanuele", "Giorgia", "Tommaso", "Alice", "Filippo", "Camilla", "Gabriele", "Noemi", "Leonardo",
+  "Michela", "Daniele", "Veronica", "Pietro", "Cecilia", "Vittorio", "Rebecca", "Enrico", "Arianna", "Massimo",
+];
+
+const lastNames = [
+  "Rossi", "Verdi", "Bianchi", "Ferrari", "Colombo", "Ricci", "Marino", "Greco", "Bruno", "Gallo",
+  "Conti", "De Luca", "Costa", "Giordano", "Mancini", "Rizzo", "Lombardi", "Moretti", "Barbieri", "Fontana",
+  "Santoro", "Mariani", "Rinaldi", "Caruso", "Ferrara", "Galli", "Martini", "Leone", "Longo", "Gentile",
+  "Martinelli", "Vitale", "Sala", "Serra", "Farina", "Piras", "Grasso", "Pellegrini", "Palumbo", "Sanna",
+  "Amato", "Vitali", "Testa", "Silvestri", "Guerra", "Parisi", "Ferraro", "Basile", "Monti", "Coppola",
+];
+
 export async function main() {
-  await prisma.user.deleteMany();
-  await prisma.role.deleteMany();
+  await prisma.ticket.deleteMany();
+  await prisma.userPermission.deleteMany();
+  await prisma.userSpecialization.deleteMany();
   await prisma.refreshToken.deleteMany();
-  await prisma.item.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.ticketCategory.deleteMany();
+
   const hashedPassword = await bcrypt.hash("Password123!", 10);
 
-  // ROLES
-  await prisma.role.createMany({
-    data: [{ role: "ADMIN" }, { role: "USER" }],
-  });
+  // CATEGORIE per reparto
+  const categoriesByDept: Record<string, { id: number; name: string }[]> = {};
 
-  // USERS
-  const admin = await prisma.user.create({
-    data: {
-      firstName: "Mario",
-      lastName: "Rossi",
-      email: "admin@example.com",
-      password: hashedPassword,
-      role: { connect: { role: "ADMIN" } },
-    },
-  });
+  for (const dept of DEPARTMENTS) {
+    const created = await Promise.all(
+      DEPARTMENT_CATEGORIES[dept].map((name) =>
+        prisma.ticketCategory.create({
+          data: { name, department: dept },
+        })
+      )
+    );
+    categoriesByDept[dept] = created;
+  }
 
-  const user1 = await prisma.user.create({
-    data: {
-      firstName: "Giuseppe",
-      lastName: "Verdi",
-      email: "verdi@example.com",
-      password: hashedPassword,
-      role: { connect: { role: "USER" } },
-    },
-  });
+  // UTENTI: 1 admin + 3 tecnici + 6 employee per reparto
+  const techniciansByDept: Record<string, { id: number }[]> = {};
+  const employeesByDept: Record<string, { id: number }[]> = {};
 
-  const user2 = await prisma.user.create({
-    data: {
-      firstName: "Anna",
-      lastName: "Bianchi",
-      email: "bianchi@example.com",
-      password: hashedPassword,
-      role: { connect: { role: "USER" } },
-    },
-  });
+  let personIndex = 0;
+  function nextPerson() {
+    const firstName = firstNames[personIndex];
+    const lastName = lastNames[personIndex];
+    personIndex++;
+    return {
+      firstName,
+      lastName,
+      email: `${lastName.toLowerCase().replace(" ", "")}@example.com`,
+    };
+  }
 
-  await prisma.item.createMany({
-    data: [
-      {
-        userId: user1.id,
-        string: "Primo item",
-        optionalEasy: "Test opzionale",
-        numberDecimal: 45.5,
-        data: new Date("2026-01-15"),
-        dataOptional: new Date("2026-01-20"),
-        enum: "ATTESA",
+  for (const dept of DEPARTMENTS) {
+    // 1 admin
+    const admin = nextPerson();
+    await prisma.user.create({
+      data: {
+        ...admin,
+        password: hashedPassword,
+        role: "ADMIN",
+        department: dept,
       },
-      {
-        userId: user1.id,
-        string: "Secondo item",
-        optionalEasy: null,
-        numberDecimal: 12.0,
-        data: new Date("2026-01-22"),
-        dataOptional: null,
-        enum: "ATTESA",
-      },
-      {
-        userId: user2.id,
-        string: "Terzo item",
-        optionalEasy: "Descrizione item",
-        numberDecimal: 120.0,
-        data: new Date("2026-02-03"),
-        dataOptional: new Date("2026-02-10"),
-        enum: "ATTESA",
-      },
-      {
-        userId: user2.id,
-        string: "Quarto item",
-        optionalEasy: "Altro valore",
-        numberDecimal: 200.0,
-        data: new Date("2026-02-18"),
-        dataOptional: null,
-        enum: "ATTESA",
-      },
-      {
-        userId: user1.id,
-        string: "Quinto item",
-        optionalEasy: null,
-        numberDecimal: 33.0,
-        data: new Date("2026-03-05"),
-        dataOptional: new Date("2026-03-07"),
-        enum: "ATTESA",
-      },
-    ],
-  });
+    });
 
+    // 3 tecnici, uno per ciascuna categoria del reparto
+    const technicians = [];
+    for (const category of categoriesByDept[dept]) {
+      const person = nextPerson();
+      const technician = await prisma.user.create({
+        data: {
+          ...person,
+          password: hashedPassword,
+          role: "TECHNICIAN",
+          department: dept,
+        },
+      });
+
+      await prisma.userSpecialization.create({
+        data: { userId: technician.id, categoryId: category.id },
+      });
+
+      technicians.push(technician);
+    }
+    techniciansByDept[dept] = technicians;
+
+    // 6 employee
+    const employees = [];
+    for (let i = 0; i < 6; i++) {
+      const person = nextPerson();
+      const employee = await prisma.user.create({
+        data: {
+          ...person,
+          password: hashedPassword,
+          role: "EMPLOYEE",
+          department: dept,
+        },
+      });
+      employees.push(employee);
+    }
+    employeesByDept[dept] = employees;
+  }
+
+  // TICKET di esempio: qualche ticket per reparto
+  for (const dept of DEPARTMENTS) {
+    const categories = categoriesByDept[dept];
+    const employees = employeesByDept[dept];
+    const technicians = techniciansByDept[dept];
+
+    for (let i = 0; i < categories.length; i++) {
+      const category = categories[i];
+      const author = employees[i % employees.length];
+      const assignedTechnician = technicians[i % technicians.length];
+
+      await prisma.ticket.create({
+        data: {
+          title: `Richiesta ${category.name.toLowerCase()} #${i + 1}`,
+          description: `Ticket di esempio per la categoria "${category.name}" nel reparto ${dept}.`,
+          status: i % 2 === 0 ? "OPEN" : "IN_PROGRESS",
+          categoryId: category.id,
+          createdById: author.id,
+          assignedToId: assignedTechnician.id,
+        },
+      });
+    }
+  }
 
   console.log("Seed completato");
 }

@@ -10,32 +10,13 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-    schemas  = ["tracking"]
 }
 
 
-model Role {
-  role  String @id
-  users User[]
-
-  @@schema("tracking")
-}
-
-model User {
-  id        Int    @id @default(autoincrement())
-  firstName String
-  lastName  String
-  email     String @unique
-  password  String
-
-  role     Role   @relation(fields: [roleName], references: [role])
-  roleName String @default("ADMIN")
-
-  refreshTokens RefreshToken[]
-  items          Item[]
-
-
-  @@schema("tracking")
+enum Role {
+  ADMIN
+  TECHNICIAN
+  EMPLOYEE
 }
 
 model RefreshToken {
@@ -46,31 +27,91 @@ model RefreshToken {
 
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@schema("tracking")
 }
 
-model Item {
-  id            Int       @id @default(autoincrement())
-  string        String
-  optionalEasy  String?
-  //scrivere anche il numero di interi e decimali fattibili
-  numberDecimal Decimal   @db.Decimal(10, 2)
-  //per qualChe strana ragione non esiste solo date in prisma
-  data          DateTime
-  dataOptional  DateTime?
-  userId        Int
-  //on cascade elimina tutti gli item collegati ad uno user in caso che lo user venga eliminato
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  enum          Enum      @default(ATTESA)
-
-  @@schema("tracking")
+enum Department {
+  HR
+  IT
+  FINANCE
+  SALES
+  MARKETING
 }
 
-enum Enum {
-  ACCETTATO
-  RIFIUTATO
-  ATTESA
-
-  @@schema("tracking")
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
 }
+
+model TicketCategory {
+  id         Int        @id @default(autoincrement())
+  name       String
+  department Department
+
+  specializations UserSpecialization[]
+  tickets         Ticket[]
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  password  String
+  firstName String
+  lastName  String
+  role      Role
+  department Department
+
+  specializations UserSpecialization[]
+  permissions     UserPermission[]
+  refreshTokens   RefreshToken[]
+
+  ticketsCreated  Ticket[] @relation("CreatedTickets")
+  ticketsAssigned Ticket[] @relation("AssignedTickets")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserSpecialization {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  categoryId Int
+  category   TicketCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId])
+}
+
+model UserPermission {
+  id      Int     @id @default(autoincrement())
+  action  String
+  granted Boolean @default(true)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, action])
+}
+
+model Ticket {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String
+  status      TicketStatus @default(OPEN)
+
+  categoryId Int
+  category   TicketCategory @relation(fields: [categoryId], references: [id])
+
+  createdById Int
+  createdBy   User @relation("CreatedTickets", fields: [createdById], references: [id])
+
+  assignedToId Int?
+  assignedTo   User? @relation("AssignedTickets", fields: [assignedToId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  closedAt  DateTime?
+}
+
