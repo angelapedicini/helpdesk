@@ -1,15 +1,22 @@
 import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/auth/session";
 
 export const userResolvers = {
-    Query: {
-        users: async () => {
-            return prisma.user.findMany({
-                include: { items: true }, // precarica gli item insieme agli user
-            });
-        },
-    },
-    User: {
-        items: (parent: { item: any[] }) => parent.item, // legge dal dato già caricato
-    },
-};
+  Query: {
+    me: async () => {
+      const session = await getSession();
+      if (!session) return null;
 
+      return prisma.user.findUnique({
+        where: { id: session.userId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          roleName: true,
+        },
+      });
+    },
+  },
+};

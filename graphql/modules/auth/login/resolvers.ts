@@ -40,6 +40,15 @@ export const loginResolvers = {
       });
       const refreshToken = await signRefreshToken(existing.id);
 
+      // AGGIUNGI QUESTO — mancava
+      await prisma.refreshToken.create({
+        data: {
+          token: refreshToken,
+          userId: existing.id,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
+
       await setAuthCookies(accessToken, refreshToken);
 
       return { success: true, user: existing };

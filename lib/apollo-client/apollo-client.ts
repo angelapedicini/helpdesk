@@ -1,6 +1,7 @@
 import { ApolloClient, InMemoryCache, HttpLink, ApolloLink } from "@apollo/client";
-import { notificationLink } from "./notification-link";
-import { loadingLink } from "./loading-link";
+import { notificationLink } from "./apollo-links/notification-link";
+import { loadingLink } from "./apollo-links/loading-link";
+import { authRefreshLink } from "./apollo-links/auth-refresh-link";
 
 const httpLink = new HttpLink({
   uri: "http://localhost:3000/api/graphql",
@@ -21,7 +22,7 @@ const queryFieldPolicies = Object.fromEntries(
 );
 
 export const client = new ApolloClient({
-  link: ApolloLink.from([notificationLink, loadingLink, httpLink]),
+  link: ApolloLink.from([notificationLink, loadingLink, authRefreshLink, httpLink]),
   cache: new InMemoryCache({
     typePolicies: {
       Query: {

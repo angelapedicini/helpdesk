@@ -5,15 +5,9 @@ export const userTypeDefs = `#graphql
     lastName: String!
     email: String!
     roleName: String!
-    items: [Item!]!
   }
 
   extend type Query {
-    users: [User!]!
+    me: User
   }
 `;
-
-
-
-
-

@@ -2,11 +2,14 @@ import prisma from "@/lib/prisma";
 import { ItemInputSchema, UpdateItemSchema } from "@/lib/validators/item.schema";
 import { GraphQLError } from "graphql";
 import { DateResolver } from "graphql-scalars";
+import { requireSession, requireAdmin } from "@/lib/auth/session";
 
 export const itemResolvers = {
   Date: DateResolver,
   Query: {
     items: async () => {
+      await requireSession(); // <-- richiede autenticazione
+
       return prisma.item.findMany({
         include: { user: true },
         orderBy: { id: "desc" },
@@ -15,6 +18,9 @@ export const itemResolvers = {
   },
   Mutation: {
     createItem: async (_parent: unknown, args: { input: unknown }) => {
+      // await requireSession(); // <-- richiede autenticazione
+       await requireAdmin();
+
       const result = ItemInputSchema.safeParse(args.input);
 
       if (!result.success) {
@@ -46,6 +52,8 @@ export const itemResolvers = {
       _parent: unknown,
       args: { id: number; input: unknown }
     ) => {
+      await requireSession(); // <-- richiede autenticazione
+
       const result = UpdateItemSchema.safeParse(args.input);
 
       if (!result.success) {
@@ -93,6 +101,8 @@ export const itemResolvers = {
     },
 
     deleteItem: async (_parent: unknown, args: { id: number }) => {
+      await requireAdmin(); // <-- richiede ruolo ADMIN (valuta requireSession se basta essere loggati)
+
       const existing = await prisma.item.findUnique({
         where: { id: args.id },
       });
