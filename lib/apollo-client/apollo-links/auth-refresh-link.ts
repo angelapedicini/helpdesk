@@ -8,7 +8,6 @@ function isUnauthenticated(errors?: readonly GqlError[]) {
   return errors?.some((e) => e.extensions?.code === "UNAUTHENTICATED") ?? false;
 }
 
-// mutex: se più query falliscono nello stesso istante, un solo refresh in volo
 let refreshing: Promise<boolean> | null = null;
 
 function doRefresh(): Promise<boolean> {
@@ -31,27 +30,39 @@ function doRefresh(): Promise<boolean> {
   return refreshing;
 }
 
+// forza il redirect al login quando il refresh fallisce davvero
+function redirectToLogin() {
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
+}
+
 export const authRefreshLink = new ApolloLink((operation, forward) => {
-  // evita loop: non intercettare il refresh stesso o il login
   if (["RefreshToken", "Login", "Register"].includes(operation.operationName ?? "")) {
     return forward(operation);
   }
 
   return forward(operation).pipe(
-    // caso 1: errori nel payload (errorPolicy: "all")
     mergeMap((result) => {
       if (isUnauthenticated(result.errors)) {
         return from(doRefresh()).pipe(
-          mergeMap((ok) => (ok ? forward(operation) : [result]))
+          mergeMap((ok) => {
+            if (ok) return forward(operation);
+            redirectToLogin();
+            return [result];
+          })
         );
       }
       return [result];
     }),
-    // caso 2: errore lanciato (rete/CombinedGraphQLErrors)
     catchError((error) => {
       if (CombinedGraphQLErrors.is(error) && isUnauthenticated(error.errors)) {
         return from(doRefresh()).pipe(
-          mergeMap((ok) => (ok ? forward(operation) : throwError(() => error)))
+          mergeMap((ok) => {
+            if (ok) return forward(operation);
+            redirectToLogin();
+            return throwError(() => error);
+          })
         );
       }
       return throwError(() => error);
