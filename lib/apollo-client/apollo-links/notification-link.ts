@@ -9,6 +9,18 @@ function isMutation(operation: import("@apollo/client").Operation) {
   );
 }
 
+// Sostituisce {campo} nel messaggio con i valori del payload restituito dalla mutation
+// Es: 'Ticket "{title}" creato con successo.' + { id: 42, title: "Stampante rotta" }
+//     -> 'Ticket "Stampante rotta" creato con successo.'
+function resolveMessageTemplate(template: string, payload: unknown): string {
+  if (!payload || typeof payload !== "object") return template;
+
+  return template.replace(/\{(\w+)\}/g, (match, key) => {
+    const value = (payload as Record<string, unknown>)[key];
+    return value !== undefined && value !== null ? String(value) : match;
+  });
+}
+
 const graphqlErrorMessages: Record<string, string> = {
   UNAUTHENTICATED: "Devi effettuare l'accesso per continuare.",
   FORBIDDEN: "Non hai i permessi per questa operazione.",
@@ -46,10 +58,21 @@ export const notificationLink = new ApolloLink((operation, forward) => {
       }
 
       if (isMutation(operation) && !context.silent) {
-        notify(
-          context.successMessage ?? "Operazione completata con successo.",
-          "success"
-        );
+        const rawMessage: string =
+          context.successMessage ?? "Operazione completata con successo.";
+
+        // Estrae il payload della mutation (prima chiave della response, es. data.createTicket)
+        const mutationKey = result.data ? Object.keys(result.data)[0] : undefined;
+        const payload = mutationKey
+          ? (result.data as Record<string, unknown>)[mutationKey]
+          : undefined;
+
+        const finalMessage =
+          typeof rawMessage === "string"
+            ? resolveMessageTemplate(rawMessage, payload)
+            : rawMessage;
+
+        notify(finalMessage, "success");
       }
     }),
     catchError((error) => {

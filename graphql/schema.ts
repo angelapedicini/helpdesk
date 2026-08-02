@@ -10,6 +10,8 @@ import { refreshTypeDefs } from "./modules/auth/refresh/typeDefs";
 import { refreshResolvers } from "./modules/auth/refresh/resolvers";
 import { logoutTypeDefs } from "./modules/auth/logout/typeDefs";
 import { logoutResolvers } from "./modules/auth/logout/resolvers";
+import { ticketTypeDefs } from "./modules/ticket/typeDefs";
+import { ticketResolvers } from "./modules/ticket/resolvers";
 
 
 export const typeDefs = [
@@ -19,16 +21,19 @@ export const typeDefs = [
   loginTypeDefs,
   refreshTypeDefs,
   logoutTypeDefs, 
+  ticketTypeDefs,
 ];
 
 export const resolvers = {
   Query: {
     ...userResolvers.Query,
+    ...ticketResolvers.Query
   },
   Mutation: {
     ...registerResolvers.Mutation,
     ...loginResolvers.Mutation,
     ...refreshResolvers.Mutation,
     ...logoutResolvers.Mutation, 
+    ...ticketResolvers.Mutation
   },
 };

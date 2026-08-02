@@ -14,7 +14,21 @@ export const userTypeDefs = `#graphql
     EMPLOYEE
   }
 
+  type UserSpecialization {
+    id: Int!
+    user: User!
+    categoryId: Int
+  }
+
+  type UserPermission {
+    id: Int!
+    action: String!
+    granted: Boolean!
+    user: User!
+  }
+
   extend type Query {
     me: User
+    searchUsers(search: String): [User!]!
   }
 `;

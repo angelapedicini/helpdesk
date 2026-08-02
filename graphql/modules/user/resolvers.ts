@@ -19,5 +19,29 @@ export const userResolvers = {
         },
       });
     },
+
+    searchUsers: async (_parent: unknown, args: { search?: string }) => {
+      const { search } = args;
+
+      return prisma.user.findMany({
+        where: search
+          ? {
+              OR: [
+                { firstName: { contains: search, mode: "insensitive" } },
+                { lastName: { contains: search, mode: "insensitive" } },
+              ],
+            }
+          : undefined,
+        // take: 10,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+          department: true,
+        },
+      });
+    },
   },
 };

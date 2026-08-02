@@ -2,6 +2,28 @@
 import type { Components, Theme } from "@mui/material/styles";
 
 export const sharedComponents: Components<Theme> = {
+    MuiCssBaseline: {
+        styleOverrides: (theme) => ({
+            "*": {
+                scrollbarWidth: "thin", // Firefox
+                scrollbarColor: `${theme.palette.grey[400]} transparent`,
+            },
+            "*::-webkit-scrollbar": {
+                width: 8,
+                height: 8,
+            },
+            "*::-webkit-scrollbar-track": {
+                background: "transparent",
+            },
+            "*::-webkit-scrollbar-thumb": {
+                backgroundColor: theme.palette.grey[400],
+                borderRadius: 4,
+            },
+            "*::-webkit-scrollbar-thumb:hover": {
+                backgroundColor: theme.palette.grey[600],
+            },
+        }),
+    },
     MuiCard: {
         defaultProps: { variant: "outlined" },
         styleOverrides: {
