@@ -37,7 +37,7 @@ export default function FilterPanel({ title = "Filtri", children }: Props) {
           borderColor: "divider",
           borderRadius: 2,
           p: 1.5,
-          width: { md: 280 },
+          width: { md: 220 },
           flexShrink: 0,
           maxHeight: "80vh",   // <-- limite massimo, non altezza fissa
           overflowY: "auto",   // <-- scroll quando il contenuto supera il limite

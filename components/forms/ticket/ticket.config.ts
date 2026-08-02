@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { TicketInputSchema } from "@/lib/validators/ticket.schema";
-import { CREATE_TICKET } from "@/lib/apollo-client/queries/ticket/ticket.mutation";
+import { CREATE_TICKET, UPDATE_TICKET } from "@/lib/apollo-client/queries/ticket/ticket.mutation";
 import { GET_TICKETS, Ticket } from "@/lib/apollo-client/queries/ticket/ticket.queries";
 import type { TicketsQueryVariables } from "@/lib/gql/graphql";
 import { EntityFormConfig, FieldDef } from "@/components/form-engine/fieldDefs";
@@ -72,7 +72,9 @@ export function useTicketFormConfig(
       }) satisfies TicketFormOutput,
     fields: ticketFields,
     createMutation: CREATE_TICKET,
+    updateMutation: UPDATE_TICKET,
     successMessage: "Ticket #{id} creato con successo.",
+    updateSuccessMessage: "Ticket #{id} aggiornato con successo.",
     listQuery: GET_TICKETS,
     listVariables: { ...listVariables, after: null },
   };

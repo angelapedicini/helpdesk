@@ -64,6 +64,7 @@ export type EntityFormConfig<
   mapToMutationInput?: (formData: TInput) => TInput;
 
   successMessage?: string;
+  updateSuccessMessage?: string;
 
   listQuery?: TypedDocumentNode<TListData, TListVars>;
   listVariables?: TListVars;

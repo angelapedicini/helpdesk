@@ -42,6 +42,7 @@ const lastNames = [
 ];
 
 export async function main() {
+  await prisma.ticketMessage.deleteMany();
   await prisma.ticket.deleteMany();
   await prisma.userPermission.deleteMany();
   await prisma.userSpecialization.deleteMany();
@@ -142,7 +143,7 @@ export async function main() {
       const author = employees[i % employees.length];
       const assignedTechnician = technicians[i % technicians.length];
 
-      await prisma.ticket.create({
+      const ticket = await prisma.ticket.create({
         data: {
           title: `Richiesta ${category.name.toLowerCase()} #${i + 1}`,
           description: `Ticket di esempio per la categoria "${category.name}" nel reparto ${dept}.`,
@@ -152,8 +153,30 @@ export async function main() {
           assignedToId: assignedTechnician.id,
         },
       });
+
+      // Qualche messaggio di esempio solo sui ticket IN_PROGRESS (già presi in carico)
+      if (ticket.status === "IN_PROGRESS") {
+        await prisma.ticketMessage.create({
+          data: {
+            ticketId: ticket.id,
+            authorId: author.id,
+            content: "Buongiorno, potete darmi un aggiornamento sulla richiesta?",
+          },
+        });
+        await prisma.ticketMessage.create({
+          data: {
+            ticketId: ticket.id,
+            authorId: assignedTechnician.id,
+            content: "Ciao, ci sto lavorando, ti aggiorno a breve.",
+          },
+        });
+      }
     }
+
   }
+
+
+
 
   console.log("Seed completato");
 }

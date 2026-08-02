@@ -180,7 +180,10 @@ export const ticketResolvers = {
         { id: "desc" }
       );
 
-      const where = buildTicketWhere(args.filter);
+      const where: Prisma.TicketWhereInput = {
+        deletedAt: null,
+        ...buildTicketWhere(args.filter),
+      };
 
       return paginateByCursor(args, {
         fetchPage: ({ take, skip, cursor }) =>
@@ -245,5 +248,89 @@ export const ticketResolvers = {
         include: { category: true, createdBy: true, assignedTo: true },
       });
     },
+    updateTicket: async (_parent: unknown, args: { id: number; input: unknown }) => {
+      await requireSession();
+
+      const result = TicketInputSchema.safeParse(args.input);
+      if (!result.success) {
+        throw new GraphQLError("Input non valido", {
+          extensions: {
+            code: "BAD_USER_INPUT",
+            issues: result.error.flatten(),
+          },
+        });
+      }
+      const input = result.data;
+
+      const existing = await prisma.ticket.findUnique({ where: { id: args.id } });
+      if (!existing || existing.deletedAt) {
+        throw new GraphQLError("Ticket non trovato", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      const category = await prisma.ticketCategory.findUnique({
+        where: { id: input.categoryId },
+      });
+      if (!category) {
+        throw new GraphQLError("Categoria non trovata", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (input.assignedToId) {
+        const assignee = await prisma.user.findUnique({
+          where: { id: input.assignedToId },
+        });
+        if (!assignee) {
+          throw new GraphQLError("Utente assegnatario non trovato", {
+            extensions: { code: "NOT_FOUND" },
+          });
+        }
+      }
+
+      return prisma.ticket.update({
+        where: { id: args.id },
+        data: {
+          title: input.title,
+          description: input.description,
+          category: { connect: { id: input.categoryId } },
+          assignedTo: input.assignedToId
+            ? { connect: { id: input.assignedToId } }
+            : { disconnect: true }, // se l'utente svuota il campo, scollega l'assegnatario
+        },
+        include: { category: true, createdBy: true, assignedTo: true },
+      });
+    },
+    deleteTicket: async (_parent: unknown, args: { id: number }) => {
+      const session = await requireSession();
+
+      const existing = await prisma.ticket.findUnique({ where: { id: args.id } });
+      if (!existing || existing.deletedAt) {
+        throw new GraphQLError("Ticket non trovato", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (existing.createdById !== session.userId) {
+        throw new GraphQLError("Non puoi eliminare un ticket che non hai creato", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      if (existing.status !== "OPEN") {
+        throw new GraphQLError(
+          "Non è possibile eliminare un ticket già preso in carico",
+          { extensions: { code: "BAD_USER_INPUT" } },
+        );
+      }
+
+      return prisma.ticket.update({
+        where: { id: args.id },
+        data: { deletedAt: new Date() },
+        include: { category: true, createdBy: true, assignedTo: true },
+      });
+    },
   },
+
 };

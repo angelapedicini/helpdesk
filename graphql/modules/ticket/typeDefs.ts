@@ -6,7 +6,11 @@ import { DateTypeDefinition } from "graphql-scalars";
 export const ticketTypeDefs = `#graphql
   ${DateTypeDefinition}
 
-  enum TicketStatus { OPEN IN_PROGRESS CLOSED }
+  enum TicketStatus { 
+    OPEN 
+    IN_PROGRESS 
+    CLOSED 
+  }
 
   type Ticket {
     id: Int!
@@ -19,6 +23,7 @@ export const ticketTypeDefs = `#graphql
     createdAt: Date!
     updatedAt: Date!
     closedAt: Date
+    deletedAt: Date
   }
 
     input TicketInput {
@@ -58,7 +63,9 @@ type Query {
   #   tickets(first: Int, after: String, orderBy: TicketOrderBy): TicketConnection!
   # }
 
-    type Mutation {
-    createTicket(input: TicketInput!): Ticket!
-  }
+ type Mutation {
+  createTicket(input: TicketInput!): Ticket!
+  updateTicket(id: Int!, input: TicketInput!): Ticket!
+  deleteTicket(id: Int!): Ticket!
+}
 `;

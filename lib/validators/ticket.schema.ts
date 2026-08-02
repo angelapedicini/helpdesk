@@ -5,9 +5,7 @@ export const TicketInputSchema = z.object({
   title: z.string().min(1, "Il titolo è obbligatorio").max(200),
   description: z.string().min(1, "La descrizione è obbligatoria"),
   categoryId: z.coerce.number().int().positive("Categoria non valida"),
-  categoryLabel: z.string().optional(),
   assignedToId: z.coerce.number().int().positive().optional().or(z.literal("").transform(() => undefined)),
-  assignedToLabel: z.string().optional(),
 });
 
 export type TicketInput = z.infer<typeof TicketInputSchema>;

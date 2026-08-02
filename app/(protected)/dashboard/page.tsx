@@ -1,6 +1,6 @@
-// app/tickets/page.tsx
 "use client";
 
+import { useMemo } from "react";
 import Typography from "@mui/material/Typography";
 import { Box, Button, Stack } from "@mui/material";
 import { useRouter } from "next/navigation";
@@ -10,17 +10,19 @@ import {
   Ticket,
   TicketSortField,
 } from "@/lib/apollo-client/queries/ticket/ticket.queries";
-import { ticketColumns } from "./column.def";
+import { createTicketColumns } from "./column.def";
 import { useCursorPagination } from "@/lib/apollo-client/hooks/pagination-hook";
+import { useAppMutation } from "@/lib/apollo-client/hooks/mutation-hook";
 import { useModalState } from "@/components/hooks/use-modal-state";
 import Modal from "@/components/modal";
 import FilterPanel from "@/components/filter-panel";
 import type { TicketFilterOutput } from "@/lib/validators/ticket.schema";
-import { TicketFilterForm } from "@/components/forms/ticket/ticket-filter";
 import EntityForm from "@/components/form-engine/entity-form";
 import { useTicketFormConfig } from "@/components/forms/ticket/ticket.config";
 import { useTicketFilterFormConfig } from "@/components/forms/ticket/ticket-filter.config";
 import FilterForm from "@/components/form-engine/filter-form";
+import { DELETE_TICKET } from "@/lib/apollo-client/queries/ticket/ticket.mutation";
+import SureForm from "@/components/forms/sure-form";
 
 const PAGE_SIZE = 20;
 
@@ -42,13 +44,35 @@ export default function TicketsPage() {
   });
 
   const ticketModal = useModalState<Ticket>();
+  const deleteModal = useModalState<Ticket>();
 
   const ticketFormConfig = useTicketFormConfig({ ...queryVariables, after: null });
   const ticketFilterConfig = useTicketFilterFormConfig();
 
+  const deleteTicket = useAppMutation(
+    DELETE_TICKET,
+    "Ticket eliminato con successo.",
+    GET_TICKETS,
+    { ...queryVariables, after: null },
+  );
+
+  const ticketColumns = useMemo(
+    () => createTicketColumns(ticketModal.open, deleteModal.open),
+    [ticketModal.open, deleteModal.open],
+  );
+
   const handleApplyFilter = (filter: TicketFilterOutput) => {
     const hasActiveFilter = Object.values(filter).some((v) => v !== undefined);
     setFilter(hasActiveFilter ? filter : undefined);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.value) return;
+
+    const result = await deleteTicket.mutate({ id: deleteModal.value.id } as never);
+    if (result.error) return; // errore già notificato dal notificationLink
+
+    deleteModal.close();
   };
 
   return (
@@ -76,8 +100,24 @@ export default function TicketsPage() {
           onRowClick={(row) => router.push(`/dashboard/${row.id}`)}
         />
 
-        <Modal title="Nuovo Ticket" isOpen={ticketModal.isOpen} onClose={ticketModal.close}>
-          <EntityForm config={ticketFormConfig} onCancel={ticketModal.close} />
+        <Modal
+          title={ticketModal.value ? "Modifica Ticket" : "Nuovo Ticket"}
+          isOpen={ticketModal.isOpen}
+          onClose={ticketModal.close}
+        >
+          <EntityForm
+            config={ticketFormConfig}
+            initialData={ticketModal.value ?? undefined}
+            onCancel={ticketModal.close}
+          />
+        </Modal>
+
+        <Modal title="Elimina Ticket" isOpen={deleteModal.isOpen} onClose={deleteModal.close}>
+          <SureForm
+            testo="eliminare"
+            onConfirm={handleConfirmDelete}
+            onCancel={deleteModal.close}
+          />
         </Modal>
       </Box>
     </Box>

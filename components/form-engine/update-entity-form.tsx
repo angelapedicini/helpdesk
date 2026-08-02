@@ -38,7 +38,7 @@ export default function UpdateEntityForm<
 
   const update = useAppMutation(
     config.updateMutation,
-    config.successMessage,
+    config.updateSuccessMessage ?? config.successMessage,
     config.listQuery,
     config.listVariables,
   );

@@ -29,3 +29,41 @@ export const CREATE_TICKET = graphql(`
     }
   }
 `);
+
+export const UPDATE_TICKET = graphql(`
+  mutation UpdateTicket($id: Int!, $input: TicketInput!) {
+    updateTicket(id: $id, input: $input) {
+      id
+      title
+      description
+      status
+      category {
+        id
+        name
+        department
+      }
+      createdBy {
+        id
+        firstName
+        lastName
+      }
+      assignedTo {
+        id
+        firstName
+        lastName
+      }
+      createdAt
+      updatedAt
+      closedAt
+    }
+  }
+`);
+
+export const DELETE_TICKET = graphql(`
+  mutation DeleteTicket($id: Int!) {
+    deleteTicket(id: $id) {
+      id
+      deletedAt
+    }
+  }
+`);
