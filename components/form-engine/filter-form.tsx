@@ -1,5 +1,5 @@
 "use client";
-
+import { useCallback, useRef } from "react";
 import { useForm, Resolver, FieldValues, SubmitHandler, DefaultValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@mui/material/Button";
@@ -14,12 +14,18 @@ type Props<TInput extends FieldValues> = {
   role?: string;
 };
 
+
 export default function FilterForm<TInput extends FieldValues>({
   config,
   onApply,
   role,
 }: Props<TInput>) {
   const { onClose: closeFilterPanel, setActiveFilterCount } = useFilterPanel();
+
+  const resetFnsRef = useRef<Record<string, () => void>>({});
+  const registerReset = useCallback((name: string, fn: () => void) => {
+    resetFnsRef.current[name] = fn;
+  }, []);
 
   const {
     handleSubmit,
@@ -43,6 +49,7 @@ export default function FilterForm<TInput extends FieldValues>({
 
   function handleReset() {
     reset(config.defaultValues as DefaultValues<TInput>);
+    Object.values(resetFnsRef.current).forEach((fn) => fn()); // <- svuota tutte le query dei campi search
     setActiveFilterCount(0);
     onApply(config.defaultValues);
     closeFilterPanel();
@@ -58,7 +65,7 @@ export default function FilterForm<TInput extends FieldValues>({
     >
       {visibleFields.map((def) => (
         <Box key={def.name}>
-          {renderField<TInput>(def, { control, register, errors })}
+          {renderField<TInput>(def, { control, register, errors, registerReset })}
         </Box>
       ))}
 

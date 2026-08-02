@@ -1,3 +1,4 @@
+// form-engine/inputs/select-input.tsx
 import { Control, Controller, FieldValues, Path } from "react-hook-form";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
@@ -33,6 +34,17 @@ export function SelectInput<TInput extends FieldValues>({
           value={field.value ?? ""}
           error={!!error}
           helperText={error}
+          slotProps={{
+            select: {
+              MenuProps: {
+                slotProps: {
+                  paper: {
+                    sx: { maxHeight: 300 },
+                  },
+                },
+              },
+            },
+          }}
         >
           <MenuItem value="">Seleziona {label.toLowerCase()}</MenuItem>
           {options.map(({ id, label: optLabel }) => (

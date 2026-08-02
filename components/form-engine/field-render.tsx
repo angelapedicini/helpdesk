@@ -13,6 +13,7 @@ type RenderContext<TInput extends FieldValues> = {
   control: Control<TInput>;
   register: UseFormRegister<TInput>;
   errors: FieldErrors<TInput>;
+  registerReset?: (name: string, fn: () => void) => void;
 };
 
 export function renderField<TInput extends FieldValues>(
@@ -63,9 +64,9 @@ export function renderField<TInput extends FieldValues>(
         <SearchInput
           name={name}
           label={def.label}
-          labelName={def.labelName as Path<TInput>}
           control={ctx.control}
           searchFn={def.searchFn}
+          registerReset={ctx.registerReset}
         />
       );
 

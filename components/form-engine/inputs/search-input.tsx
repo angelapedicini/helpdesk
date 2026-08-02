@@ -1,5 +1,4 @@
 import {
-  useForm,
   Controller,
   ControllerRenderProps,
   ControllerFieldState,
@@ -17,29 +16,35 @@ import ListItemText from "@mui/material/ListItemText";
 import SearchIcon from "@mui/icons-material/Search";
 import Popper from "@mui/material/Popper";
 import Typography from "@mui/material/Typography";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SearchResult } from "../fieldDefs";
 
 type SearchInputContentProps<TInput extends FieldValues> = {
   idField: ControllerRenderProps<TInput, Path<TInput>>;
-  labelField: ControllerRenderProps<TInput, Path<TInput>>;
   fieldState: ControllerFieldState;
   label: string;
   searchFn: (filter: { search?: string }) => Promise<SearchResult[]>;
+  initialLabel?: string;
+  registerReset?: (name: string, fn: () => void) => void;
 };
 
 function SearchInputContent<TInput extends FieldValues>({
   idField,
-  labelField,
   fieldState,
   label,
   searchFn,
+  initialLabel,
+  registerReset,
 }: SearchInputContentProps<TInput>) {
+  const [query, setQuery] = useState(initialLabel ?? "");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null);
 
-  const query = (labelField.value as string) ?? "";
+  // Comando imperativo: quando si preme Reset, FilterForm chiama questa funzione.
+  useEffect(() => {
+    registerReset?.(idField.name, () => setQuery(""));
+  }, [registerReset, idField.name]);
 
   async function handleSearch() {
     try {
@@ -54,7 +59,7 @@ function SearchInputContent<TInput extends FieldValues>({
 
   function handleSelect(item: SearchResult) {
     idField.onChange(item.id);
-    labelField.onChange(item.label);
+    setQuery(item.label);
     setResults([]);
     setHasSearched(false);
   }
@@ -76,7 +81,7 @@ function SearchInputContent<TInput extends FieldValues>({
           label={label}
           value={query}
           onChange={(e) => {
-            labelField.onChange(e.target.value);
+            setQuery(e.target.value);
             idField.onChange(undefined);
             setHasSearched(false);
           }}
@@ -149,34 +154,31 @@ type Props<TInput extends FieldValues> = {
   name: Path<TInput>;
   label: string;
   searchFn: (filter: { search?: string }) => Promise<SearchResult[]>;
-  labelName: Path<TInput>;
   control: Control<TInput>;
+  initialLabel?: string;
+  registerReset?: (name: string, fn: () => void) => void;
 };
 
 export function SearchInput<TInput extends FieldValues>({
   name,
   label,
   searchFn,
-  labelName,
   control,
+  initialLabel,
+  registerReset,
 }: Props<TInput>) {
   return (
     <Controller
       name={name}
       control={control}
       render={({ field: idField, fieldState }) => (
-        <Controller
-          name={labelName}
-          control={control}
-          render={({ field: labelField }) => (
-            <SearchInputContent<TInput>
-              idField={idField}
-              labelField={labelField}
-              fieldState={fieldState}
-              label={label}
-              searchFn={searchFn}
-            />
-          )}
+        <SearchInputContent<TInput>
+          idField={idField}
+          fieldState={fieldState}
+          label={label}
+          searchFn={searchFn}
+          initialLabel={initialLabel}
+          registerReset={registerReset}
         />
       )}
     />

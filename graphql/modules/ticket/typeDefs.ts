@@ -8,12 +8,6 @@ export const ticketTypeDefs = `#graphql
 
   enum TicketStatus { OPEN IN_PROGRESS CLOSED }
 
-  type TicketCategory {
-    id: Int!
-    name: String!
-    department: Department!
-  }
-
   type Ticket {
     id: Int!
     title: String!
