@@ -3,7 +3,7 @@
 
 import { useReactiveVar } from "@apollo/client/react";
 import { Snackbar, Alert } from "@mui/material";
-import { notificationVar } from "@/lib/apollo-client/apollo-links/notification";
+import { notificationVar } from "@/apollo-client/apollo-links/notification";
 
 export function GlobalSnackbar() {
   const notification = useReactiveVar(notificationVar);

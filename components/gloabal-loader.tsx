@@ -3,7 +3,7 @@
 
 import { useReactiveVar } from "@apollo/client/react";
 import { CircularProgress, Box } from "@mui/material";
-import { loadingVar } from "@/lib/apollo-client/apollo-links/loading-link";
+import { loadingVar } from "@/apollo-client/apollo-links/loading-link";
 
 export function GlobalLoadingBar() {
   const count = useReactiveVar(loadingVar);

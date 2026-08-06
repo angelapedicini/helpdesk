@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import { LoginSchema } from "@/lib/validators/auth.schema";
 import { GraphQLError } from "graphql";
 import bcrypt from "bcryptjs";
-import { signAccessToken, signRefreshToken } from "@/lib/auth/jwt";
+import { buildAccessTokenPayload, signAccessToken, signRefreshToken } from "@/lib/auth/jwt";
 import { setAuthCookies } from "@/lib/auth/cookies";
 
 export const loginResolvers = {
@@ -34,10 +34,7 @@ export const loginResolvers = {
         });
       }
 
-      const accessToken = await signAccessToken({
-        userId: existing.id,
-        role: existing.role,  
-      });
+      const accessToken = await signAccessToken(buildAccessTokenPayload(existing));
       const refreshToken = await signRefreshToken(existing.id);
 
       // AGGIUNGI QUESTO — mancava

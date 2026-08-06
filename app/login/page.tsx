@@ -20,8 +20,8 @@ import {
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { LoginInput, LoginSchema } from "@/lib/validators/auth.schema";
-import { useAppMutation } from "@/lib/apollo-client/hooks/mutation-hook";
-import { LOGIN } from "@/lib/apollo-client/queries/auth/login/login.mutation";
+import { useAppMutation } from "@/apollo-client/hooks/mutation-hook";
+import { LOGIN } from "@/apollo-client/queries/auth/login/login.mutation";
 
 
 
@@ -47,7 +47,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginInput) => {
     const result = await login({ input: data });
     if (result.data && !result.error) {
-      router.replace("/");
+      router.replace("/dashboard");
     }
   };
 

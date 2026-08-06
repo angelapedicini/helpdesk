@@ -1,7 +1,7 @@
 // modules/auth/refresh/resolvers.ts
 import { GraphQLError } from "graphql";
 import prisma from "@/lib/prisma";
-import { verifyRefreshToken, signAccessToken, signRefreshToken } from "@/lib/auth/jwt";
+import { verifyRefreshToken, signAccessToken, signRefreshToken, buildAccessTokenPayload } from "@/lib/auth/jwt";
 import { setAuthCookies, getRefreshToken, clearAuthCookies } from "@/lib/auth/cookies";
 
 export const refreshResolvers = {
@@ -43,10 +43,7 @@ export const refreshResolvers = {
       // Rotation
       await prisma.refreshToken.delete({ where: { token: refreshToken } });
 
-      const newAccessToken = await signAccessToken({
-        userId: storedToken.user.id,
-        role: storedToken.user.role,
-      });
+      const newAccessToken = await signAccessToken(buildAccessTokenPayload(storedToken.user));
       const newRefreshToken = await signRefreshToken(storedToken.user.id);
 
       await prisma.refreshToken.create({

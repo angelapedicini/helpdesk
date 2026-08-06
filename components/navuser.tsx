@@ -10,10 +10,10 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import { ME_QUERY } from "@/lib/apollo-client/queries/user/me";
-import { useAppQuery } from "@/lib/apollo-client/hooks/query-hook";
-import { LOGOUT } from "@/lib/apollo-client/queries/auth/logout/logout.mutation";
-import { useAppMutation } from "@/lib/apollo-client/hooks/mutation-hook";
+import { ME_QUERY } from "@/apollo-client/queries/user/me";
+import { useAppQuery } from "@/apollo-client/hooks/query-hook";
+import { LOGOUT } from "@/apollo-client/queries/auth/logout/logout.mutation";
+import { useAppMutation } from "@/apollo-client/hooks/mutation-hook";
 
 export default function NavUser() {
   const { data, loading } = useAppQuery(ME_QUERY);

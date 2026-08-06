@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
-import type { Role } from "@/app/generated/prisma/client";
+import type { Department, Role } from "@/app/generated/prisma/client";
 
 //si prendono i segreti dalla env 
 const accessSecret = new TextEncoder().encode(process.env.JWT_SECRET!);
@@ -9,6 +9,7 @@ const refreshSecret = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET!);
 export type AccessTokenPayload = {
   userId: number;
   role: Role;
+  department: Department;
 };
 
 //creazione effettiva di access token 
@@ -19,7 +20,7 @@ export async function signAccessToken(payload: AccessTokenPayload) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("30s")
+    .setExpirationTime("10m")
     .sign(accessSecret);
 }
 
@@ -42,7 +43,7 @@ export async function signRefreshToken(userId: number) {
   return new SignJWT({ userId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime("1d")
     .sign(refreshSecret);
 }
 
@@ -54,4 +55,12 @@ export async function verifyRefreshToken(token: string): Promise<{ userId: numbe
   } catch {
     return null;
   }
+}
+
+export function buildAccessTokenPayload(user: { id: number; role: Role; department: Department }): AccessTokenPayload {
+  return {
+    userId: user.id,
+    role: user.role,
+    department: user.department,
+  };
 }

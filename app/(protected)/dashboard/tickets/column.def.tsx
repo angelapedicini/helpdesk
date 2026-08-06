@@ -2,7 +2,7 @@ import { Column } from "@/components/table";
 import { Box, Chip, IconButton, Tooltip } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { Ticket, TicketSortField } from "@/lib/apollo-client/queries/ticket/ticket.queries";
+import { Ticket, TicketSortField } from "@/apollo-client/queries/ticket/ticket.queries";
 
 export function createTicketColumns(
     onEdit: (row: Ticket) => void,
@@ -19,8 +19,15 @@ export function createTicketColumns(
                 <Chip label={row.status} size="small" color={row.status === "CLOSED" ? "default" : "primary"} />
             ),
         },
-        { header: "Categoria", sortField: "CATEGORY", render: (row) => row.category.name },
-        { header: "Reparto", sortField: "DEPARTMENT", render: (row) => row.category.department },
+        {
+            header: "Priorità",
+            sortField: "PRIORITY",
+            render: (row) => (
+                <Chip label={row.priority} size="small" color={row.priority === "URGENT" ? "default" : "primary"} />
+            ),
+        },
+        // { header: "Categoria", sortField: "CATEGORY", render: (row) => row.category.name ?? "-" },
+        // { header: "Reparto", sortField: "DEPARTMENT", render: (row) => row.category.department },
         {
             header: "Creato da",
             sortField: "CREATED_BY",

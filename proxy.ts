@@ -62,10 +62,11 @@ function handleForbidden(req: NextRequest) {
   return NextResponse.redirect(new URL("/dashboard", req.url));
 }
 
-function injectUserHeaders(req: NextRequest, payload: { userId: number; role: string }) {
+function injectUserHeaders(req: NextRequest, payload: { userId: number; role: string, department: string }) {
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-user-id", String(payload.userId));
   requestHeaders.set("x-user-role", payload.role);
+  requestHeaders.set("x-user-department", payload.department);
   requestHeaders.set("x-pathname", req.nextUrl.pathname);
   return requestHeaders;
 }

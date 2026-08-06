@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import { BaseItem, EntityFormConfig } from "./fieldDefs";
-import { useAppMutation } from "@/lib/apollo-client/hooks/mutation-hook";
+import { useAppMutation } from "@/apollo-client/hooks/mutation-hook";
 import { renderField } from "./field-render";
 
 

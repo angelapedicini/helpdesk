@@ -1,25 +1,30 @@
 "use client";
 
 import { z } from "zod";
-import { TicketInputSchema } from "@/lib/validators/ticket.schema";
-import { CREATE_TICKET, UPDATE_TICKET } from "@/lib/apollo-client/queries/ticket/ticket.mutation";
-import { GET_TICKETS, Ticket } from "@/lib/apollo-client/queries/ticket/ticket.queries";
-import type { TicketsQueryVariables } from "@/lib/gql/graphql";
+import { CREATE_TICKET, UPDATE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
+import { GET_TICKETS, Ticket } from "@/apollo-client/queries/ticket/ticket.queries";
 import { EntityFormConfig, FieldDef } from "@/components/form-engine/fieldDefs";
-import { useAppLazyQuery } from "@/lib/apollo-client/hooks/lazy-query";
-import { useAppQuery } from "@/lib/apollo-client/hooks/query-hook";
-import { SEARCH_USERS } from "@/lib/apollo-client/queries/user/search";
-import { GET_CATEGORIES } from "@/lib/apollo-client/queries/ticket-category/ticket-category.queries";
+import { useAppLazyQuery } from "@/apollo-client/hooks/lazy-query";
+import { useAppQuery } from "@/apollo-client/hooks/query-hook";
+import { SEARCH_USERS } from "@/apollo-client/queries/user/search";
+import { GET_CATEGORIES } from "@/apollo-client/queries/ticket-category/ticket-category.queries";
+import { TicketCreateSchema } from "@/lib/validators/ticket.schema";
+import { TicketsQueryVariables } from "@/apollo-client/gql/graphql";
+import { Department } from "@/lib/validators/auth.schema";
 
-type TicketFormInput = z.input<typeof TicketInputSchema>;
-type TicketFormOutput = z.output<typeof TicketInputSchema>;
+type TicketFormOutput = z.output<typeof TicketCreateSchema>;
 
 export function useTicketFormConfig(
   listVariables: TicketsQueryVariables,
   initialData?: Ticket,
+  presetDepartment?: Department,
 ): EntityFormConfig<TicketFormOutput, Ticket> {
-  const { run: runSearchUsers } = useAppLazyQuery(SEARCH_USERS);
-  const { data: categories } = useAppQuery(GET_CATEGORIES);
+  // const { run: runSearchUsers } = useAppLazyQuery(SEARCH_USERS);
+  // const { data: categories } = useAppQuery(GET_CATEGORIES);
+  const { data: categories } = useAppQuery(GET_CATEGORIES, {
+    variables: { department: presetDepartment },
+    skip: !presetDepartment, // se non c'è un department preset, magari vuoi mostrarle tutte
+  });
 
   const categoryOptions = (categories ?? []).map((c) => ({
     id: c.id,
@@ -39,36 +44,38 @@ export function useTicketFormConfig(
       type: "select",
       options: categoryOptions,
     },
-    {
-      name: "assignedToId",
-      label: "Assegnatario (opzionale)",
-      type: "search",
-      initialLabel: assignedToInitialLabel,
-      searchFn: async (filter) => {
-        const users = await runSearchUsers({ search: filter.search } as never);
-        return (users ?? []).map((u) => ({
-          id: u.id,
-          label: `${u.firstName} ${u.lastName}`,
-        }));
-      },
-    },
+    // {
+    //   name: "assignedToId",
+    //   label: "Assegnatario (opzionale)",
+    //   type: "search",
+    //   initialLabel: assignedToInitialLabel,
+    //   searchFn: async (filter) => {
+    //     const users = await runSearchUsers({ search: filter.search } as never);
+    //     return (users ?? []).map((u) => ({
+    //       id: u.id,
+    //       label: `${u.firstName} ${u.lastName}`,
+    //     }));
+    //   },
+    // },
   ];
 
   return {
-    schema: TicketInputSchema,
+    schema: TicketCreateSchema,
     defaultValues: {
       title: "",
       description: "",
       categoryId: undefined as unknown as number,
-      assignedToId: undefined,
+      // assignedToId: undefined,
+      department: presetDepartment ?? (undefined as unknown as Department),
     } satisfies TicketFormOutput,
     mapToForm: (ticket) =>
       ({
         title: ticket.title,
         description: ticket.description,
         categoryId: Number(ticket.category?.id),
-        assignedToId:
-          ticket.assignedTo?.id != null ? Number(ticket.assignedTo.id) : undefined,
+        department: ticket.ticketDepartment,
+        // assignedToId:
+        //   ticket.assignedTo?.id != null ? Number(ticket.assignedTo.id) : undefined,
       }) satisfies TicketFormOutput,
     fields: ticketFields,
     createMutation: CREATE_TICKET,

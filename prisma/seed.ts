@@ -1,5 +1,5 @@
 // prisma/seed.ts
-import { PrismaClient } from "../app/generated/prisma/client";
+import { Department, PrismaClient } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 import bcrypt from "bcryptjs";
@@ -26,22 +26,120 @@ const DEPARTMENTS = Object.keys(DEPARTMENT_CATEGORIES) as Array<
 >;
 
 const firstNames = [
-  "Mario", "Giuseppe", "Anna", "Luca", "Sara", "Marco", "Elena", "Paolo", "Chiara", "Davide",
-  "Francesca", "Alessandro", "Giulia", "Matteo", "Valentina", "Simone", "Laura", "Andrea", "Martina", "Roberto",
-  "Federica", "Stefano", "Silvia", "Fabio", "Claudia", "Riccardo", "Ilaria", "Nicola", "Serena", "Antonio",
-  "Beatrice", "Emanuele", "Giorgia", "Tommaso", "Alice", "Filippo", "Camilla", "Gabriele", "Noemi", "Leonardo",
-  "Michela", "Daniele", "Veronica", "Pietro", "Cecilia", "Vittorio", "Rebecca", "Enrico", "Arianna", "Massimo",
+  "Mario",
+  "Giuseppe",
+  "Anna",
+  "Luca",
+  "Sara",
+  "Marco",
+  "Elena",
+  "Paolo",
+  "Chiara",
+  "Davide",
+  "Francesca",
+  "Alessandro",
+  "Giulia",
+  "Matteo",
+  "Valentina",
+  "Simone",
+  "Laura",
+  "Andrea",
+  "Martina",
+  "Roberto",
+  "Federica",
+  "Stefano",
+  "Silvia",
+  "Fabio",
+  "Claudia",
+  "Riccardo",
+  "Ilaria",
+  "Nicola",
+  "Serena",
+  "Antonio",
+  "Beatrice",
+  "Emanuele",
+  "Giorgia",
+  "Tommaso",
+  "Alice",
+  "Filippo",
+  "Camilla",
+  "Gabriele",
+  "Noemi",
+  "Leonardo",
+  "Michela",
+  "Daniele",
+  "Veronica",
+  "Pietro",
+  "Cecilia",
+  "Vittorio",
+  "Rebecca",
+  "Enrico",
+  "Arianna",
+  "Massimo",
 ];
 
 const lastNames = [
-  "Rossi", "Verdi", "Bianchi", "Ferrari", "Colombo", "Ricci", "Marino", "Greco", "Bruno", "Gallo",
-  "Conti", "De Luca", "Costa", "Giordano", "Mancini", "Rizzo", "Lombardi", "Moretti", "Barbieri", "Fontana",
-  "Santoro", "Mariani", "Rinaldi", "Caruso", "Ferrara", "Galli", "Martini", "Leone", "Longo", "Gentile",
-  "Martinelli", "Vitale", "Sala", "Serra", "Farina", "Piras", "Grasso", "Pellegrini", "Palumbo", "Sanna",
-  "Amato", "Vitali", "Testa", "Silvestri", "Guerra", "Parisi", "Ferraro", "Basile", "Monti", "Coppola",
+  "Rossi",
+  "Verdi",
+  "Bianchi",
+  "Ferrari",
+  "Colombo",
+  "Ricci",
+  "Marino",
+  "Greco",
+  "Bruno",
+  "Gallo",
+  "Conti",
+  "De Luca",
+  "Costa",
+  "Giordano",
+  "Mancini",
+  "Rizzo",
+  "Lombardi",
+  "Moretti",
+  "Barbieri",
+  "Fontana",
+  "Santoro",
+  "Mariani",
+  "Rinaldi",
+  "Caruso",
+  "Ferrara",
+  "Galli",
+  "Martini",
+  "Leone",
+  "Longo",
+  "Gentile",
+  "Martinelli",
+  "Vitale",
+  "Sala",
+  "Serra",
+  "Farina",
+  "Piras",
+  "Grasso",
+  "Pellegrini",
+  "Palumbo",
+  "Sanna",
+  "Amato",
+  "Vitali",
+  "Testa",
+  "Silvestri",
+  "Guerra",
+  "Parisi",
+  "Ferraro",
+  "Basile",
+  "Monti",
+  "Coppola",
 ];
 
+const PRIORITIES = [
+  "LOW",
+  "MEDIUM",
+  "HIGH",
+  "URGENT",
+] as const;
+
 export async function main() {
+  await prisma.ticketHistory.deleteMany();
   await prisma.ticketMessage.deleteMany();
   await prisma.ticket.deleteMany();
   await prisma.userPermission.deleteMany();
@@ -50,31 +148,49 @@ export async function main() {
   await prisma.user.deleteMany();
   await prisma.ticketCategory.deleteMany();
 
-  const hashedPassword = await bcrypt.hash("Password123!", 10);
+  const hashedPassword = await bcrypt.hash(
+    "Password123!",
+    10
+  );
 
-  // CATEGORIE per reparto
-  const categoriesByDept: Record<string, { id: number; name: string }[]> = {};
+  const categoriesByDept: Record<
+  string,
+  { id: number; name: string; department: Department }[]
+> = {};
 
   for (const dept of DEPARTMENTS) {
     const created = await Promise.all(
       DEPARTMENT_CATEGORIES[dept].map((name) =>
         prisma.ticketCategory.create({
-          data: { name, department: dept },
+          data: {
+            name,
+            department: dept,
+          },
         })
       )
     );
+
     categoriesByDept[dept] = created;
   }
 
-  // UTENTI: 1 admin + 3 tecnici + 6 employee per reparto
-  const techniciansByDept: Record<string, { id: number }[]> = {};
-  const employeesByDept: Record<string, { id: number }[]> = {};
+  const techniciansByDept: Record<
+    string,
+    { id: number }[]
+  > = {};
+
+  const employeesByDept: Record<
+    string,
+    { id: number }[]
+  > = {};
 
   let personIndex = 0;
+
   function nextPerson() {
     const firstName = firstNames[personIndex];
     const lastName = lastNames[personIndex];
+
     personIndex++;
+
     return {
       firstName,
       lastName,
@@ -83,24 +199,38 @@ export async function main() {
   }
 
   for (const dept of DEPARTMENTS) {
-    // 1 admin
-    const admin = nextPerson();
-    await prisma.user.create({
+    const admin = await prisma.user.create({
       data: {
-        ...admin,
+        ...nextPerson(),
         password: hashedPassword,
         role: "ADMIN",
         department: dept,
       },
     });
 
-    // 3 tecnici, uno per ciascuna categoria del reparto
+    await prisma.userPermission.createMany({
+      data: [
+        {
+          userId: admin.id,
+          action: "tickets.manage",
+        },
+        {
+          userId: admin.id,
+          action: "users.manage",
+        },
+        {
+          userId: admin.id,
+          action: "categories.manage",
+        },
+      ],
+    });
+
     const technicians = [];
+
     for (const category of categoriesByDept[dept]) {
-      const person = nextPerson();
       const technician = await prisma.user.create({
         data: {
-          ...person,
+          ...nextPerson(),
           password: hashedPassword,
           role: "TECHNICIAN",
           department: dept,
@@ -108,31 +238,36 @@ export async function main() {
       });
 
       await prisma.userSpecialization.create({
-        data: { userId: technician.id, categoryId: category.id },
+        data: {
+          userId: technician.id,
+          categoryId: category.id,
+        },
       });
 
       technicians.push(technician);
     }
+
     techniciansByDept[dept] = technicians;
 
-    // 6 employee
     const employees = [];
+
     for (let i = 0; i < 6; i++) {
-      const person = nextPerson();
       const employee = await prisma.user.create({
         data: {
-          ...person,
+          ...nextPerson(),
           password: hashedPassword,
           role: "EMPLOYEE",
           department: dept,
         },
       });
+
       employees.push(employee);
     }
+
     employeesByDept[dept] = employees;
   }
 
-  // TICKET di esempio: qualche ticket per reparto
+  // CREAZIONE TICKET
   for (const dept of DEPARTMENTS) {
     const categories = categoriesByDept[dept];
     const employees = employeesByDept[dept];
@@ -140,46 +275,190 @@ export async function main() {
 
     for (let i = 0; i < categories.length; i++) {
       const category = categories[i];
+
       const author = employees[i % employees.length];
-      const assignedTechnician = technicians[i % technicians.length];
+      const technician = technicians[i % technicians.length];
+
+      let status:
+        | "OPEN"
+        | "ASSIGNED"
+        | "IN_PROGRESS"
+        | "CLOSED"
+        | "REFUSED";
+
+      /*
+        Distribuzione stati:
+
+        0 -> OPEN
+        1 -> ASSIGNED
+        2 -> IN_PROGRESS
+        3 -> CLOSED
+        4 -> REFUSED
+      */
+
+      switch (i % 5) {
+        case 0:
+          status = "OPEN";
+          break;
+
+        case 1:
+          status = "ASSIGNED";
+          break;
+
+        case 2:
+          status = "IN_PROGRESS";
+          break;
+
+        case 3:
+          status = "CLOSED";
+          break;
+
+        default:
+          status = "REFUSED";
+          break;
+      }
 
       const ticket = await prisma.ticket.create({
         data: {
-          title: `Richiesta ${category.name.toLowerCase()} #${i + 1}`,
-          description: `Ticket di esempio per la categoria "${category.name}" nel reparto ${dept}.`,
-          status: i % 2 === 0 ? "OPEN" : "IN_PROGRESS",
+          title: `Richiesta ${category.name.toLowerCase()} #${i + 1
+            }`,
+
+          description:
+            `Ticket di esempio per la categoria "${category.name}" ` +
+            `del reparto ${dept}.`,
+
+          status,
+
+          priority: PRIORITIES[i % PRIORITIES.length],
+
           categoryId: category.id,
+
           createdById: author.id,
-          assignedToId: assignedTechnician.id,
+
+          /*
+            OPEN:
+            nessun tecnico assegnato
+      
+            tutti gli altri stati:
+            hanno un tecnico assegnato
+          */
+          assignedToId:
+            status === "OPEN"
+              ? null
+              : technician.id,
+
+          // reparto di appartenenza dell'autore al momento della creazione
+          sourceDepartmentForUser: dept,
+
+          // reparto target del ticket: dato che qui la categoria è sempre presente,
+          // coincide con il reparto della categoria stessa
+          ticketDepartment: category.department,
+
+          dueDate:
+            status === "CLOSED" ||
+              status === "REFUSED"
+              ? null
+              : new Date(
+                Date.now() +
+                (i + 2) *
+                24 *
+                60 *
+                60 *
+                1000
+              ),
+
+          closedAt:
+            status === "CLOSED" ||
+              status === "REFUSED"
+              ? new Date(
+                Date.now() -
+                24 *
+                60 *
+                60 *
+                1000
+              )
+              : null,
         },
       });
 
-      // Qualche messaggio di esempio solo sui ticket IN_PROGRESS (già presi in carico)
-      if (ticket.status === "IN_PROGRESS") {
-        await prisma.ticketMessage.create({
-          data: {
-            ticketId: ticket.id,
-            authorId: author.id,
-            content: "Buongiorno, potete darmi un aggiornamento sulla richiesta?",
-          },
+
+      /*
+        Messaggi per ticket IN_PROGRESS
+      */
+
+      if (status === "IN_PROGRESS") {
+        await prisma.ticketMessage.createMany({
+          data: [
+            {
+              ticketId: ticket.id,
+              authorId: author.id,
+              content:
+                "Buongiorno, potete darmi un aggiornamento sulla richiesta?",
+            },
+            {
+              ticketId: ticket.id,
+              authorId: technician.id,
+              content:
+                "Ho preso in carico il ticket. Sto verificando il problema.",
+            },
+          ],
         });
-        await prisma.ticketMessage.create({
-          data: {
-            ticketId: ticket.id,
-            authorId: assignedTechnician.id,
-            content: "Ciao, ci sto lavorando, ti aggiorno a breve.",
-          },
+      }
+
+
+      /*
+        Messaggi per ticket CLOSED
+      */
+
+      if (status === "CLOSED") {
+        await prisma.ticketMessage.createMany({
+          data: [
+            {
+              ticketId: ticket.id,
+              authorId: author.id,
+              content:
+                "Avete aggiornamenti sulla richiesta?",
+            },
+            {
+              ticketId: ticket.id,
+              authorId: technician.id,
+              content:
+                "Problema risolto. Puoi effettuare una verifica.",
+            },
+            {
+              ticketId: ticket.id,
+              authorId: author.id,
+              content:
+                "Confermo, tutto risolto. Grazie.",
+            },
+          ],
+        });
+      }
+
+
+      /*
+        Messaggi per ticket REFUSED
+      */
+
+      if (status === "REFUSED") {
+        await prisma.ticketMessage.createMany({
+          data: [
+            {
+              ticketId: ticket.id,
+              authorId: technician.id,
+              content:
+                "La richiesta non è di competenza della categoria selezionata. Creare un nuovo ticket con la categoria corretta.",
+            },
+          ],
         });
       }
     }
-
   }
-
-
 
 
   console.log("Seed completato");
 }
+
 
 main()
   .catch((error) => {

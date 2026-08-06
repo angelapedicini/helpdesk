@@ -18,6 +18,13 @@ enum Role {
   EMPLOYEE
 }
 
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model RefreshToken {
   id        Int      @id @default(autoincrement())
   token     String   @unique
@@ -38,8 +45,10 @@ enum Department {
 
 enum TicketStatus {
   OPEN
+  ASSIGNED
   IN_PROGRESS
   CLOSED
+  REFUSED
 }
 
 model TicketCategory {
@@ -67,6 +76,7 @@ model User {
   ticketsCreated  Ticket[]        @relation("CreatedTickets")
   ticketsAssigned Ticket[]        @relation("AssignedTickets")
   ticketMessages  TicketMessage[] @relation("TicketMessages")
+  ticketHistory TicketHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -100,9 +110,10 @@ model Ticket {
   title       String
   description String
   status      TicketStatus @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
 
-  categoryId Int
-  category   TicketCategory @relation(fields: [categoryId], references: [id])
+  categoryId Int?
+  category   TicketCategory? @relation(fields: [categoryId], references: [id])
 
   createdById Int
   createdBy   User @relation("CreatedTickets", fields: [createdById], references: [id])
@@ -110,10 +121,17 @@ model Ticket {
   assignedToId Int?
   assignedTo   User? @relation("AssignedTickets", fields: [assignedToId], references: [id])
 
+  sourceDepartmentForUser Department
+  ticketDepartment Department
+
+
   messages TicketMessage[]
+
+  history TicketHistory[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  dueDate   DateTime?
   closedAt  DateTime?
   deletedAt DateTime?
 }
@@ -127,6 +145,20 @@ model TicketMessage {
 
   authorId Int
   author   User @relation("TicketMessages", fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model TicketHistory {
+  id Int @id @default(autoincrement())
+
+  ticketId Int
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  actorId Int?
+  actor   User? @relation(fields: [actorId], references: [id])
+
+  snapshotBefore Json
 
   createdAt DateTime @default(now())
 }

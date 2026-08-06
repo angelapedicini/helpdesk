@@ -10,8 +10,8 @@ import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import DataObjectIcon from "@mui/icons-material/DataObject";
-import { ME_QUERY } from "@/lib/apollo-client/queries/user/me";
-import { useAppQuery } from "@/lib/apollo-client/hooks/query-hook";
+import { ME_QUERY } from "@/apollo-client/queries/user/me";
+import { useAppQuery } from "@/apollo-client/hooks/query-hook";
 import NavUser from "./navuser";
 import { NavLinkItem } from "./types/navlink";
 import NavSidebar from "./sidebar";
@@ -19,23 +19,23 @@ import NavSidebar from "./sidebar";
 
 const NAV_LINKS: NavLinkItem[] = [
   {
-    label: "Corsi",
-    href: "/corso",
-    icon: <DataObjectIcon />,
-    roles: ["ADMIN"],
-  },
-  {
-    label: "Assegnazioni",
-    href: "/assegnazione",
+    label: "Dashboard",
+    href: "/dashboard",
     icon: <DataObjectIcon />,
     // nessun 'roles' => visibile a tutti
   },
   {
-    label: "Statistiche",
-    href: "/assegnazione/stats",
-    icon: <BarChartIcon />,
-    roles: ["ADMIN"],
-  },
+    label: "I miei ticket",
+    href: "/dashboard/tickets",
+    icon: <DataObjectIcon />,
+    // nessun 'roles' => visibile a tutti
+  }, 
+  // {
+  //   label: "Statistiche",
+  //   href: "/assegnazione/stats",
+  //   icon: <BarChartIcon />,
+  //   roles: ["ADMIN"],
+  // },
 ];
 
 export default function Navbar() {
@@ -65,7 +65,7 @@ export default function Navbar() {
             </IconButton>
             <Link href="/dashboard" style={{ textDecoration: "none", color: "inherit" }}>
               <Typography variant="h6" component="div">
-                Academy
+                Helpdesk
               </Typography>
             </Link>
           </Box>

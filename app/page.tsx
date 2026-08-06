@@ -4,6 +4,7 @@ import { Box, Button } from "@mui/material";
 import Link from "next/link";
 
 export default function Page() {
+  // return null;
 
   return (
     <Box sx={{ display: "flex", justifyContent: "center", width: "100%", minHeight: "100vh" }}>

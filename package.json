@@ -14,6 +14,8 @@
     "@apollo/client": "^4.2.7",
     "@apollo/server": "^5.5.1",
     "@as-integrations/next": "^4.1.0",
+    "@casl/ability": "^7.0.1",
+    "@casl/prisma": "^2.0.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.4.0",

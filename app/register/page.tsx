@@ -21,8 +21,8 @@ import {
   MenuItem,
 } from "@mui/material";
 import { RegisterSchema } from "@/lib/validators/auth.schema";
-import { REGISTER } from "@/lib/apollo-client/queries/auth/register/register.mutation";
-import { useAppMutation } from "@/lib/apollo-client/hooks/mutation-hook";
+import { REGISTER } from "@/apollo-client/queries/auth/register/register.mutation";
+import { useAppMutation } from "@/apollo-client/hooks/mutation-hook";
 
 const DEPARTMENT_OPTIONS = [
   { value: "HR", label: "Risorse Umane" },

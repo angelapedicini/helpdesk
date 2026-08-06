@@ -10,7 +10,7 @@ import { lightTheme } from "../theme/theme-light";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { it } from "date-fns/locale";
-import { client } from "../apollo-client/apollo-client";
+import { client } from "../../apollo-client/apollo-client";
 import { ApolloProvider } from "@apollo/client/react";
 import { GlobalLoadingBar } from "@/components/gloabal-loader";
 import { GlobalSnackbar } from "@/components/global-error-snackbar";

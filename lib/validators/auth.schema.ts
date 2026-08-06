@@ -2,6 +2,9 @@ import { z } from "zod";
 
 export const DepartmentEnum = z.enum(["HR", "IT", "FINANCE", "SALES", "MARKETING"]);
 
+export type Department = z.infer<typeof DepartmentEnum>;
+
+
 export const RegisterSchema = z.object({
   firstName: z.string().trim().min(1, "Il nome è obbligatorio"),
   lastName: z.string().trim().min(1, "Il cognome è obbligatorio"),

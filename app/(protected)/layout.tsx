@@ -2,7 +2,7 @@
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import Navbar from "@/components/navbat";
+import Navbar from "@/components/navbar";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
     const session = await getSession();

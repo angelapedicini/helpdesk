@@ -1,11 +1,11 @@
 "use client";
 
-import { SEARCH_USERS } from "@/lib/apollo-client/queries/user/search";
+import { SEARCH_USERS } from "@/apollo-client/queries/user/search";
 import { TicketFilterSchema, TicketFilterOutput } from "@/lib/validators/ticket.schema";
 import { FilterFormConfig, FieldDef } from "@/components/form-engine/fieldDefs";
-import { useAppLazyQuery } from "@/lib/apollo-client/hooks/lazy-query";
-import { useAppQuery } from "@/lib/apollo-client/hooks/query-hook";
-import { GET_CATEGORIES } from "@/lib/apollo-client/queries/ticket-category/ticket-category.queries";
+import { useAppLazyQuery } from "@/apollo-client/hooks/lazy-query";
+import { useAppQuery } from "@/apollo-client/hooks/query-hook";
+import { GET_CATEGORIES } from "@/apollo-client/queries/ticket-category/ticket-category.queries";
 
 const emptyValues: TicketFilterOutput = {
   createdById: undefined,
