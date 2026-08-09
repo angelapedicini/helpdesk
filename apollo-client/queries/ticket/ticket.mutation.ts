@@ -29,17 +29,19 @@ export const CREATE_TICKET = graphql(`
       createdAt
       updatedAt
       closedAt
+      dueDate
     }
   }
 `);
 
 export const UPDATE_TICKET = graphql(`
-  mutation UpdateTicket($id: Int!, $input: TicketInput!) {
+  mutation UpdateTicket($id: Int!, $input: TicketUpdateInput!) {
     updateTicket(id: $id, input: $input) {
       id
       title
       description
       status
+      priority
       ticketDepartment
       category {
         id
@@ -59,6 +61,7 @@ export const UPDATE_TICKET = graphql(`
       createdAt
       updatedAt
       closedAt
+      dueDate
     }
   }
 `);

@@ -111,7 +111,8 @@ export function useCursorPagination<
             orderBy: sort ?? undefined,
             filter: filter ?? undefined,
         } as TVars,
-        fetchPolicy: "network-only", // TEMPORANEO, solo per debug
+        // fetchPolicy: "network-only", // TEMPORANEO, solo per debug
+        fetchPolicy: "cache-and-network",
     });
 
     const nodes = data?.edges.map((e) => e.node) ?? [];

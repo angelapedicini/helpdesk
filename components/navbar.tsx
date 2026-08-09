@@ -8,7 +8,6 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
-import BarChartIcon from "@mui/icons-material/BarChart";
 import DataObjectIcon from "@mui/icons-material/DataObject";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
 import { useAppQuery } from "@/apollo-client/hooks/query-hook";
@@ -27,6 +26,12 @@ const NAV_LINKS: NavLinkItem[] = [
   {
     label: "I miei ticket",
     href: "/dashboard/tickets",
+    icon: <DataObjectIcon />,
+    // nessun 'roles' => visibile a tutti
+  }, 
+    {
+    label: "Ticket assegnati a me",
+    href: "/dashboard/ticketsAssignedToMe",
     icon: <DataObjectIcon />,
     // nessun 'roles' => visibile a tutti
   }, 

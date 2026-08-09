@@ -5,6 +5,23 @@ import { DateTypeDefinition } from "graphql-scalars";
 export const ticketTypeDefs = `#graphql
   ${DateTypeDefinition}
 
+  
+  ${makeConnectionTypeDefs("Ticket")}
+  ${makeSortTypeDefs("Ticket", [
+  "ID",
+  "TITLE",
+  "DESCRIPTION",
+  "STATUS",
+  "PRIORITY",
+  "CATEGORY",
+  "DEPARTMENT",
+  "CREATED_BY",
+  "ASSIGNED_TO",
+  "CREATED_AT",
+  "UPDATED_AT",
+  "CLOSED_AT",
+])}
+
   enum TicketStatus { 
     OPEN 
     ASSIGNED
@@ -38,6 +55,7 @@ export const ticketTypeDefs = `#graphql
     createdAt: Date!
     updatedAt: Date!
     closedAt: Date
+    dueDate: Date
     deletedAt: Date
     sourceDepartmentForUser: Department!
     ticketDepartment: Department!
@@ -60,34 +78,30 @@ export const ticketTypeDefs = `#graphql
   }
 
   type Query {
-    tickets(
-      first: Int
-      after: String
-      orderBy: TicketOrderBy
-      filter: TicketFilter
-      scope: TicketScope = MINE
-    ): TicketConnection!
-  }
+  tickets(
+    first: Int
+    after: String
+    orderBy: TicketOrderBy
+    filter: TicketFilter
+    scope: TicketScope = MINE
+  ): TicketConnection!
 
-  ${makeConnectionTypeDefs("Ticket")}
-  ${makeSortTypeDefs("Ticket", [
-    "ID",
-    "TITLE",
-    "DESCRIPTION",
-    "STATUS",
-    "PRIORITY",
-    "CATEGORY",
-    "DEPARTMENT",
-    "CREATED_BY",
-    "ASSIGNED_TO",
-    "CREATED_AT",
-    "UPDATED_AT",
-    "CLOSED_AT",
-  ])}
+  ticket(id: Int!): Ticket
+}
+
+input TicketUpdateInput {
+    title: String
+    description: String
+    categoryId: Int
+    assignedToId: Int
+    priority: TicketPriority
+    status: TicketStatus
+}
+
 
   type Mutation {
     createTicket(input: TicketInput!): Ticket!
-    updateTicket(id: Int!, input: TicketInput!): Ticket!
+    updateTicket(id: Int!, input: TicketUpdateInput!): Ticket!
     deleteTicket(id: Int!): Ticket!
   }
 `;

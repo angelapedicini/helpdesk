@@ -6,7 +6,6 @@ import { SortArg, toPrismaOrderBy } from "@/graphql/sorting/sorting";
 import { GraphQLError } from "graphql/error";
 import {
   TicketCreateSchema,
-  TicketUpdateSchema,
   TicketFilterSchema,
 } from "@/lib/validators/ticket.schema";
 import { defineAbilityFor, ALLOWED_STATUS_TRANSITIONS } from "@/lib/casl/abilities";
@@ -14,6 +13,8 @@ import { ForbiddenError, subject } from "@casl/ability";
 import { accessibleBy } from "@casl/prisma";
 import { AccessTokenPayload } from "@/lib/auth/jwt";
 import { autoAssign } from "@/lib/ticket/autoAssign";
+import { TicketDetailSchema } from "@/lib/validators/ticket-detail.schema";
+import { computeDueDate } from "@/lib/ticket/dueDate";
 
 type TicketSortField =
   | "ID"
@@ -36,7 +37,7 @@ const TICKET_SORT_FIELD_MAP: Record<TicketSortField, string> = {
   STATUS: "status",
   PRIORITY: "priority",
   CATEGORY: "category.name",
-  DEPARTMENT: "category.department",
+  DEPARTMENT: "ticketDepartment",
   CREATED_BY: "createdBy.firstName",
   ASSIGNED_TO: "assignedTo.firstName",
   CREATED_AT: "createdAt",
@@ -143,6 +144,28 @@ export const ticketResolvers = {
           }),
       });
     },
+    ticket: async (
+      _parent: unknown,
+      args: { id: number }
+    ) => {
+      const session = await requireSession();
+      const ability = defineAbilityFor(session);
+
+      return prisma.ticket.findFirst({
+        where: {
+          id: args.id,
+          deletedAt: null,
+          AND: [
+            accessibleBy(ability, "read").ofType("Ticket"),
+          ],
+        },
+        include: {
+          category: true,
+          createdBy: true,
+          assignedTo: true,
+        },
+      });
+    },
   },
 
   Mutation: {
@@ -195,10 +218,10 @@ export const ticketResolvers = {
           description: input.description,
           status: assignedToId ? "ASSIGNED" : "OPEN",
           sourceDepartmentForUser: session.department,
-          categoryId: input.categoryId,      
-          createdById: session.userId,       
+          categoryId: input.categoryId,
+          createdById: session.userId,
           assignedToId: assignedToId,
-          ticketDepartment: input.department        
+          ticketDepartment: input.department
         },
         include: { category: true, createdBy: true, assignedTo: true },
       });
@@ -208,7 +231,7 @@ export const ticketResolvers = {
       const session = await requireSession();
       const ability = defineAbilityFor(session);
 
-      const result = TicketUpdateSchema.safeParse(args.input);
+      const result = TicketDetailSchema.safeParse(args.input);
       if (!result.success) {
         throw new GraphQLError("Input non valido", {
           extensions: { code: "BAD_USER_INPUT", issues: result.error.flatten() },
@@ -250,13 +273,9 @@ export const ticketResolvers = {
             { extensions: { code: "BAD_USER_INPUT" } }
           );
         }
-
-        // rifiuto: richiede sempre una motivazione (va inserita come messaggio
-        // dal chiamante, qui verifichiamo solo che sia presente nell'input,
-        // adatta al tuo schema se il messaggio è una mutation separata)
       }
 
-      if (input.categoryId !== undefined) {
+      if (input.categoryId !== undefined && input.categoryId !== null) {
         const category = await prisma.ticketCategory.findUnique({
           where: { id: input.categoryId },
         });
@@ -278,11 +297,16 @@ export const ticketResolvers = {
         }
       }
 
+
+
       const data: Prisma.TicketUpdateInput = {};
       if (input.title !== undefined) data.title = input.title;
       if (input.description !== undefined) data.description = input.description;
       if (input.categoryId !== undefined) {
-        data.category = { connect: { id: input.categoryId } };
+        data.category =
+          input.categoryId !== null
+            ? { connect: { id: input.categoryId } }
+            : { disconnect: true };
       }
       if (input.assignedToId !== undefined) {
         data.assignedTo =
@@ -291,44 +315,19 @@ export const ticketResolvers = {
             : { disconnect: true };
       }
       if (input.status !== undefined) data.status = input.status;
-      if (input.dueDate !== undefined) data.dueDate = input.dueDate;
       if (input.status === "CLOSED") data.closedAt = new Date();
+      if (input.priority !== undefined) {
+        data.priority = input.priority;
+        data.dueDate = computeDueDate(input.priority, existing.createdAt);
+      }
 
       return prisma.ticket.update({
         where: { id: args.id },
         data,
         include: { category: true, createdBy: true, assignedTo: true },
       });
-    },
+    }
 
-    deleteTicket: async (_parent: unknown, args: { id: number }) => {
-      const session = await requireSession();
 
-      const existing = await prisma.ticket.findUnique({ where: { id: args.id } });
-      if (!existing || existing.deletedAt) {
-        throw new GraphQLError("Ticket non trovato", {
-          extensions: { code: "NOT_FOUND" },
-        });
-      }
-
-      if (existing.createdById !== session.userId) {
-        throw new GraphQLError("Non puoi eliminare un ticket che non hai creato", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
-
-      if (existing.status !== "OPEN") {
-        throw new GraphQLError(
-          "Non è possibile eliminare un ticket già preso in carico",
-          { extensions: { code: "BAD_USER_INPUT" } }
-        );
-      }
-
-      return prisma.ticket.update({
-        where: { id: args.id },
-        data: { deletedAt: new Date() },
-        include: { category: true, createdBy: true, assignedTo: true },
-      });
-    },
   },
 };

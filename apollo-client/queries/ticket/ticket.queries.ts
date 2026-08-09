@@ -23,6 +23,7 @@ export const GET_TICKETS = graphql(`
           assignedTo { id firstName lastName }
           createdAt 
           updatedAt 
+          dueDate
           closedAt
           ticketDepartment
         }
@@ -51,3 +52,39 @@ export type TicketSortField =
 
 // coerente 1:1 con l'enum TicketScope dello schema GraphQL
 export type TicketScope = "MINE" | "ASSIGNED_TO_ME" | "DEPARTMENT";
+
+export const GET_TICKET_BY_ID = graphql(`
+  query Ticket($id: Int!) {
+    ticket(id: $id) {
+      id
+      title
+      description
+      status
+      priority
+      category {
+        id
+        name
+        department
+      }
+      createdBy {
+        id
+        firstName
+        lastName
+      }
+      assignedTo {
+        id
+        firstName
+        lastName
+      }
+      createdAt
+      updatedAt
+      closedAt
+      dueDate
+      sourceDepartmentForUser
+      ticketDepartment
+    }
+  }
+`);
+
+export type TicketDetail = NonNullable<ResultOf<typeof GET_TICKET_BY_ID>["ticket"]>;
+

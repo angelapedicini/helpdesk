@@ -26,34 +26,39 @@ export function SelectInput<TInput extends FieldValues>({
     <Controller
       name={name}
       control={control}
-      render={({ field }) => (
-        <TextField
-          label={label}
-          select
-          {...field}
-          value={field.value ?? ""}
-          error={!!error}
-          helperText={error}
-          slotProps={{
-            select: {
-              MenuProps: {
-                slotProps: {
-                  paper: {
-                    sx: { maxHeight: 300 },
+      render={({ field }) => {
+        const hasMatch = options.some((opt) => opt.id === field.value);
+        const selectValue = hasMatch ? field.value : "";
+
+        return (
+          <TextField
+            label={label}
+            select
+            {...field}
+            value={selectValue}
+            error={!!error}
+            helperText={error}
+            slotProps={{
+              select: {
+                MenuProps: {
+                  slotProps: {
+                    paper: {
+                      sx: { maxHeight: 300 },
+                    },
                   },
                 },
               },
-            },
-          }}
-        >
-          <MenuItem value="">Seleziona {label.toLowerCase()}</MenuItem>
-          {options.map(({ id, label: optLabel }) => (
-            <MenuItem key={id} value={id}>
-              {renderOption?.(id) ?? optLabel}
-            </MenuItem>
-          ))}
-        </TextField>
-      )}
+            }}
+          >
+            <MenuItem value="">Seleziona {label.toLowerCase()}</MenuItem>
+            {options.map(({ id, label: optLabel }) => (
+              <MenuItem key={id} value={id}>
+                {renderOption?.(id) ?? optLabel}
+              </MenuItem>
+            ))}
+          </TextField>
+        );
+      }}
     />
   );
 }

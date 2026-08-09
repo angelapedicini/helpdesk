@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import Navbar from "@/components/navbar";
+import { defineAbilityFor } from "@/lib/casl/abilities";
+import { AbilityProvider } from "@/lib/casl/abilityContext";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
     const session = await getSession();
@@ -10,12 +12,18 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
     const user = await prisma.user.findUnique({
         where: { id: session.userId },
-        select: { id: true }, // basta l'id per verificare che esista ancora
+        select: { id: true },
     });
     if (!user) redirect("/login");
 
-    return <>
-        <Navbar />
-        {children}
-    </>;
+    const ability = defineAbilityFor(session); // session deve avere shape AccessTokenPayload
+
+    return (
+        <>
+            <Navbar />
+            <AbilityProvider initialRules={ability.rules}>
+                {children}
+            </AbilityProvider>
+        </>
+    );
 }

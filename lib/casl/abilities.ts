@@ -19,7 +19,7 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
 
   // Admin: tutti i ticket del proprio reparto
   if (user.role === "ADMIN") {
-    can("read", "Ticket", { sourceDepartment: user.department });
+    can("read", "Ticket", { ticketDepartment: user.department });
   }
 
   // --- UPDATE (invariato rispetto a prima) ---
@@ -43,10 +43,10 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
 
   if (user.role === "ADMIN") {
     can("update", "Ticket", ["assignedToId"], {
-      sourceDepartment: user.department,
+      ticketDepartment: user.department,
       status: { in: ["OPEN", "ASSIGNED"] },
     });
-    can("update", "Ticket", ["status"], { sourceDepartment: user.department, status: "OPEN" });
+    can("update", "Ticket", ["status"], { ticketDepartment: user.department, status: "OPEN" });
     cannot("update", "Ticket", ["status"], {
       status: { in: ["IN_PROGRESS", "CLOSED"] },
     }).because("L'admin non può intervenire su un ticket già in lavorazione");
@@ -54,10 +54,13 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
     // il divieto vale SOLO quando l'admin sta gestendo un ticket del reparto
     // che non ha creato lui stesso — se è il creatore, valgono le regole base da employee
     cannot("update", "Ticket", ["createdById", "categoryId"], {
-      sourceDepartment: user.department,
+      ticketDepartment: user.department,
       createdById: { not: user.userId },
     }).because("L'admin non può modificare creatore o categoria di un ticket che non ha creato lui stesso");
   }
+
+  // --- DELETE ---
+  can("delete", "Ticket", { createdById: user.userId, status: "OPEN" });
 
   return build();
 }

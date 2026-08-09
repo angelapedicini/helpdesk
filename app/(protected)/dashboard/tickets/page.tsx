@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import { useMemo, useState } from "react";
 import Typography from "@mui/material/Typography";
 import { Box, Button, Stack, IconButton, Badge } from "@mui/material";
@@ -12,7 +10,6 @@ import { createTicketColumns } from "./column.def";
 import { useModalState } from "@/components/hooks/use-modal-state";
 import Modal from "@/components/modal";
 import type { TicketFilterOutput } from "@/lib/validators/ticket.schema";
-import EntityForm from "@/components/form-engine/entity-form";
 import { useTicketFormConfig } from "@/components/forms/ticket/ticket.config";
 import { useTicketFilterFormConfig } from "@/components/forms/ticket/ticket-filter.config";
 import FilterForm from "@/components/form-engine/filter-form";
@@ -27,6 +24,8 @@ import {
   TicketScope,
 } from "@/apollo-client/queries/ticket/ticket.queries";
 import { DELETE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
+import EntityForm from "@/components/form-engine/entity-form";
+import { useAbility } from "@/lib/casl/abilityContext";
 
 const PAGE_SIZE = 20;
 
@@ -35,6 +34,7 @@ export default function TicketsPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   const scope = "MINE";
+  const ability = useAbility();
 
   const {
     nodes: tickets,
@@ -57,7 +57,10 @@ export default function TicketsPage() {
   const ticketModal = useModalState<Ticket>();
   const deleteModal = useModalState<Ticket>();
 
-  const ticketFormConfig = useTicketFormConfig({ ...queryVariables, after: null });
+  const ticketFormConfig = useTicketFormConfig(
+    { ...queryVariables, after: null },
+    ticketModal.value ?? undefined,
+  );
   const ticketFilterConfig = useTicketFilterFormConfig();
 
   const deleteTicket = useAppMutation(
@@ -68,8 +71,8 @@ export default function TicketsPage() {
   );
 
   const ticketColumns = useMemo(
-    () => createTicketColumns(ticketModal.open, deleteModal.open),
-    [ticketModal.open, deleteModal.open],
+    () => createTicketColumns(ability, ticketModal.open, deleteModal.open),
+    [ability, ticketModal.open, deleteModal.open],
   );
 
   const handleApplyFilter = (filter: TicketFilterOutput) => {
@@ -109,7 +112,7 @@ export default function TicketsPage() {
         hasMore={hasNextPage}
         loadingMore={loading}
         keyExtractor={(row) => row.id}
-        onRowClick={(row) => router.push(`/dashboard/${row.id}`)}
+        onRowClick={(row) => router.push(`/dashboard/tickets/${row.id}`)}
       />
 
       <FiltersSidebar open={filtersOpen} onClose={() => setFiltersOpen(false)}>
@@ -120,7 +123,20 @@ export default function TicketsPage() {
           <FilterForm config={ticketFilterConfig} onApply={handleApplyFilter} />
         </Box>
       </FiltersSidebar>
-      
+
+      <Modal
+        title={ticketModal.value ? "Modifica Ticket" : "Nuovo Ticket"}
+        isOpen={ticketModal.isOpen}
+        onClose={ticketModal.close}
+      >
+        <EntityForm
+          config={ticketFormConfig}
+          initialData={ticketModal.value ?? undefined}
+          onCancel={ticketModal.close}
+        />
+      </Modal>
+
+
       <Modal title="Elimina Ticket" isOpen={deleteModal.isOpen} onClose={deleteModal.close}>
         <SureForm
           testo="eliminare"

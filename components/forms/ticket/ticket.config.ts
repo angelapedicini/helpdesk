@@ -19,11 +19,18 @@ export function useTicketFormConfig(
   initialData?: Ticket,
   presetDepartment?: Department,
 ): EntityFormConfig<TicketFormOutput, Ticket> {
-  // const { run: runSearchUsers } = useAppLazyQuery(SEARCH_USERS);
-  // const { data: categories } = useAppQuery(GET_CATEGORIES);
+  const department =
+    initialData?.ticketDepartment ?? presetDepartment;
+
+  console.log("FORM CONFIG", {
+    presetDepartment,
+    initialDepartment: initialData?.ticketDepartment,
+    department,
+  });
+
   const { data: categories } = useAppQuery(GET_CATEGORIES, {
-    variables: { department: presetDepartment },
-    skip: !presetDepartment, // se non c'è un department preset, magari vuoi mostrarle tutte
+    variables: { department },
+    skip: !department,
   });
 
   const categoryOptions = (categories ?? []).map((c) => ({
@@ -65,8 +72,7 @@ export function useTicketFormConfig(
       title: "",
       description: "",
       categoryId: undefined as unknown as number,
-      // assignedToId: undefined,
-      department: presetDepartment ?? (undefined as unknown as Department),
+      department: department ?? (undefined as unknown as Department),
     } satisfies TicketFormOutput,
     mapToForm: (ticket) =>
       ({
@@ -74,8 +80,6 @@ export function useTicketFormConfig(
         description: ticket.description,
         categoryId: Number(ticket.category?.id),
         department: ticket.ticketDepartment,
-        // assignedToId:
-        //   ticket.assignedTo?.id != null ? Number(ticket.assignedTo.id) : undefined,
       }) satisfies TicketFormOutput,
     fields: ticketFields,
     createMutation: CREATE_TICKET,

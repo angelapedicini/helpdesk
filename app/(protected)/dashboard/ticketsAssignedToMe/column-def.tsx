@@ -4,10 +4,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Ticket, TicketSortField } from "@/apollo-client/queries/ticket/ticket.queries";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status.config";
-import { toTicketSubject, type AppAbility } from "@/lib/casl/types";
 
 export function createTicketColumns(
-    ability: AppAbility,
     onEdit: (row: Ticket) => void,
     onDelete: (row: Ticket) => void,
 ): Column<Ticket, TicketSortField>[] {
@@ -28,8 +26,8 @@ export function createTicketColumns(
                 <Chip label={row.priority} size="small" color={row.priority === "URGENT" ? "default" : "primary"} />
             ),
         },
-        // { header: "Categoria", sortField: "CATEGORY", render: (row) => row.category.name ?? "-" },
-        // { header: "Reparto", sortField: "DEPARTMENT", render: (row) => row.category.department },
+        { header: "Categoria", sortField: "CATEGORY", render: (row) => row.category?.name ? row.category.name : "-" },
+        { header: "Reparto", sortField: "DEPARTMENT", render: (row) => row.ticketDepartment },
         {
             header: "Creato da",
             sortField: "CREATED_BY",
@@ -60,29 +58,21 @@ export function createTicketColumns(
             header: "Azioni",
             width: 110,
             render: (row) => {
-                const ticketSubject = toTicketSubject(row);
-                const canEdit = ability.can("update", ticketSubject);
-                const canDelete = ability.can("delete", ticketSubject);
-
-                const deleteReason = !canDelete
-                    ? ability.relevantRuleFor("delete", ticketSubject)?.reason
-                    : "";
+                const canDelete = row.status === "OPEN";
 
                 return (
                     <Box sx={{ display: "flex", gap: 0.5, flexWrap: "nowrap" }}>
-                        {canEdit && (
-                            <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEdit(row);
-                                }}
-                            >
-                                <EditIcon fontSize="small" />
-                            </IconButton>
-                        )}
+                        <IconButton
+                            size="small"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(row);
+                            }}
+                        >
+                            <EditIcon fontSize="small" />
+                        </IconButton>
 
-                        <Tooltip title={canDelete ? "" : deleteReason || "Non eliminabile"}>
+                        <Tooltip title={canDelete ? "" : "Non eliminabile: ticket già preso in carico"}>
                             <span>
                                 <IconButton
                                     size="small"
