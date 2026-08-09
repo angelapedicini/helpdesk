@@ -22,14 +22,17 @@ import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { TicketStatus, TicketPriority } from "@/lib/validators/ticket.schema";
 
-type TicketQueryResult = NonNullable<ResultOf<typeof GET_TICKET_BY_ID>["ticket"]>;
+import type { TicketFieldsFragment } from "@/apollo-client/gql/graphql";
+
 
 type TicketDetailFormProps = {
-    ticket: TicketQueryResult;
+    ticket: TicketFieldsFragment;
     onSubmit: (values: TicketDetailFormOutput) => void | Promise<void>;
 };
 
-function mapTicketToFormValues(ticket: TicketQueryResult): TicketDetailFormValues {
+function mapTicketToFormValues(
+    ticket: TicketFieldsFragment
+): TicketDetailFormValues {
     return {
         title: ticket.title,
         description: ticket.description ?? "",

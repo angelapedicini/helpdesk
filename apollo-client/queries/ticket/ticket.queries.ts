@@ -1,5 +1,6 @@
 import { graphql } from "@/apollo-client/gql";
 import type { ResultOf } from "@graphql-typed-document-node/core";
+import type { TicketFieldsFragment } from "@/apollo-client/gql/graphql";
 
 export const GET_TICKETS = graphql(`
   query Tickets(
@@ -13,19 +14,7 @@ export const GET_TICKETS = graphql(`
       edges {
         cursor
         node {
-          id 
-          title 
-          description 
-          status 
-          priority
-          category { id name department }
-          createdBy { id firstName lastName }
-          assignedTo { id firstName lastName }
-          createdAt 
-          updatedAt 
-          dueDate
-          closedAt
-          ticketDepartment
+          ...TicketFields
         }
       }
       pageInfo { hasNextPage endCursor }
@@ -34,7 +23,13 @@ export const GET_TICKETS = graphql(`
 `);
 
 export type TicketConnection = ResultOf<typeof GET_TICKETS>["tickets"];
-export type Ticket = TicketConnection["edges"][number]["node"];
+
+// Tipo "grezzo" (mascherato), così com'è nella response Apollo
+export type TicketNode = TicketConnection["edges"][number]["node"];
+
+// Tipo "vero" coi campi risolti (id, title, status, ecc.)
+// = il tipo del fragment generato direttamente da codegen
+export type Ticket = TicketFieldsFragment;
 
 export type TicketSortField =
   | "ID"
@@ -50,41 +45,12 @@ export type TicketSortField =
   | "UPDATED_AT"
   | "CLOSED_AT";
 
-// coerente 1:1 con l'enum TicketScope dello schema GraphQL
 export type TicketScope = "MINE" | "ASSIGNED_TO_ME" | "DEPARTMENT";
 
 export const GET_TICKET_BY_ID = graphql(`
-  query Ticket($id: Int!) {
+  query GetTicketById($id: Int!) {
     ticket(id: $id) {
-      id
-      title
-      description
-      status
-      priority
-      category {
-        id
-        name
-        department
-      }
-      createdBy {
-        id
-        firstName
-        lastName
-      }
-      assignedTo {
-        id
-        firstName
-        lastName
-      }
-      createdAt
-      updatedAt
-      closedAt
-      dueDate
-      sourceDepartmentForUser
-      ticketDepartment
+      ...TicketFields
     }
   }
 `);
-
-export type TicketDetail = NonNullable<ResultOf<typeof GET_TICKET_BY_ID>["ticket"]>;
-

@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
-import { GET_TICKET_BY_ID } from "@/apollo-client/queries/ticket/ticket.queries";
+
 import {
     Box,
     Card,
@@ -10,10 +10,15 @@ import {
     CardHeader,
     Chip,
     Divider,
-    Skeleton,
     Typography,
 } from "@mui/material";
+
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status.config";
+
+
+import { useFragment } from "@/apollo-client/gql/fragment-masking";
+import { GET_TICKET_BY_ID } from "@/apollo-client/queries/ticket/ticket.queries";
+import { TicketFieldsFragmentDoc } from "@/apollo-client/gql/graphql";
 
 export default function Page() {
     const { id } = useParams();
@@ -21,7 +26,7 @@ export default function Page() {
     const ticketId =
         typeof id === "string" ? Number(id) : NaN;
 
-    const { data, loading } = useQuery(GET_TICKET_BY_ID, {
+    const { data } = useQuery(GET_TICKET_BY_ID, {
         variables: { id: ticketId },
         skip: !Number.isInteger(ticketId),
     });
@@ -34,9 +39,14 @@ export default function Page() {
         );
     }
 
-    const ticket = data?.ticket;
+    const ticket = useFragment(
+        TicketFieldsFragmentDoc,
+        data?.ticket
+    );
 
-    if (!ticket) return null;
+    if (!ticket) {
+        return null;
+    }
 
     return (
         <Box
@@ -66,47 +76,56 @@ export default function Page() {
                             gap: 2,
                         }}
                     >
-                        <Box >
+                        <Box>
                             <strong>Titolo:</strong> {ticket.title}
                         </Box>
 
-                        <Box >
+                        <Box>
                             <strong>Descrizione:</strong> {ticket.description}
                         </Box>
 
-                        <Box >
-                            <strong>Priorità: </strong>
-                            <Chip label={ticket.priority} size="small" color={ticket.priority === "URGENT" ? "default" : "primary"} />
+                        <Box>
+                            <strong>Priorità:</strong>{" "}
+                            <Chip
+                                label={ticket.priority}
+                                size="small"
+                                color={
+                                    ticket.priority === "URGENT"
+                                        ? "default"
+                                        : "primary"
+                                }
+                            />
                         </Box>
 
-                        <Box >
+                        <Box>
                             <strong>Categoria:</strong>{" "}
                             {ticket.category?.name ?? "-"}
                         </Box>
 
-                        <Box >
+                        <Box>
                             <strong>Creato da:</strong>{" "}
-                            {ticket.createdBy.firstName} {ticket.createdBy.lastName}
+                            {ticket.createdBy.firstName}{" "}
+                            {ticket.createdBy.lastName}
                         </Box>
 
-                        <Box >
+                        <Box>
                             <strong>Assegnato a:</strong>{" "}
                             {ticket.assignedTo
                                 ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
                                 : "-"}
                         </Box>
 
-                        <Box >
+                        <Box>
                             <strong>Data creazione:</strong>{" "}
                             {new Date(ticket.createdAt).toLocaleString("it-IT")}
                         </Box>
 
-                        <Box >
+                        <Box>
                             <strong>Ultimo aggiornamento:</strong>{" "}
                             {new Date(ticket.updatedAt).toLocaleString("it-IT")}
                         </Box>
 
-                        <Box >
+                        <Box>
                             <strong>Chiuso il:</strong>{" "}
                             {ticket.closedAt
                                 ? new Date(ticket.closedAt).toLocaleString("it-IT")
