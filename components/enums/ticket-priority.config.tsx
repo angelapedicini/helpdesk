@@ -5,7 +5,7 @@ import RemoveIcon from "@mui/icons-material/Remove";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import PriorityHighIcon from "@mui/icons-material/PriorityHigh";
 import { ComponentType } from "react";
-import { TicketPriority } from "@/lib/validators/ticket.schema";
+import { TicketPriority } from "@/lib/validators/enums.schema";
 
 type TicketPriorityConfig = {
   label: string;

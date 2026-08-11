@@ -23,13 +23,14 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
   }
 
   // --- UPDATE (invariato rispetto a prima) ---
-  can("update", "Ticket", ["title", "description", "categoryId"], {
+  can("update", "Ticket", ["title", "description", "categoryId", "priority"], {
     createdById: user.userId,
     status: { in: ["OPEN", "ASSIGNED"] },
   });
 
   if (user.role === "TECHNICIAN") {
     can("update", "Ticket", ["status"], { assignedToId: user.userId, status: "ASSIGNED" });
+    can("update", "Ticket", ["priority"], { assignedToId: user.userId, status: "ASSIGNED" });
     can("update", "Ticket", ["status", "closedAt"], { assignedToId: user.userId, status: "IN_PROGRESS" });
     can("update", "Ticket", ["dueDate"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
     can("update", "Ticket", ["assignedToId"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
@@ -60,7 +61,7 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
   }
 
   // --- DELETE ---
-  can("delete", "Ticket", { createdById: user.userId, status: "OPEN" });
+  can("delete", "Ticket", { createdById: user.userId, status: { in: ["OPEN", "ASSIGNED"] }, });
 
   return build();
 }

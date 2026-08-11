@@ -65,9 +65,9 @@ export const ticketTypeDefs = `#graphql
   input TicketInput {
     title: String!
     description: String!
-    categoryId: Int!
-    assignedToId: Int
-    department: Department
+    categoryId: Int
+    priority: TicketPriority!
+    department: Department!
   }
 
   input TicketFilter {
@@ -75,6 +75,7 @@ export const ticketTypeDefs = `#graphql
     assignedToId: Int
     status: TicketStatus
     categoryId: Int
+    priority: TicketPriority
   }
 
   type Query {
@@ -92,10 +93,10 @@ export const ticketTypeDefs = `#graphql
 input TicketUpdateInput {
     title: String
     description: String
+    status: TicketStatus
+    priority: TicketPriority
     categoryId: Int
     assignedToId: Int
-    priority: TicketPriority
-    status: TicketStatus
 }
 
 

@@ -29,6 +29,6 @@ export const userTypeDefs = `#graphql
 
   extend type Query {
     me: User
-    searchUsers(search: String): [User!]!
+    searchUsers(search: String, role: Role, department: Department): [User!]!
   }
 `;

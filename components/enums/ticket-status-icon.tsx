@@ -1,4 +1,3 @@
-import { TicketStatus } from "@/lib/validators/ticket.schema";
 import { SvgIconProps } from "@mui/material";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
@@ -6,6 +5,7 @@ import AutorenewIcon from "@mui/icons-material/Autorenew";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import { ComponentType } from "react";
+import { TicketStatus } from "@/lib/validators/enums.schema";
 
 type TicketStatusConfig = {
   label: string;

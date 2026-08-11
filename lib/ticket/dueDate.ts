@@ -1,6 +1,6 @@
 // lib/ticket/dueDate.ts
 import { addBusinessDays } from "date-fns";
-import { TicketPriority } from "@/lib/validators/ticket.schema";
+import { TicketPriority } from "../validators/enums.schema";
 
 const DUE_DATE_BUSINESS_DAYS_BY_PRIORITY: Record<TicketPriority, number> = {
   URGENT: 3,

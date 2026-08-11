@@ -1,8 +1,8 @@
 "use client";
 
+import { DepartmentEnum } from "@/lib/validators/enums.schema";
 import { Box, Button } from "@mui/material";
 import Link from "next/link";
-import { DepartmentEnum } from "@/lib/validators/auth.schema";
 
 const DEPARTMENT_LABELS: Record<string, string> = {
     HR: "Risorse Umane",
@@ -28,7 +28,7 @@ export default function Page() {
                     <Button
                         key={dept}
                         component={Link}
-                        href={`/dashboard/newTicket/${dept}`}
+                        href={`/newTicket/${dept}`}
                         variant="outlined"
                         size="large"
                         sx={{ color: "inherit", py: 1.5, fontSize: "1.1rem" }}

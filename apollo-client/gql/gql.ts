@@ -25,7 +25,7 @@ type Documents = {
     "\n  query Tickets(\n    $first: Int\n    $after: String\n    $orderBy: TicketOrderBy\n    $filter: TicketFilter\n    $scope: TicketScope\n  ) {\n    tickets(first: $first, after: $after, orderBy: $orderBy, filter: $filter, scope: $scope) {\n      edges {\n        cursor\n        node {\n          ...TicketFields\n        }\n      }\n      pageInfo { hasNextPage endCursor }\n    }\n  }\n": typeof types.TicketsDocument,
     "\n  query GetTicketById($id: Int!) {\n    ticket(id: $id) {\n      ...TicketFields\n    }\n  }\n": typeof types.GetTicketByIdDocument,
     "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      role\n      department\n    }\n  }\n": typeof types.MeDocument,
-    "\n  query SearchUsers($search: String) {\n    searchUsers(search: $search) {\n      id\n      firstName\n      lastName\n    }\n  }\n": typeof types.SearchUsersDocument,
+    "\n  query SearchUsers($search: String, $role: Role, $department: Department) {\n    searchUsers(search: $search, role: $role, department: $department) {\n      id\n      firstName\n      lastName\n    }\n  }\n": typeof types.SearchUsersDocument,
 };
 const documents: Documents = {
     "\n  mutation Login($input: LoginInput!) {\n    login(input: $input) {\n      user {\n        id\n        email\n        firstName\n        lastName\n      }\n    }\n  }\n": types.LoginDocument,
@@ -39,7 +39,7 @@ const documents: Documents = {
     "\n  query Tickets(\n    $first: Int\n    $after: String\n    $orderBy: TicketOrderBy\n    $filter: TicketFilter\n    $scope: TicketScope\n  ) {\n    tickets(first: $first, after: $after, orderBy: $orderBy, filter: $filter, scope: $scope) {\n      edges {\n        cursor\n        node {\n          ...TicketFields\n        }\n      }\n      pageInfo { hasNextPage endCursor }\n    }\n  }\n": types.TicketsDocument,
     "\n  query GetTicketById($id: Int!) {\n    ticket(id: $id) {\n      ...TicketFields\n    }\n  }\n": types.GetTicketByIdDocument,
     "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      role\n      department\n    }\n  }\n": types.MeDocument,
-    "\n  query SearchUsers($search: String) {\n    searchUsers(search: $search) {\n      id\n      firstName\n      lastName\n    }\n  }\n": types.SearchUsersDocument,
+    "\n  query SearchUsers($search: String, $role: Role, $department: Department) {\n    searchUsers(search: $search, role: $role, department: $department) {\n      id\n      firstName\n      lastName\n    }\n  }\n": types.SearchUsersDocument,
 };
 
 /**
@@ -103,7 +103,7 @@ export function graphql(source: "\n  query Me {\n    me {\n      id\n      first
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query SearchUsers($search: String) {\n    searchUsers(search: $search) {\n      id\n      firstName\n      lastName\n    }\n  }\n"): (typeof documents)["\n  query SearchUsers($search: String) {\n    searchUsers(search: $search) {\n      id\n      firstName\n      lastName\n    }\n  }\n"];
+export function graphql(source: "\n  query SearchUsers($search: String, $role: Role, $department: Department) {\n    searchUsers(search: $search, role: $role, department: $department) {\n      id\n      firstName\n      lastName\n    }\n  }\n"): (typeof documents)["\n  query SearchUsers($search: String, $role: Role, $department: Department) {\n    searchUsers(search: $search, role: $role, department: $department) {\n      id\n      firstName\n      lastName\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

@@ -25,16 +25,22 @@ const NAV_LINKS: NavLinkItem[] = [
   },
   {
     label: "I miei ticket",
-    href: "/dashboard/tickets",
+    href: "/tickets",
     icon: <DataObjectIcon />,
     // nessun 'roles' => visibile a tutti
-  }, 
-    {
+  },
+  {
     label: "Ticket assegnati a me",
-    href: "/dashboard/ticketsAssignedToMe",
+    href: "/ticketsAssignedToMe",
     icon: <DataObjectIcon />,
     // nessun 'roles' => visibile a tutti
-  }, 
+  },
+  {
+    label: "Ticket del dipartimento",
+    href: "/ticketsForDep",
+    icon: <DataObjectIcon />,
+    // nessun 'roles' => visibile a tutti
+  },
   // {
   //   label: "Statistiche",
   //   href: "/assegnazione/stats",

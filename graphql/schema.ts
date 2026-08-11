@@ -11,9 +11,10 @@ import { refreshResolvers } from "./modules/auth/refresh/resolvers";
 import { logoutTypeDefs } from "./modules/auth/logout/typeDefs";
 import { logoutResolvers } from "./modules/auth/logout/resolvers";
 import { ticketTypeDefs } from "./modules/ticket/typeDefs";
-import { ticketResolvers } from "./modules/ticket/resolvers";
+// import { ticketResolvers } from "./modules/ticket/resolvers";
 import { ticketCategoryTypeDefs } from "./modules/ticket-category/typeDefs";
 import { categoryResolvers } from "./modules/ticket-category/resolver";
+import { ticketResolvers } from "./modules/ticket/resolvers";
 
 
 export const typeDefs = [

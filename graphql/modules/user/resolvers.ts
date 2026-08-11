@@ -1,5 +1,7 @@
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
+import { Department, Role } from "@/app/generated/prisma/enums";
+import { Prisma } from "@/app/generated/prisma/client";
 
 export const userResolvers = {
   Query: {
@@ -20,19 +22,31 @@ export const userResolvers = {
       });
     },
 
-    searchUsers: async (_parent: unknown, args: { search?: string }) => {
-      const { search } = args;
+    searchUsers: async (
+      _parent: unknown,
+      args: { search?: string; role?: Role; department?: Department }
+    ) => {
+      const { search, role, department } = args;
+
+      const where: Prisma.UserWhereInput = {};
+
+      if (search) {
+        where.OR = [
+          { firstName: { contains: search, mode: "insensitive" } },
+          { lastName: { contains: search, mode: "insensitive" } },
+        ];
+      }
+
+      if (role) {
+        where.role = role;
+      }
+
+      if (department) {
+        where.department = department;
+      }
 
       return prisma.user.findMany({
-        where: search
-          ? {
-              OR: [
-                { firstName: { contains: search, mode: "insensitive" } },
-                { lastName: { contains: search, mode: "insensitive" } },
-              ],
-            }
-          : undefined,
-        // take: 10,
+        where,
         select: {
           id: true,
           firstName: true,

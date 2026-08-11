@@ -158,7 +158,7 @@ model TicketHistory {
   actorId Int?
   actor   User? @relation(fields: [actorId], references: [id])
 
-  snapshotBefore Json
+  snapshotBefore Json 
 
   createdAt DateTime @default(now())
 }

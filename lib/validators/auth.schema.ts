@@ -1,8 +1,7 @@
 import { z } from "zod";
+import { DepartmentEnum } from "./enums.schema";
 
-export const DepartmentEnum = z.enum(["HR", "IT", "FINANCE", "SALES", "MARKETING"]);
 
-export type Department = z.infer<typeof DepartmentEnum>;
 
 
 export const RegisterSchema = z.object({

@@ -1,9 +1,7 @@
 // lib/validators/ticket-detail.schema.ts
 import { z } from "zod";
-import { TicketStatusSchema } from "./ticket.schema";
-import { DepartmentEnum } from "./auth.schema";
+import { DepartmentEnum, TicketPrioritySchema, TicketStatusSchema } from "./enums.schema";
 
-export const TicketPrioritySchema = z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]);
 
 // Mirror 1:1 di `type Ticket` nel typeDefs GraphQL, tutti i campi opzionali.
 // category / createdBy / assignedTo sono relation risolte in GraphQL:
@@ -19,6 +17,44 @@ export const TicketDetailSchema = z.object({
 
 });
 
-// lib/validators/ticket-detail.schema.ts — invariato lo schema, cambia solo l'export del tipo
 export type TicketDetailFormValues = z.input<typeof TicketDetailSchema>; // era z.infer
 export type TicketDetailFormOutput = z.output<typeof TicketDetailSchema>;
+
+export const UpdateTicketSchema = z.object({
+  title: z.string().min(1, "Il titolo è obbligatorio").max(200).optional(),
+  description: z.string().min(1, "La descrizione è obbligatoria").optional(),
+  status: TicketStatusSchema.optional(),
+  priority: TicketPrioritySchema.optional(),
+  categoryId: z.coerce.number().int().positive().nullable().optional(),
+  assignedToId: z.coerce.number().int().positive().nullable().optional(),
+
+});
+
+export type UpdateTicketInput = z.input<typeof UpdateTicketSchema>; // era z.infer
+export type UpdateTicketOutput = z.output<typeof UpdateTicketSchema>;
+
+
+export const CreateTicketSchema = z.object({
+  title: z.string().min(1, "Il titolo è obbligatorio").max(200),
+  description: z.string().min(1, "La descrizione è obbligatoria"),
+  priority: TicketPrioritySchema,
+  categoryId: z.coerce.number().int().positive(),
+  department: DepartmentEnum
+});
+
+// lib/validators/ticket-detail.schema.ts — invariato lo schema, cambia solo l'export del tipo
+export type CreateTicketFormValues = z.input<typeof CreateTicketSchema>; // era z.infer
+export type CreateTicketFormOutput = z.output<typeof CreateTicketSchema>;
+
+
+export const FilterTicketSchema = z.object({
+  createdById: z.coerce.number().int().positive("Utente non valido").optional(),
+  assignedToId: z.coerce.number().int().positive("Utente non valido").optional(),
+  status: TicketStatusSchema.optional(),
+  categoryId: z.coerce.number().int().positive("Categoria non valida").optional(),
+  priority: TicketPrioritySchema.optional(),
+});
+
+
+export type FilterTicketInput = z.input<typeof FilterTicketSchema>;
+export type FilterTicketOutput = z.output<typeof FilterTicketSchema>;
