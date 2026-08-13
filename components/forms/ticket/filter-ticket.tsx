@@ -64,13 +64,28 @@ export default function FilterTicketForm({
     const [searchUsers, { loading: loadingUsers }] =
         useLazyQuery(SEARCH_USERS);
 
-    async function handleSearchUsers(
+    async function handleAssignedTo(
         search: string
     ): Promise<SearchResult[]> {
         const { data } = await searchUsers({
             variables: {
                 search,
                 role: "TECHNICIAN",
+            },
+        });
+
+        return (data?.searchUsers ?? []).map((u) => ({
+            id: u.id,
+            label: `${u.firstName} ${u.lastName}`,
+        }));
+    }
+
+    async function handleCreatedBy(
+        search: string
+    ): Promise<SearchResult[]> {
+        const { data } = await searchUsers({
+            variables: {
+                search,
             },
         });
 
@@ -157,10 +172,19 @@ export default function FilterTicketForm({
                 />
 
                 <SearchInput
+                    name="createdById"
+                    label="Creato da"
+                    control={control}
+                    onSearch={handleCreatedBy}
+                    loading={loadingUsers}
+                    registerReset={registerReset}
+                />
+
+                <SearchInput
                     name="assignedToId"
                     label="Assegnato a"
                     control={control}
-                    onSearch={handleSearchUsers}
+                    onSearch={handleAssignedTo}
                     loading={loadingUsers}
                     registerReset={registerReset}
                 />
@@ -230,14 +254,14 @@ export default function FilterTicketForm({
                                     toCalendarUTCDate(date)
                                 )
                             }
-                            // slotProps={{
-                            //     textField: {
-                            //         fullWidth: true,
-                            //         error: !!errors.dueDateFrom,
-                            //         helperText:
-                            //             errors.dueDateFrom?.message,
-                            //     },
-                            // }}
+                        // slotProps={{
+                        //     textField: {
+                        //         fullWidth: true,
+                        //         error: !!errors.dueDateFrom,
+                        //         helperText:
+                        //             errors.dueDateFrom?.message,
+                        //     },
+                        // }}
                         />
                     )}
                 />
@@ -254,14 +278,14 @@ export default function FilterTicketForm({
                                     toCalendarUTCDate(date)
                                 )
                             }
-                            // slotProps={{
-                            //     textField: {
-                            //         fullWidth: true,
-                            //         error: !!errors.dueDateTo,
-                            //         helperText:
-                            //             errors.dueDateTo?.message,
-                            //     },
-                            // }}
+                        // slotProps={{
+                        //     textField: {
+                        //         fullWidth: true,
+                        //         error: !!errors.dueDateTo,
+                        //         helperText:
+                        //             errors.dueDateTo?.message,
+                        //     },
+                        // }}
                         />
                     )}
                 />
