@@ -15,6 +15,8 @@ import { ticketTypeDefs } from "./modules/ticket/typeDefs";
 import { ticketCategoryTypeDefs } from "./modules/ticket-category/typeDefs";
 import { categoryResolvers } from "./modules/ticket-category/resolver";
 import { ticketResolvers } from "./modules/ticket/resolvers";
+import { userSpecializationResolvers } from "./modules/user-specialization/resolver";
+import { userSpecializationTypeDefs } from "./modules/user-specialization/typeDef";
 
 
 export const typeDefs = [
@@ -26,6 +28,7 @@ export const typeDefs = [
   logoutTypeDefs, 
   ticketTypeDefs,
   ticketCategoryTypeDefs,
+  userSpecializationTypeDefs
 ];
 
 export const resolvers = {
@@ -33,6 +36,7 @@ export const resolvers = {
     ...userResolvers.Query,
     ...ticketResolvers.Query,
     ...categoryResolvers.Query,
+    ...userSpecializationResolvers.Query
   },
   Mutation: {
     ...registerResolvers.Mutation,

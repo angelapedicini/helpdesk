@@ -24,6 +24,7 @@ type Documents = {
     "\n  mutation DeleteTicket($id: Int!) {\n    deleteTicket(id: $id) {\n      id\n      deletedAt\n    }\n  }\n": typeof types.DeleteTicketDocument,
     "\n  query Tickets(\n    $first: Int\n    $after: String\n    $orderBy: TicketOrderBy\n    $filter: TicketFilter\n    $scope: TicketScope\n  ) {\n    tickets(first: $first, after: $after, orderBy: $orderBy, filter: $filter, scope: $scope) {\n      edges {\n        cursor\n        node {\n          ...TicketFields\n        }\n      }\n      pageInfo { hasNextPage endCursor }\n    }\n  }\n": typeof types.TicketsDocument,
     "\n  query GetTicketById($id: Int!) {\n    ticket(id: $id) {\n      ...TicketFields\n    }\n  }\n": typeof types.GetTicketByIdDocument,
+    "\n  query SoleSpecialistCategoryIds($department: Department!, $userId: Int) {\n    soleSpecialistCategoryIds(department: $department, userId: $userId)\n  }\n": typeof types.SoleSpecialistCategoryIdsDocument,
     "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      role\n      department\n    }\n  }\n": typeof types.MeDocument,
     "\n  query SearchUsers($search: String, $role: Role, $department: Department) {\n    searchUsers(search: $search, role: $role, department: $department) {\n      id\n      firstName\n      lastName\n    }\n  }\n": typeof types.SearchUsersDocument,
 };
@@ -38,6 +39,7 @@ const documents: Documents = {
     "\n  mutation DeleteTicket($id: Int!) {\n    deleteTicket(id: $id) {\n      id\n      deletedAt\n    }\n  }\n": types.DeleteTicketDocument,
     "\n  query Tickets(\n    $first: Int\n    $after: String\n    $orderBy: TicketOrderBy\n    $filter: TicketFilter\n    $scope: TicketScope\n  ) {\n    tickets(first: $first, after: $after, orderBy: $orderBy, filter: $filter, scope: $scope) {\n      edges {\n        cursor\n        node {\n          ...TicketFields\n        }\n      }\n      pageInfo { hasNextPage endCursor }\n    }\n  }\n": types.TicketsDocument,
     "\n  query GetTicketById($id: Int!) {\n    ticket(id: $id) {\n      ...TicketFields\n    }\n  }\n": types.GetTicketByIdDocument,
+    "\n  query SoleSpecialistCategoryIds($department: Department!, $userId: Int) {\n    soleSpecialistCategoryIds(department: $department, userId: $userId)\n  }\n": types.SoleSpecialistCategoryIdsDocument,
     "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      role\n      department\n    }\n  }\n": types.MeDocument,
     "\n  query SearchUsers($search: String, $role: Role, $department: Department) {\n    searchUsers(search: $search, role: $role, department: $department) {\n      id\n      firstName\n      lastName\n    }\n  }\n": types.SearchUsersDocument,
 };
@@ -96,6 +98,10 @@ export function graphql(source: "\n  query Tickets(\n    $first: Int\n    $after
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query GetTicketById($id: Int!) {\n    ticket(id: $id) {\n      ...TicketFields\n    }\n  }\n"): (typeof documents)["\n  query GetTicketById($id: Int!) {\n    ticket(id: $id) {\n      ...TicketFields\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query SoleSpecialistCategoryIds($department: Department!, $userId: Int) {\n    soleSpecialistCategoryIds(department: $department, userId: $userId)\n  }\n"): (typeof documents)["\n  query SoleSpecialistCategoryIds($department: Department!, $userId: Int) {\n    soleSpecialistCategoryIds(department: $department, userId: $userId)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

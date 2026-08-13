@@ -24,23 +24,26 @@ export async function createTicket(_parent: unknown, args: { input: unknown }) {
 
   //da rimuovere quando si consente categoria null per ticket non previsti
   //il controllo dovrebbe essere if input.category !== undefined
-  const category = await prisma.ticketCategory.findUnique({
-    where: { id: input.categoryId },
-  });
-  if (!category) {
-    throw new GraphQLError("Categoria non trovata", {
-      extensions: { code: "NOT_FOUND" },
+
+  if (input.categoryId !== undefined) {
+    const category = await prisma.ticketCategory.findUnique({
+      where: { id: input.categoryId },
     });
+    if (!category) {
+      throw new GraphQLError("Categoria non trovata", {
+        extensions: { code: "NOT_FOUND" },
+      });
+    }
   }
 
   //serve per ticket non previsti in modo tale da inserire null in assigned to id
   //admin andrà ad assegnalro a mano
   let assignedToId = null;
-  if (input.categoryId != null) {
-    assignedToId = await autoAssign(input.categoryId);
+  if (input.categoryId != undefined) {
+    assignedToId = await autoAssign(input.categoryId, session.userId);
   }
 
-  assignedToId = await autoAssign(input.categoryId);
+  // assignedToId = await autoAssign(input.categoryId, session.userId);
   const dueDate = computeDueDate(input.priority);
 
   return prisma.ticket.create({

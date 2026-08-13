@@ -1,3 +1,6 @@
+// components/forms/inputs/search-input.tsx
+"use client";
+
 import {
   Controller,
   ControllerRenderProps,
@@ -6,8 +9,6 @@ import {
   Path,
   Control,
 } from "react-hook-form";
-import { OperationVariables } from "@apollo/client";
-import { LazyQueryExecFunction } from "@apollo/client/react";
 import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -23,63 +24,59 @@ import { useEffect, useState } from "react";
 
 export type SearchResult = { id: number; label: string };
 
-// Vincola TVariables ad avere sempre un campo "search" opzionale,
-// così SearchInput può essere usato solo con query che lo prevedono.
-type SearchVariables = OperationVariables & { search?: string };
+export type RegisterReset = (
+  name: string,
+  fn: () => void
+) => (() => void) | void;
 
-type SearchInputContentProps<
-  TInput extends FieldValues,
-  TData,
-  TVariables extends SearchVariables
-> = {
+type SearchInputContentProps<TInput extends FieldValues> = {
   idField: ControllerRenderProps<TInput, Path<TInput>>;
   fieldState: ControllerFieldState;
   label: string;
-  execute: LazyQueryExecFunction<TData, TVariables>;
-  variables?: Omit<TVariables, "search">;
-  mapData: (data: TData | undefined) => SearchResult[];
+  onSearch: (query: string) => Promise<SearchResult[]>;
   loading?: boolean;
+  disabled?: boolean;
   initialLabel?: string;
-  registerReset?: (name: string, fn: () => void) => void;
+  registerReset?: RegisterReset;
 };
 
-function SearchInputContent<
-  TInput extends FieldValues,
-  TData,
-  TVariables extends SearchVariables
->({
+function SearchInputContent<TInput extends FieldValues>({
   idField,
   fieldState,
   label,
-  execute,
-  variables,
-  mapData,
-  loading,
+  onSearch,
+  loading: externalLoading,
+  disabled,
   initialLabel,
   registerReset,
-}: SearchInputContentProps<TInput, TData, TVariables>) {
+}: SearchInputContentProps<TInput>) {
   const [query, setQuery] = useState(initialLabel ?? "");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [internalLoading, setInternalLoading] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null);
 
-  // Comando imperativo: quando si preme Reset, FilterForm chiama questa funzione.
+  const loading = externalLoading ?? internalLoading;
+
+  // Il target del reset è sempre initialLabel: "" per un campo filtro
+  // (nessun initialLabel passato), il valore originale per un campo update.
   useEffect(() => {
-    registerReset?.(idField.name, () => setQuery(""));
-  }, [registerReset, idField.name]);
+    return registerReset?.(idField.name, () => {
+      setQuery(initialLabel ?? "");
+      setResults([]);
+      setHasSearched(false);
+    });
+  }, [registerReset, idField.name, initialLabel]);
 
   async function handleSearch() {
+    setInternalLoading(true);
     try {
-      // Cast sicuro: sappiamo che TVariables ha sempre "search" opzionale
-      // (vincolato da SearchVariables), ma TS non riesce a verificare
-      // per struttura la fusione di generici, quindi passiamo da "unknown".
-      const { data } = await execute({
-        variables: { ...variables, search: query } as unknown as TVariables,
-      });
-      setResults(mapData(data));
+      const items = await onSearch(query);
+      setResults(items);
     } catch {
       setResults([]);
     } finally {
+      setInternalLoading(false);
       setHasSearched(true);
     }
   }
@@ -107,6 +104,7 @@ function SearchInputContent<
         <TextField
           label={label}
           value={query}
+          disabled={disabled}
           onChange={(e) => {
             setQuery(e.target.value);
             idField.onChange(undefined);
@@ -123,7 +121,11 @@ function SearchInputContent<
           error={!!fieldState.error}
           helperText={fieldState.error?.message}
         />
-        <IconButton onClick={handleSearch} size="small" disabled={loading}>
+        <IconButton
+          onClick={handleSearch}
+          size="small"
+          disabled={loading || disabled}
+        >
           {loading ? (
             <CircularProgress size={16} />
           ) : (
@@ -181,50 +183,39 @@ function SearchInputContent<
   );
 }
 
-type Props<
-  TInput extends FieldValues,
-  TData,
-  TVariables extends SearchVariables
-> = {
+type Props<TInput extends FieldValues> = {
   name: Path<TInput>;
   label: string;
   control: Control<TInput>;
-  execute: LazyQueryExecFunction<TData, TVariables>;
-  variables?: Omit<TVariables, "search">;
-  mapData: (data: TData | undefined) => SearchResult[];
+  onSearch: (query: string) => Promise<SearchResult[]>;
   loading?: boolean;
+  disabled?: boolean;
   initialLabel?: string;
-  registerReset?: (name: string, fn: () => void) => void;
+  registerReset?: RegisterReset;
 };
 
-export function SearchInput<
-  TInput extends FieldValues,
-  TData,
-  TVariables extends SearchVariables
->({
+export function SearchInput<TInput extends FieldValues>({
   name,
   label,
   control,
-  execute,
-  variables,
-  mapData,
+  onSearch,
   loading,
+  disabled,
   initialLabel,
   registerReset,
-}: Props<TInput, TData, TVariables>) {
+}: Props<TInput>) {
   return (
     <Controller
       name={name}
       control={control}
       render={({ field: idField, fieldState }) => (
-        <SearchInputContent<TInput, TData, TVariables>
+        <SearchInputContent<TInput>
           idField={idField}
           fieldState={fieldState}
           label={label}
-          execute={execute}
-          variables={variables}
-          mapData={mapData}
+          onSearch={onSearch}
           loading={loading}
+          disabled={disabled}
           initialLabel={initialLabel}
           registerReset={registerReset}
         />

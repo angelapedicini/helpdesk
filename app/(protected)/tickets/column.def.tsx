@@ -44,7 +44,7 @@ export function createTicketColumns(
             sortField: "DESCRIPTION",
             render: (row) => row.ticketDepartment,
         },
-         {
+        {
             header: "Categoria",
             width: 150,
             sortField: "DESCRIPTION",
@@ -172,6 +172,8 @@ export function createTicketColumns(
                                 <IconButton
                                     size="small"
                                     disabled={!canDelete}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onMouseUp={(e) => e.stopPropagation()}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onDelete(row);

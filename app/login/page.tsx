@@ -20,8 +20,8 @@ import {
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { LoginInput, LoginSchema } from "@/lib/validators/auth.schema";
-import { useAppMutation } from "@/apollo-client/hooks/mutation-hook";
 import { LOGIN } from "@/apollo-client/queries/auth/login/login.mutation";
+import { useMutation } from "@apollo/client/react";
 
 
 
@@ -29,11 +29,12 @@ import { LOGIN } from "@/apollo-client/queries/auth/login/login.mutation";
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  
-  const { mutate: login, loading } = useAppMutation(
-    LOGIN,
-    "Login avvenuto con successo."
-  );
+
+  const [login, { loading }] = useMutation(LOGIN, {
+    context: {
+      successMessage: "Login avvenuto con successo.",
+    },
+  });
 
   const {
     register,
@@ -45,7 +46,12 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginInput) => {
-    const result = await login({ input: data });
+    const result = await login({
+      variables: {
+        input: data,
+      },
+    });
+
     if (result.data && !result.error) {
       router.replace("/dashboard");
     }
@@ -114,7 +120,7 @@ export default function LoginPage() {
           />
 
           {/* variant="contained" viene dal tema, size="large" è specifico di questa pagina */}
-          <Button type="submit" size="large" disabled={isSubmitting || loading}>
+          <Button type="submit" size="large" disabled={isSubmitting}>
             {isSubmitting || loading ? "Accesso..." : "Accedi"}
           </Button>
         </Box>

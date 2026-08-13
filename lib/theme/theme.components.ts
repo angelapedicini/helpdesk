@@ -1,5 +1,6 @@
 // lib/theme/theme.components.ts
 import type { Components, Theme } from "@mui/material/styles";
+import type {} from "@mui/x-date-pickers/themeAugmentation";
 
 export const sharedComponents: Components<Theme> = {
     MuiCssBaseline: {
@@ -75,6 +76,7 @@ export const sharedComponents: Components<Theme> = {
             }),
         },
     },
+    
     MuiButton: {
         defaultProps: { variant: "contained" },
         styleOverrides: {
@@ -102,6 +104,17 @@ export const sharedComponents: Components<Theme> = {
     MuiSelect: {
         defaultProps: {
             size: "small",
+        },
+    },
+    MuiDatePicker: {
+        defaultProps: {
+            slotProps: {
+                textField: {
+                    size: "small",
+                    fullWidth: true,
+                    variant: "outlined",
+                },
+            },
         },
     },
 };

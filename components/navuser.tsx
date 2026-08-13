@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useApolloClient } from "@apollo/client/react";
+import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
@@ -11,20 +11,18 @@ import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
-import { useAppQuery } from "@/apollo-client/hooks/query-hook";
 import { LOGOUT } from "@/apollo-client/queries/auth/logout/logout.mutation";
-import { useAppMutation } from "@/apollo-client/hooks/mutation-hook";
 
 export default function NavUser() {
-  const { data, loading } = useAppQuery(ME_QUERY);
+  const { data, loading } = useQuery(ME_QUERY);
   const client = useApolloClient();
   const router = useRouter();
   const [anchor, setAnchor] = useState<null | HTMLElement>(null);
 
-  const { mutate: logout } = useAppMutation(LOGOUT);
+  const [logout] = useMutation(LOGOUT);
 
   if (loading) return null;
-  const user = data;
+  const user = data?.me;
   if (!user) return null;
 
   const handleLogout = async () => {

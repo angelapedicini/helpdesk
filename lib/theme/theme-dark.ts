@@ -39,5 +39,44 @@ export const darkTheme = createTheme({
     button: { fontWeight: 500, textTransform: "none" },
   },
   shadows,
-  components: sharedComponents,
+  components: {
+    ...sharedComponents,
+
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#c7c7c7",
+          },
+        },
+
+        // input: {
+        //   "&.Mui-disabled": {
+        //     WebkitTextFillColor: "#63666d",
+        //   },
+        // },
+      },
+    },
+    MuiPickersOutlinedInput: {
+      styleOverrides: {
+        root: {
+          "& .MuiPickersOutlinedInput-notchedOutline": {
+            borderColor: "#c7c7c7",
+          },
+
+          // "&:hover .MuiPickersOutlinedInput-notchedOutline": {
+          //   borderColor: "#21130d",
+          // },
+
+          // "&.Mui-focused .MuiPickersOutlinedInput-notchedOutline": {
+          //   borderColor: "#21130d",
+          // },
+
+          // "&.Mui-disabled .MuiPickersOutlinedInput-notchedOutline": {
+          //   borderColor: "#21130d",
+          // },
+        },
+      },
+    },
+  },
 });

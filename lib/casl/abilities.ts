@@ -6,7 +6,15 @@ import type { AccessTokenPayload } from "@/lib/auth/jwt";
 export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
   const { can, cannot, build } = new AbilityBuilder<AppAbility>(createPrismaAbility);
 
-  can("create", "Ticket");
+  const BASE_CREATE_FIELDS = ["title", "description", "categoryId", "priority", "department"] as const;
+
+  can("create", "Ticket", [...BASE_CREATE_FIELDS]);
+
+  // Il technician può impostare l'assegnatario in creazione,
+  // ma solo per ticket nel proprio dipartimento
+  if (user.role === "TECHNICIAN") {
+    can("create", "Ticket", "assignedToId", { ticketDepartment: user.department });
+  }
 
   // --- READ ---
   // Employee: solo i ticket creati da lui
@@ -54,10 +62,21 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
 
     // il divieto vale SOLO quando l'admin sta gestendo un ticket del reparto
     // che non ha creato lui stesso — se è il creatore, valgono le regole base da employee
-    cannot("update", "Ticket", ["createdById", "categoryId"], {
+    cannot("update", "Ticket", ["createdById",], {
       ticketDepartment: user.department,
-      createdById: { not: user.userId },
+      // createdById: { not: user.userId },
     }).because("L'admin non può modificare creatore o categoria di un ticket che non ha creato lui stesso");
+
+    can("update", "Ticket", ["categoryId"], {
+      ticketDepartment: user.department,
+      // createdById: { not: user.userId },
+      status: { in: ["OPEN", "ASSIGNED"] },
+    });
+
+    can("update", "Ticket", ["priority"], {
+      ticketDepartment: user.department,
+      status: { in: ["OPEN", "ASSIGNED"] },
+    });
   }
 
   // --- DELETE ---

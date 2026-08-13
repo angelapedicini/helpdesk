@@ -93,10 +93,10 @@ export default function TicketForDepPage() {
     );
 
     return (
-        <Box sx={{ mt: 5, mx: 2 }}>
+        <Box sx={{ mt: 2, mx: 2 }}>
             <Stack
                 direction="row"
-                sx={{ justifyContent: "", alignItems: "center", mb: 3 }}
+                sx={{ justifyContent: "", alignItems: "center", mb: 2 }}
             >
                 <IconButton onClick={ticketFilters.open}>
                     <Badge

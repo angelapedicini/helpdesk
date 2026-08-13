@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Box, Button, FormControl, FormHelperText, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { Alert, Box, Button, FormControl, FormHelperText, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import {
     CreateTicketFormOutput,
     CreateTicketFormValues,
@@ -11,12 +11,16 @@ import {
 } from "@/lib/validators/ticket-detail.schema";
 import { GET_CATEGORIES } from "@/apollo-client/queries/ticket-category/ticket-category.queries";
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
-import type { Department } from "@/apollo-client/gql/graphql";
-import { useMutation, useQuery } from "@apollo/client/react";
+import { Role, type Department } from "@/apollo-client/gql/graphql";
+import { skipToken, useMutation, useQuery } from "@apollo/client/react";
 import { TicketPriority } from "@/lib/validators/enums.schema";
 import { CREATE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
-import { SelectInput } from "../inputs/select-input";
-import { AppSelect } from "../inputs/search-input2";
+import { AppSelect } from "../inputs/select-input";
+import { useRouter } from "next/navigation";
+// import { useAppQuery } from "@/apollo-client/hooks/query-hook";
+import { ME_QUERY } from "@/apollo-client/queries/user/me";
+import { SOLE_SPECIALIST_CATEGORY_IDS } from "@/apollo-client/queries/user-specialization/user-specialization.queries.ts";
+
 
 type TicketDetailFormProps = {
     department?: Department;
@@ -24,11 +28,15 @@ type TicketDetailFormProps = {
 };
 
 export default function CreateTicket({ department, onSubmit }: TicketDetailFormProps) {
+    const router = useRouter();
+    const { data: meData } = useQuery(ME_QUERY);
+
     const {
         register,
         control,
         handleSubmit,
         setValue,
+        watch,
         formState: { errors, isSubmitting },
     } = useForm<CreateTicketFormValues, unknown, CreateTicketFormOutput>({
         resolver: zodResolver(CreateTicketSchema),
@@ -37,18 +45,17 @@ export default function CreateTicket({ department, onSubmit }: TicketDetailFormP
         },
     });
 
-    // Il campo "department" non è editabile dall'utente:
-    // arriva come prop e va sincronizzato nel form.
+
     useEffect(() => {
         setValue("department", department as Department);
     }, [department, setValue]);
 
-    const { data } = useQuery(GET_CATEGORIES, {
+    const { data: categoriesData } = useQuery(GET_CATEGORIES, {
         variables: { department },
         skip: !department,
     });
 
-    const categoryOptions = (data?.categories ?? []).map((c) => ({
+    const categoryOptions = (categoriesData?.categories ?? []).map((c) => ({
         id: c.id,
         label: c.name,
     }));
@@ -61,6 +68,28 @@ export default function CreateTicket({ department, onSubmit }: TicketDetailFormP
         icon: TICKET_PRIORITY_CONFIG[id].icon,
         color: TICKET_PRIORITY_CONFIG[id].color,
     }));
+
+    const canSeeSoleSpecialistHint =
+        meData?.me?.role === "TECHNICIAN" && meData?.me.department === department;
+
+    // Una sola chiamata per l'intero form, non una per ogni categoria selezionata.
+    const { data: soleCategoriesData } = useQuery(
+        SOLE_SPECIALIST_CATEGORY_IDS,
+        canSeeSoleSpecialistHint && department
+            ? { variables: { department } } // userId omesso → self, come concordato
+            : skipToken
+    );
+
+    const soleSpecialistCategoryIds = useMemo(
+        () => new Set(soleCategoriesData?.soleSpecialistCategoryIds ?? []),
+        [soleCategoriesData]
+    );
+
+    const selectedCategoryId = watch("categoryId");
+    const categoryIdForQuery = Number(selectedCategoryId);
+    const hasValidCategoryId = selectedCategoryId != null && !Number.isNaN(categoryIdForQuery);
+
+    const isSoleSpecialist = hasValidCategoryId && soleSpecialistCategoryIds.has(categoryIdForQuery);
 
     const [createTicket] = useMutation(CREATE_TICKET, {
         context: {
@@ -86,6 +115,8 @@ export default function CreateTicket({ department, onSubmit }: TicketDetailFormP
         }
 
         onSubmit(values);
+        router.replace("/tickets");
+
     };
 
     return (
@@ -133,6 +164,13 @@ export default function CreateTicket({ department, onSubmit }: TicketDetailFormP
                     options={categoryOptions}
                     disabled={!department}
                 />
+
+                {isSoleSpecialist && (
+                    <Alert severity="info" sx={{ gridColumn: { md: "1 / -1" } }}>
+                        Sei l'unico tecnico con questa specializzazione: il ticket ti
+                        verrà assegnato automaticamente al momento della creazione.
+                    </Alert>
+                )}
 
                 <Button type="submit" variant="contained" disabled={isSubmitting} sx={{ gridColumn: { md: "1 / -1" } }}>
                     Salva

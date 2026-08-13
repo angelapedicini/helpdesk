@@ -1,65 +1,109 @@
-// form-engine/inputs/select-input.tsx
-import { Control, Controller, FieldValues, Path } from "react-hook-form";
-import TextField from "@mui/material/TextField";
-import MenuItem from "@mui/material/MenuItem";
-import type { ReactNode } from "react";
+// components/forms/inputs/app-select.tsx
 
-export type SelectOption = { id: string | number; label: string };
+"use client";
 
-type Props<TInput extends FieldValues> = {
-  name: Path<TInput>;
-  label: string;
-  control: Control<TInput>;
-  options: SelectOption[];
-  error?: string;
-  renderOption?: (id: string | number) => ReactNode;
+import {
+    Box,
+    FormControl,
+    FormHelperText,
+    InputLabel,
+    MenuItem,
+    Select,
+    type SelectProps,
+} from "@mui/material";
+
+import {
+    Controller,
+    type Control,
+    type FieldPath,
+    type FieldValues,
+} from "react-hook-form";
+
+export type SelectOption<TValue extends string | number = string | number> = {
+    id: TValue;
+    label: string;
+    icon?: React.ComponentType<any>;
+    color?: string;
 };
 
-export function SelectInput<TInput extends FieldValues>({
-  name,
-  label,
-  control,
-  options,
-  error,
-  renderOption,
-}: Props<TInput>) {
-  return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field }) => {
-        const hasMatch = options.some((opt) => opt.id === field.value);
-        const selectValue = hasMatch ? field.value : "";
+type AppSelectProps<
+    TFieldValues extends FieldValues,
+    TValue extends string | number = string | number,
+> = {
+    name: FieldPath<TFieldValues>;
+    label: string;
+    control: Control<TFieldValues>;
+    options: SelectOption<TValue>[];
+} & Omit<SelectProps, "name" | "value" | "defaultValue">;
 
-        return (
-          <TextField
-            label={label}
-            select
-            {...field}
-            value={selectValue}
-            error={!!error}
-            helperText={error}
-            slotProps={{
-              select: {
-                MenuProps: {
-                  slotProps: {
-                    paper: {
-                      sx: { maxHeight: 300 },
-                    },
-                  },
-                },
-              },
-            }}
-          >
-            <MenuItem value="">Seleziona {label.toLowerCase()}</MenuItem>
-            {options.map(({ id, label: optLabel }) => (
-              <MenuItem key={id} value={id}>
-                {renderOption?.(id) ?? optLabel}
-              </MenuItem>
-            ))}
-          </TextField>
-        );
-      }}
-    />
-  );
+export function AppSelect<
+    TFieldValues extends FieldValues,
+    TValue extends string | number = string | number,
+>({
+    name,
+    label,
+    control,
+    options,
+    ...selectProps
+}: AppSelectProps<TFieldValues, TValue>) {
+    const labelId = `${String(name)}-label`;
+
+    return (
+        <Controller
+            name={name}
+            control={control}
+            render={({ field, fieldState }) => (
+                <FormControl
+                    fullWidth
+                    error={!!fieldState.error}
+                    disabled={selectProps.disabled}
+                >
+                    <InputLabel id={labelId}>
+                        {label}
+                    </InputLabel>
+
+                    <Select
+                        {...field}
+                        {...selectProps}
+                        labelId={labelId}
+                        label={label}
+                        value={field.value ?? ""}
+                    >
+                        {options.map((option) => {
+                            const Icon = option.icon;
+
+                            return (
+                                <MenuItem
+                                    key={option.id}
+                                    value={option.id}
+                                >
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
+                                        }}
+                                    >
+                                        {Icon && (
+                                            <Icon
+                                                sx={{
+                                                    color: option.color,
+                                                }}
+                                            />
+                                        )}
+
+                                        {option.label}
+                                    </Box>
+                                </MenuItem>
+                            );
+                        })}
+                    </Select>
+
+                    <FormHelperText>
+                        {fieldState.error?.message}
+                    </FormHelperText>
+                </FormControl>
+            )}
+        />
+    );
 }

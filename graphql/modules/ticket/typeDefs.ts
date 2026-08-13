@@ -76,6 +76,12 @@ export const ticketTypeDefs = `#graphql
     status: TicketStatus
     categoryId: Int
     priority: TicketPriority
+
+    overdue: Boolean
+    unassigned: Boolean
+
+    dueDateFrom: Date
+    dueDateTo: Date
   }
 
   type Query {

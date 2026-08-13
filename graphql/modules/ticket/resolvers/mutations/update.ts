@@ -6,6 +6,8 @@ import { defineAbilityFor } from "@/lib/casl/abilities";
 import { UpdateTicketSchema } from "@/lib/validators/ticket-detail.schema";
 import { computeDueDate } from "@/lib/ticket/dueDate";
 import { assertCanUpdateTicket } from "@/lib/casl/ticket.guard";
+import { autoAssign } from "@/lib/ticket/autoAssign";
+import { stat } from "fs";
 
 export async function updateTicket(_parent: unknown, args: { id: number; input: unknown }) {
   const session = await requireSession();
@@ -81,6 +83,23 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     }
   }
 
+  let status = input.status;
+
+  if (
+    input.assignedToId !== undefined &&
+    input.assignedToId !== null &&
+    existing.status === "OPEN"
+  ) {
+    status = "ASSIGNED";
+  }
+
+  let assignedToId = input.assignedToId;
+
+  if (input.categoryId !== undefined && input.categoryId !== null && input.assignedToId === undefined) {
+    assignedToId = await autoAssign(input.categoryId, existing.createdById);
+    status = "ASSIGNED";
+  }
+
   //aggiunto histroy per update
   const [updated] = await prisma.$transaction([
     prisma.ticket.update({
@@ -88,10 +107,10 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
       data: {
         title: input.title,
         description: input.description,
-        status: input.status,
+        status: status,
         priority: input.priority,
         categoryId: input.categoryId,
-        assignedToId: input.assignedToId,
+        assignedToId: assignedToId,
         closedAt,
         dueDate,
       },

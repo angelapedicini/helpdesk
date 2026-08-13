@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
-import { Box, Stack, Typography, IconButton, Badge } from "@mui/material";
+import { Box, Stack, Typography, IconButton, Badge, Button } from "@mui/material";
 import FilterListIcon from "@mui/icons-material/FilterList";
 
 import AppTable from "@/components/table";
@@ -93,7 +93,7 @@ export default function TicketForDepPage() {
     );
 
     return (
-        <Box sx={{ mt: 5, mx: 2 }}>
+        <Box sx={{ mt: 3, mx: 2 }}>
             <Stack
                 direction="row"
                 sx={{ justifyContent: "", alignItems: "center", mb: 3 }}
@@ -107,11 +107,13 @@ export default function TicketForDepPage() {
                         <FilterListIcon />
                     </Badge>
                 </IconButton>
+
                 <Typography variant="h5">I miei ticket</Typography>
+
             </Stack>
 
             <AppTable
-                maxHeight="80vh"
+                maxHeight="75vh"
                 data={tickets}
                 columns={ticketColumns}
                 sort={sort}

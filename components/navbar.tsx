@@ -10,10 +10,10 @@ import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import DataObjectIcon from "@mui/icons-material/DataObject";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
-import { useAppQuery } from "@/apollo-client/hooks/query-hook";
 import NavUser from "./navuser";
 import { NavLinkItem } from "./types/navlink";
 import NavSidebar from "./sidebar";
+import { useQuery } from "@apollo/client/react";
 
 
 const NAV_LINKS: NavLinkItem[] = [
@@ -50,12 +50,12 @@ const NAV_LINKS: NavLinkItem[] = [
 ];
 
 export default function Navbar() {
-  const { data, loading } = useAppQuery(ME_QUERY);
+  const { data, loading } = useQuery(ME_QUERY);
   const [open, setOpen] = React.useState(false);
   const toggleDrawer = (newOpen: boolean) => () => setOpen(newOpen);
 
   if (loading) return null;
-  const user = data;
+  const user = data?.me;
   if (!user) return null;
 
   return (

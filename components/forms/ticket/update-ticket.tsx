@@ -2,17 +2,17 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { useForm, useController } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+    Alert,
     Box,
     Button,
     TextField,
 } from "@mui/material";
-import { useLazyQuery, useMutation } from "@apollo/client/react";
+import { skipToken, useLazyQuery, useMutation, useQuery } from "@apollo/client/react";
 
 import { SEARCH_USERS } from "@/apollo-client/queries/user/search";
-import { useAppQuery } from "@/apollo-client/hooks/query-hook";
 import { GET_CATEGORIES } from "@/apollo-client/queries/ticket-category/ticket-category.queries";
 
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
@@ -37,10 +37,12 @@ import { UPDATE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
 
 import { toTicketSubject } from "@/lib/casl/types";
 import { useAbility } from "@/lib/casl/abilityContext";
-import { AppSelect } from "../inputs/search-input2";
+import { AppSelect } from "../inputs/select-input";
 // import { SearchInput, SearchResult } from "../inputs/search-input3";
 import { useResetRegistry } from "../hooks/use-reset-registry";
-import { SearchInput, SearchResult } from "../inputs/auto-complete";
+import { SearchInput, SearchResult } from "../inputs/search-input";
+import { SOLE_SPECIALIST_CATEGORY_IDS } from "@/apollo-client/queries/user-specialization/user-specialization.queries.ts";
+
 
 type TicketDetailFormProps = {
     ticket: TicketFieldsFragment;
@@ -118,11 +120,37 @@ export default function TicketDetailForm({
         control,
         handleSubmit,
         reset,
+        watch,
         formState: { errors, isSubmitting, isDirty },
     } = useForm<UpdateTicketInput, undefined, UpdateTicketOutput>({
         resolver: zodResolver(UpdateTicketSchema),
         defaultValues,
     });
+
+    const createdBy = ticket.createdBy;
+
+    const canSeeSoleSpecialistHint =
+        ticket.sourceDepartmentForUser === ticket.ticketDepartment;
+
+    const { data: soleCategoriesData } = useQuery(
+        SOLE_SPECIALIST_CATEGORY_IDS,
+        canSeeSoleSpecialistHint && createdBy
+            ? { variables: { department: ticket.ticketDepartment, userId: createdBy.id } }
+            : skipToken
+    );
+
+    const soleSpecialistCategoryIds = useMemo(
+        () => new Set(soleCategoriesData?.soleSpecialistCategoryIds ?? []),
+        [soleCategoriesData]
+    );
+
+    const selectedCategoryId = watch("categoryId");
+    const categoryIdForQuery = Number(selectedCategoryId);
+    const hasValidCategoryId = selectedCategoryId != null && !Number.isNaN(categoryIdForQuery);
+
+    const isSoleSpecialist = hasValidCategoryId && soleSpecialistCategoryIds.has(categoryIdForQuery);
+
+
 
     // const [searchUsers, { loading: loadingUsers }] =
     //     useLazyQuery(SEARCH_USERS);
@@ -161,21 +189,67 @@ export default function TicketDetailForm({
         }));
     }
 
-    const { data: categories } = useAppQuery(GET_CATEGORIES, {
+    // const { data: categories } = useQuery(GET_CATEGORIES, {
+    //     variables: {
+    //         department: ticket.ticketDepartment,
+    //     },
+    //     skip: !ticket.ticketDepartment,
+    // });
+
+    // const categoryOptions = useMemo(() => {
+    //     const options = (categories ?? []).map((c) => ({
+    //         id: c.id,
+    //         label: c.name,
+    //     }));
+
+    //     // Se la categoria del ticket non è ancora tra le opzioni caricate
+    //     // (query in corso, o categoria fuori dal dipartimento corrente),
+    //     // la aggiungiamo comunque per evitare il mismatch di MUI.
+    //     if (ticket.category && !options.some((o) => o.id === ticket.category!.id)) {
+    //         options.push({
+    //             id: ticket.category.id,
+    //             label: ticket.category.name,
+    //         });
+    //     }
+
+    //     return options;
+    // }, [categories, ticket.category]);
+
+    const { data: categoriesData } = useQuery(GET_CATEGORIES, {
         variables: {
             department: ticket.ticketDepartment,
         },
         skip: !ticket.ticketDepartment,
     });
 
-    const categoryOptions = (categories ?? []).map((c) => ({
-        id: c.id,
-        label: c.name,
-    }));
+    // const categoryOptions = (categoriesData?.categories ?? []).map((c) => ({
+    //     id: c.id,
+    //     label: c.name,
+    // }));
+
+    const categoryOptions = useMemo(() => {
+        const options = (categoriesData?.categories ?? []).map((c) => ({
+            id: c.id,
+            label: c.name,
+        }));
+
+        // Se la categoria del ticket non è ancora tra le opzioni caricate
+        // (query in corso, o categoria fuori dal dipartimento corrente),
+        // la aggiungiamo comunque per evitare il mismatch di MUI.
+        if (ticket.category && !options.some((o) => o.id === ticket.category!.id)) {
+            options.push({
+                id: ticket.category.id,
+                label: ticket.category.name,
+            });
+        }
+
+        return options;
+    }, [categoriesData, ticket.category]);
 
     useEffect(() => {
         reset(defaultValues);
-    }, [defaultValues, reset]);
+        resetAll();
+    }, [defaultValues, reset, resetAll]);
 
     const statusOptions = (
         Object.keys(TICKET_STATUS_CONFIG) as TicketStatus[]
@@ -392,6 +466,14 @@ export default function TicketDetailForm({
                     options={statusOptions}
                     disabled={!fieldPermissions.status}
                 />
+
+                {isSoleSpecialist && createdBy && (
+                    <Alert severity="info" sx={{ gridColumn: { md: "1 / -1" } }}>
+                        {`${createdBy.firstName} ${createdBy.lastName}`} è l'unico tecnico con
+                        questa specializzazione: il ticket verrà assegnato automaticamente a
+                        lui/lei al salvataggio.
+                    </Alert>
+                )}
 
                 <Box
                     sx={{
