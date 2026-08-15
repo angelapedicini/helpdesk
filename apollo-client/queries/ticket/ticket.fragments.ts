@@ -32,5 +32,11 @@ export const TICKET_FIELDS = graphql(`
     dueDate
     sourceDepartmentForUser
     ticketDepartment
+    lastUpdatedBy {
+      id
+      firstName
+      lastName
+    }
+    closingMessage
   }
 `);

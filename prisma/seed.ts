@@ -26,117 +26,28 @@ const DEPARTMENTS = Object.keys(DEPARTMENT_CATEGORIES) as Array<
 >;
 
 const firstNames = [
-  "Mario",
-  "Giuseppe",
-  "Anna",
-  "Luca",
-  "Sara",
-  "Marco",
-  "Elena",
-  "Paolo",
-  "Chiara",
-  "Davide",
-  "Francesca",
-  "Alessandro",
-  "Giulia",
-  "Matteo",
-  "Valentina",
-  "Simone",
-  "Laura",
-  "Andrea",
-  "Martina",
-  "Roberto",
-  "Federica",
-  "Stefano",
-  "Silvia",
-  "Fabio",
-  "Claudia",
-  "Riccardo",
-  "Ilaria",
-  "Nicola",
-  "Serena",
-  "Antonio",
-  "Beatrice",
-  "Emanuele",
-  "Giorgia",
-  "Tommaso",
-  "Alice",
-  "Filippo",
-  "Camilla",
-  "Gabriele",
-  "Noemi",
-  "Leonardo",
-  "Michela",
-  "Daniele",
-  "Veronica",
-  "Pietro",
-  "Cecilia",
-  "Vittorio",
-  "Rebecca",
-  "Enrico",
-  "Arianna",
-  "Massimo",
+  "Mario", "Giuseppe", "Anna", "Luca", "Sara", "Marco", "Elena", "Paolo",
+  "Chiara", "Davide", "Francesca", "Alessandro", "Giulia", "Matteo",
+  "Valentina", "Simone", "Laura", "Andrea", "Martina", "Roberto",
+  "Federica", "Stefano", "Silvia", "Fabio", "Claudia", "Riccardo",
+  "Ilaria", "Nicola", "Serena", "Antonio", "Beatrice", "Emanuele",
+  "Giorgia", "Tommaso", "Alice", "Filippo", "Camilla", "Gabriele",
+  "Noemi", "Leonardo", "Michela", "Daniele", "Veronica", "Pietro",
+  "Cecilia", "Vittorio", "Rebecca", "Enrico", "Arianna", "Massimo",
 ];
 
 const lastNames = [
-  "Rossi",
-  "Verdi",
-  "Bianchi",
-  "Ferrari",
-  "Colombo",
-  "Ricci",
-  "Marino",
-  "Greco",
-  "Bruno",
-  "Gallo",
-  "Conti",
-  "De Luca",
-  "Costa",
-  "Giordano",
-  "Mancini",
-  "Rizzo",
-  "Lombardi",
-  "Moretti",
-  "Barbieri",
-  "Fontana",
-  "Santoro",
-  "Mariani",
-  "Rinaldi",
-  "Caruso",
-  "Ferrara",
-  "Galli",
-  "Martini",
-  "Leone",
-  "Longo",
-  "Gentile",
-  "Martinelli",
-  "Vitale",
-  "Sala",
-  "Serra",
-  "Farina",
-  "Piras",
-  "Grasso",
-  "Pellegrini",
-  "Palumbo",
-  "Sanna",
-  "Amato",
-  "Vitali",
-  "Testa",
-  "Silvestri",
-  "Guerra",
-  "Parisi",
-  "Ferraro",
-  "Basile",
-  "Monti",
-  "Coppola",
+  "Rossi", "Verdi", "Bianchi", "Ferrari", "Colombo", "Ricci", "Marino",
+  "Greco", "Bruno", "Gallo", "Conti", "De Luca", "Costa", "Giordano",
+  "Mancini", "Rizzo", "Lombardi", "Moretti", "Barbieri", "Fontana",
+  "Santoro", "Mariani", "Rinaldi", "Caruso", "Ferrara", "Galli",
+  "Martini", "Leone", "Longo", "Gentile", "Martinelli", "Vitale",
+  "Sala", "Serra", "Farina", "Piras", "Grasso", "Pellegrini",
+  "Palumbo", "Sanna", "Amato", "Vitali", "Testa", "Silvestri",
+  "Guerra", "Parisi", "Ferraro", "Basile", "Monti", "Coppola",
 ];
 
-const PRIORITIES = [
-  "LOW",
-  "MEDIUM",
-  "HIGH",
-  "URGENT",
-] as const;
+const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 
 export async function main() {
   await prisma.ticketHistory.deleteMany();
@@ -148,15 +59,12 @@ export async function main() {
   await prisma.user.deleteMany();
   await prisma.ticketCategory.deleteMany();
 
-  const hashedPassword = await bcrypt.hash(
-    "Password123!",
-    10
-  );
+  const hashedPassword = await bcrypt.hash("Password123!", 10);
 
   const categoriesByDept: Record<
-  string,
-  { id: number; name: string; department: Department }[]
-> = {};
+    string,
+    { id: number; name: string; department: Department }[]
+  > = {};
 
   for (const dept of DEPARTMENTS) {
     const created = await Promise.all(
@@ -173,15 +81,8 @@ export async function main() {
     categoriesByDept[dept] = created;
   }
 
-  const techniciansByDept: Record<
-    string,
-    { id: number }[]
-  > = {};
-
-  const employeesByDept: Record<
-    string,
-    { id: number }[]
-  > = {};
+  const techniciansByDept: Record<string, { id: number }[]> = {};
+  const employeesByDept: Record<string, { id: number }[]> = {};
 
   let personIndex = 0;
 
@@ -210,18 +111,9 @@ export async function main() {
 
     await prisma.userPermission.createMany({
       data: [
-        {
-          userId: admin.id,
-          action: "tickets.manage",
-        },
-        {
-          userId: admin.id,
-          action: "users.manage",
-        },
-        {
-          userId: admin.id,
-          action: "categories.manage",
-        },
+        { userId: admin.id, action: "tickets.manage" },
+        { userId: admin.id, action: "users.manage" },
+        { userId: admin.id, action: "categories.manage" },
       ],
     });
 
@@ -318,10 +210,30 @@ export async function main() {
           break;
       }
 
+      /*
+        Messaggio di chiusura: definito prima della creazione del ticket
+        così da poter popolare subito Ticket.closingMessage (cache) e
+        riusare lo stesso contenuto nel relativo TicketMessage
+        (isClosingMessage: true), mantenendo le due scritture coerenti.
+      */
+      const closingMessageContent =
+        status === "CLOSED"
+          ? "Problema risolto. Puoi effettuare una verifica."
+          : status === "REFUSED"
+            ? "La richiesta non è di competenza della categoria selezionata. Creare un nuovo ticket con la categoria corretta."
+            : null;
+
+      /*
+        lastUpdatedBy: chi ha effettuato l'ultima modifica al ticket.
+        - OPEN: nessuna modifica dopo la creazione, resta l'autore
+        - tutti gli altri stati: il tecnico è intervenuto per ultimo
+          (assegnazione, lavorazione, chiusura/rifiuto)
+      */
+      const lastUpdatedById = status === "OPEN" ? author.id : technician.id;
+
       const ticket = await prisma.ticket.create({
         data: {
-          title: `Richiesta ${category.name.toLowerCase()} #${i + 1
-            }`,
+          title: `Richiesta ${category.name.toLowerCase()} #${i + 1}`,
 
           description:
             `Ticket di esempio per la categoria "${category.name}" ` +
@@ -335,17 +247,18 @@ export async function main() {
 
           createdById: author.id,
 
+          lastUpdatedById,
+
+          closingMessage: closingMessageContent,
+
           /*
             OPEN:
             nessun tecnico assegnato
-      
+
             tutti gli altri stati:
             hanno un tecnico assegnato
           */
-          assignedToId:
-            status === "OPEN"
-              ? null
-              : technician.id,
+          assignedToId: status === "OPEN" ? null : technician.id,
 
           // reparto di appartenenza dell'autore al momento della creazione
           sourceDepartmentForUser: dept,
@@ -355,32 +268,52 @@ export async function main() {
           ticketDepartment: category.department,
 
           dueDate:
-            status === "CLOSED" ||
-              status === "REFUSED"
+            status === "CLOSED" || status === "REFUSED"
               ? null
-              : new Date(
-                Date.now() +
-                (i + 2) *
-                24 *
-                60 *
-                60 *
-                1000
-              ),
+              : new Date(Date.now() + (i + 2) * 24 * 60 * 60 * 1000),
 
           closedAt:
-            status === "CLOSED" ||
-              status === "REFUSED"
-              ? new Date(
-                Date.now() -
-                24 *
-                60 *
-                60 *
-                1000
-              )
+            status === "CLOSED" || status === "REFUSED"
+              ? new Date(Date.now() - 24 * 60 * 60 * 1000)
               : null,
         },
       });
 
+      /*
+        Storico modifiche (TicketHistory)
+
+        Per i ticket che hanno subito una transizione dallo stato OPEN
+        iniziale, salviamo uno snapshot "prima" della modifica insieme
+        ai campi effettivamente cambiati. actorId = tecnico, dato che
+        è lui a intervenire su assegnazione/lavorazione/chiusura.
+      */
+      if (status !== "OPEN") {
+        await prisma.ticketHistory.create({
+          data: {
+            ticketId: ticket.id,
+            actorId: technician.id,
+            snapshotBefore: {
+              status: "OPEN",
+              assignedToId: null,
+              lastUpdatedById: author.id,
+              closingMessage: null,
+              closedAt: null,
+              dueDate: null,
+            },
+            changedFields:
+              status === "CLOSED" || status === "REFUSED"
+                ? [
+                  "status",
+                  "assignedToId",
+                  "lastUpdatedById",
+                  "closingMessage",
+                  "closedAt",
+                  "dueDate",
+                ]
+                : ["status", "assignedToId", "lastUpdatedById", "dueDate"],
+          },
+        });
+      }
 
       /*
         Messaggi per ticket IN_PROGRESS
@@ -405,7 +338,6 @@ export async function main() {
         });
       }
 
-
       /*
         Messaggi per ticket CLOSED
       */
@@ -416,25 +348,22 @@ export async function main() {
             {
               ticketId: ticket.id,
               authorId: author.id,
-              content:
-                "Avete aggiornamenti sulla richiesta?",
+              content: "Avete aggiornamenti sulla richiesta?",
             },
             {
               ticketId: ticket.id,
               authorId: technician.id,
-              content:
-                "Problema risolto. Puoi effettuare una verifica.",
+              content: closingMessageContent!,
+              isClosingMessage: true,
             },
             {
               ticketId: ticket.id,
               authorId: author.id,
-              content:
-                "Confermo, tutto risolto. Grazie.",
+              content: "Confermo, tutto risolto. Grazie.",
             },
           ],
         });
       }
-
 
       /*
         Messaggi per ticket REFUSED
@@ -446,8 +375,8 @@ export async function main() {
             {
               ticketId: ticket.id,
               authorId: technician.id,
-              content:
-                "La richiesta non è di competenza della categoria selezionata. Creare un nuovo ticket con la categoria corretta.",
+              content: closingMessageContent!,
+              isClosingMessage: true,
             },
           ],
         });
@@ -455,10 +384,8 @@ export async function main() {
     }
   }
 
-
   console.log("Seed completato");
 }
-
 
 main()
   .catch((error) => {

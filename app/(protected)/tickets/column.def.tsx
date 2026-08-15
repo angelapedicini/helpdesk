@@ -13,12 +13,25 @@ import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.confi
 import { toTicketSubject, type AppAbility } from "@/lib/casl/types";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
 
+// Scope disponibili per la tabella dei ticket.
+// Passato dalla pagina che monta la tabella (es. "ASSIGNED_TO_ME" nella pagina
+// "I miei ticket assegnati", "DEPARTMENT" nella pagina di dipartimento, ecc.)
+export type TicketScope = "ASSIGNED_TO_ME" | "DEPARTMENT" | "MINE";
+
+// Estende Column aggiungendo un campo opzionale "scopes":
+// - se omesso -> la colonna è visibile in tutti gli scope
+// - se presente -> la colonna è visibile SOLO negli scope elencati
+type ScopedColumn<T, S extends string> = Column<T, S> & {
+    scopes?: TicketScope[];
+};
+
 export function createTicketColumns(
     ability: AppAbility,
     onEdit: (row: Ticket) => void,
     onDelete: (row: Ticket) => void,
+    scope: TicketScope,
 ): Column<Ticket, TicketSortField>[] {
-    return [
+    const columns: ScopedColumn<Ticket, TicketSortField>[] = [
         {
             header: "Id",
             width: 70,
@@ -43,6 +56,8 @@ export function createTicketColumns(
             width: 150,
             sortField: "DESCRIPTION",
             render: (row) => row.ticketDepartment,
+            // Non serve mostrare il dipartimento se sei già nella vista filtrata per dipartimento
+            scopes: ["ASSIGNED_TO_ME", "MINE"],
         },
         {
             header: "Categoria",
@@ -92,12 +107,14 @@ export function createTicketColumns(
                 );
             },
         },
-        // {
-        //     header: "Creato da",
-        //     sortField: "CREATED_BY",
-        //     render: (row) =>
-        //         `${row.createdBy.firstName} ${row.createdBy.lastName}`,
-        // },
+        {
+            header: "Creato da",
+            sortField: "CREATED_BY",
+            render: (row) =>
+                `${row.createdBy.firstName} ${row.createdBy.lastName}`,
+            scopes: ["ASSIGNED_TO_ME", "DEPARTMENT"],
+
+        },
 
         {
             header: "Assegnato a",
@@ -106,6 +123,8 @@ export function createTicketColumns(
                 row.assignedTo
                     ? `${row.assignedTo.firstName} ${row.assignedTo.lastName}`
                     : "Non assegnato",
+            // Ridondante nella vista "assegnati a me" (sei sempre tu)
+            scopes: ["DEPARTMENT", "MINE"],
         },
 
         {
@@ -113,6 +132,17 @@ export function createTicketColumns(
             sortField: "CREATED_AT",
             render: (row) =>
                 new Date(row.createdAt).toLocaleDateString("it-IT"),
+        },
+        
+        {
+            header: "Aggiornato da",
+            sortField: "ASSIGNED_TO",
+            render: (row) =>
+                row.lastUpdatedBy
+                    ? `${row.lastUpdatedBy.firstName} ${row.lastUpdatedBy.lastName}`
+                    : "-",
+            // Ridondante nella vista "assegnati a me" (sei sempre tu)
+            scopes: ["DEPARTMENT", "MINE"],
         },
 
         {
@@ -188,4 +218,6 @@ export function createTicketColumns(
             },
         },
     ];
+
+    return columns.filter((col) => !col.scopes || col.scopes.includes(scope));
 }

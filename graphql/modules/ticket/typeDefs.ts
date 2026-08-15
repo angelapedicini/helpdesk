@@ -59,6 +59,8 @@ export const ticketTypeDefs = `#graphql
     deletedAt: Date
     sourceDepartmentForUser: Department!
     ticketDepartment: Department!
+    lastUpdatedBy: User
+    closingMessage: String
 
   }
 
@@ -103,6 +105,7 @@ input TicketUpdateInput {
     priority: TicketPriority
     categoryId: Int
     assignedToId: Int
+    closingMessage: String
 }
 
 

@@ -37,9 +37,15 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
   });
 
   if (user.role === "TECHNICIAN") {
-    can("update", "Ticket", ["status"], { assignedToId: user.userId, status: "ASSIGNED" });
+    // ASSIGNED -> REFUSED: il technician può rifiutare, quindi deve poter
+    // inviare anche closingMessage insieme allo status
+    can("update", "Ticket", ["status", "closingMessage"], { assignedToId: user.userId, status: "ASSIGNED" });
     can("update", "Ticket", ["priority"], { assignedToId: user.userId, status: "ASSIGNED" });
-    can("update", "Ticket", ["status", "closedAt"], { assignedToId: user.userId, status: "IN_PROGRESS" });
+
+    // IN_PROGRESS -> CLOSED: idem, il messaggio di chiusura va insieme
+    // a status e closedAt nella stessa transizione
+    can("update", "Ticket", ["status", "closedAt", "closingMessage"], { assignedToId: user.userId, status: "IN_PROGRESS" });
+
     can("update", "Ticket", ["dueDate"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
     can("update", "Ticket", ["assignedToId"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
 
@@ -55,7 +61,11 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
       ticketDepartment: user.department,
       status: { in: ["OPEN", "ASSIGNED"] },
     });
-    can("update", "Ticket", ["status"], { ticketDepartment: user.department, status: "OPEN" });
+
+    // OPEN -> REFUSED (vedi ALLOWED_STATUS_TRANSITIONS): l'admin può rifiutare
+    // un ticket ancora aperto, quindi deve poter inviare closingMessage
+    can("update", "Ticket", ["status", "closingMessage"], { ticketDepartment: user.department, status: "OPEN" });
+
     cannot("update", "Ticket", ["status"], {
       status: { in: ["IN_PROGRESS", "CLOSED"] },
     }).because("L'admin non può intervenire su un ticket già in lavorazione");

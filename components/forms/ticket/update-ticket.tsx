@@ -61,6 +61,7 @@ function mapTicketToFormValues(
         priority: ticket.priority ?? undefined,
         categoryId: ticket.category?.id ?? null,
         assignedToId: ticket.assignedTo?.id ?? null,
+        closingMessage: ticket.closingMessage ?? undefined,
     };
 }
 
@@ -100,21 +101,6 @@ export default function TicketDetailForm({
         ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
         : undefined;
 
-    // const {
-    //     register,
-    //     control,
-    //     handleSubmit,
-    //     reset,
-    //     formState: {
-    //         errors,
-    //         isSubmitting,
-    //         isDirty,
-    //     },
-    // } = useForm<UpdateTicketInput, undefined, UpdateTicketOutput>({
-    //     resolver: zodResolver(UpdateTicketSchema),
-    //     defaultValues,
-    // });
-
     const {
         register,
         control,
@@ -150,27 +136,11 @@ export default function TicketDetailForm({
 
     const isSoleSpecialist = hasValidCategoryId && soleSpecialistCategoryIds.has(categoryIdForQuery);
 
-
-
-    // const [searchUsers, { loading: loadingUsers }] =
-    //     useLazyQuery(SEARCH_USERS);
-
-    // const [searchUsers, { loading: loadingUsers }] = useLazyQuery(SEARCH_USERS);
-
-    // async function handleSearchUsers(search: string): Promise<SearchResult[]> {
-    //     const { data } = await searchUsers({
-    //         variables: {
-    //             search,
-    //             role: "TECHNICIAN",
-    //             department: ticket.ticketDepartment,
-    //         },
-    //     });
-
-    //     return (data?.searchUsers ?? []).map((u) => ({
-    //         id: u.id,
-    //         label: `${u.firstName} ${u.lastName}`,
-    //     }));
-    // }
+    // Il messaggio di chiusura va mostrato solo quando lo stato selezionato
+    // nel form è CLOSED o REFUSED (coerente con la regola in UpdateTicketSchema)
+    const selectedStatus = watch("status");
+    const showClosingMessage =
+        selectedStatus === "CLOSED" || selectedStatus === "REFUSED";
 
     const [searchUsers, { loading: loadingUsers }] = useLazyQuery(SEARCH_USERS);
 
@@ -189,43 +159,12 @@ export default function TicketDetailForm({
         }));
     }
 
-    // const { data: categories } = useQuery(GET_CATEGORIES, {
-    //     variables: {
-    //         department: ticket.ticketDepartment,
-    //     },
-    //     skip: !ticket.ticketDepartment,
-    // });
-
-    // const categoryOptions = useMemo(() => {
-    //     const options = (categories ?? []).map((c) => ({
-    //         id: c.id,
-    //         label: c.name,
-    //     }));
-
-    //     // Se la categoria del ticket non è ancora tra le opzioni caricate
-    //     // (query in corso, o categoria fuori dal dipartimento corrente),
-    //     // la aggiungiamo comunque per evitare il mismatch di MUI.
-    //     if (ticket.category && !options.some((o) => o.id === ticket.category!.id)) {
-    //         options.push({
-    //             id: ticket.category.id,
-    //             label: ticket.category.name,
-    //         });
-    //     }
-
-    //     return options;
-    // }, [categories, ticket.category]);
-
     const { data: categoriesData } = useQuery(GET_CATEGORIES, {
         variables: {
             department: ticket.ticketDepartment,
         },
         skip: !ticket.ticketDepartment,
     });
-
-    // const categoryOptions = (categoriesData?.categories ?? []).map((c) => ({
-    //     id: c.id,
-    //     label: c.name,
-    // }));
 
     const categoryOptions = useMemo(() => {
         const options = (categoriesData?.categories ?? []).map((c) => ({
@@ -325,6 +264,10 @@ export default function TicketDetailForm({
             changedValues.assignedToId = values.assignedToId;
         }
 
+        if (values.closingMessage !== defaultValuesOutput.closingMessage) {
+            changedValues.closingMessage = values.closingMessage;
+        }
+
         /*
          * Nessuna modifica reale.
          * Evitiamo completamente la mutation GraphQL.
@@ -419,26 +362,6 @@ export default function TicketDetailForm({
 
                 />
 
-                {/* <SearchInput
-                    name="assignedToId"
-                    label="Tecnico assegnato"
-                    control={control}
-                    execute={searchUsers}
-                    variables={{
-                        role: "TECHNICIAN",
-                        department: ticket.ticketDepartment,
-                    }}
-                    mapData={(data) =>
-                        (data?.searchUsers ?? []).map((u) => ({
-                            id: u.id,
-                            label: `${u.firstName} ${u.lastName}`,
-                        }))
-                    }
-                    loading={loadingUsers}
-                    initialLabel={assignedToInitialLabel}
-                // disabled={!fieldPermissions.assignedToId}
-                /> */}
-
                 <SearchInput
                     name="assignedToId"
                     label="Tecnico assegnato"
@@ -450,15 +373,6 @@ export default function TicketDetailForm({
                     registerReset={registerReset}
                 />
 
-                {/* <SearchAutocomplete
-                    name="assignedToId"
-                    control={control}
-                    label="Tecnico assegnato"
-                    loading={loadingUsers}
-                    disabled={!fieldPermissions.assignedToId}
-                    initialLabel={assignedToInitialLabel}
-                    onSearch={handleSearchUsers}
-                /> */}
                 <AppSelect
                     name="status"
                     label="Status"
@@ -466,6 +380,23 @@ export default function TicketDetailForm({
                     options={statusOptions}
                     disabled={!fieldPermissions.status}
                 />
+
+                {showClosingMessage && (
+                    <TextField
+                        {...register("closingMessage")}
+                        label="Messaggio di chiusura"
+                        fullWidth
+                        multiline
+                        minRows={3}
+                        error={!!errors.closingMessage}
+                        helperText={errors.closingMessage?.message}
+                        sx={{
+                            gridColumn: {
+                                md: "1 / -1",
+                            },
+                        }}
+                    />
+                )}
 
                 {isSoleSpecialist && createdBy && (
                     <Alert severity="info" sx={{ gridColumn: { md: "1 / -1" } }}>

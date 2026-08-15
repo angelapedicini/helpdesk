@@ -20,15 +20,28 @@ import { DepartmentEnum, TicketPrioritySchema, TicketStatusSchema } from "./enum
 // export type TicketDetailFormValues = z.input<typeof TicketDetailSchema>; // era z.infer
 // export type TicketDetailFormOutput = z.output<typeof TicketDetailSchema>;
 
-export const UpdateTicketSchema = z.object({
-  title: z.string().min(1, "Questo campo deve contenere almeno un carattere").max(200).optional(),
-  description: z.string().min(1, "Questo campo deve contenere almeno un carattere").optional(),
-  status: TicketStatusSchema.optional(),
-  priority: TicketPrioritySchema.optional(),
-  categoryId: z.coerce.number().int().positive().nullable().optional(),
-  assignedToId: z.coerce.number().int().positive().nullable().optional(),
-
-});
+export const UpdateTicketSchema = z
+  .object({
+    title: z.string().min(1, "Questo campo deve contenere almeno un carattere").max(200).optional(),
+    description: z.string().min(1, "Questo campo deve contenere almeno un carattere").optional(),
+    status: TicketStatusSchema.optional(),
+    priority: TicketPrioritySchema.optional(),
+    categoryId: z.coerce.number().int().positive().nullable().optional(),
+    assignedToId: z.coerce.number().int().positive().nullable().optional(),
+    closingMessage: z.string().min(1, "Questo campo deve contenere almeno un carattere").optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      (data.status === "CLOSED" || data.status === "REFUSED") &&
+      !data.closingMessage
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Il messaggio di chiusura è obbligatorio quando il ticket viene chiuso o rifiutato",
+        path: ["closingMessage"],
+      });
+    }
+  });
 
 export type UpdateTicketInput = z.input<typeof UpdateTicketSchema>; // era z.infer
 export type UpdateTicketOutput = z.output<typeof UpdateTicketSchema>;
@@ -60,7 +73,7 @@ export const FilterTicketSchema = z.object({
   overdue: z.boolean().optional(),
   unassigned: z.boolean().optional(),
 
-    dueDateFrom: z.coerce.date().optional().transform((d) => d?.toISOString()),
+  dueDateFrom: z.coerce.date().optional().transform((d) => d?.toISOString()),
   dueDateTo: z.coerce.date().optional().transform((d) => d?.toISOString()),
 });
 

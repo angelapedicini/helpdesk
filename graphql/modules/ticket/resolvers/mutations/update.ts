@@ -7,7 +7,6 @@ import { UpdateTicketSchema } from "@/lib/validators/ticket-detail.schema";
 import { computeDueDate } from "@/lib/ticket/dueDate";
 import { assertCanUpdateTicket } from "@/lib/casl/ticket.guard";
 import { autoAssign } from "@/lib/ticket/autoAssign";
-import { stat } from "fs";
 
 export async function updateTicket(_parent: unknown, args: { id: number; input: unknown }) {
   const session = await requireSession();
@@ -21,21 +20,17 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   }
   const input = result.data;
 
-  const existing = await prisma.ticket.findUnique({ where: { id: args.id } });
+  const existing = await prisma.ticket.findUnique({
+    where: { id: args.id },
+    include: { category: true, createdBy: true, assignedTo: true, lastUpdatedBy: true },
+  });
+
   if (!existing || existing.deletedAt) {
     throw new GraphQLError("Ticket non trovato", { extensions: { code: "NOT_FOUND" } });
   }
 
-  console.log("=== UPDATE DEBUG ===");
-  console.log("args.input:", args.input);
-  console.log("result.data:", result.data);
-  console.log("Object.keys(input):", Object.keys(input));
-  console.log("input.status:", input.status);
-  console.log("input.title:", input.title);
-
   assertCanUpdateTicket(ability, session, existing, input);
 
-  //controllo per categoria esistente
   if (input.categoryId !== undefined && input.categoryId !== null) {
     const category = await prisma.ticketCategory.findUnique({ where: { id: input.categoryId } });
     if (!category) {
@@ -43,7 +38,6 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     }
   }
 
-  //controllo per user id assegnato esistente
   if (input.assignedToId !== undefined && input.assignedToId !== null) {
     const assignee = await prisma.user.findUnique({ where: { id: input.assignedToId } });
     if (!assignee) {
@@ -64,7 +58,6 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
 
   const categoryId = input.categoryId !== undefined ? input.categoryId : existing.categoryId;
 
-  //controllo cambio assegnato. in tb specialization deve avere la stessa categoria del precedente
   if (input.assignedToId !== undefined && input.assignedToId !== null && categoryId !== null) {
     const specialization = await prisma.userSpecialization.findUnique({
       where: {
@@ -100,7 +93,50 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     status = "ASSIGNED";
   }
 
-  //aggiunto histroy per update
+  // closingMessage arriva già validato come obbligatorio quando status è
+  // CLOSED/REFUSED (vedi superRefine nello schema). Lo salvo sia sul Ticket
+  // (cache per lettura rapida) sia come TicketMessage dedicato.
+  const isClosingTransition = status === "CLOSED" || status === "REFUSED";
+  const closingMessage = isClosingTransition ? input.closingMessage : undefined;
+
+  const snapshotBefore = {
+    title: existing.title,
+    description: existing.description,
+    status: existing.status,
+    priority: existing.priority,
+
+    category: existing.category
+      ? { id: existing.category.id, name: existing.category.name }
+      : null,
+
+    createdBy: {
+      id: existing.createdBy.id,
+      firstName: existing.createdBy.firstName,
+      lastName: existing.createdBy.lastName,
+    },
+
+    assignedTo: existing.assignedTo
+      ? {
+        id: existing.assignedTo.id,
+        firstName: existing.assignedTo.firstName,
+        lastName: existing.assignedTo.lastName,
+      }
+      : null,
+
+    dueDate: existing.dueDate,
+    closedAt: existing.closedAt,
+
+    lastUpdatedBy: existing.lastUpdatedBy
+      ? {
+        id: existing.lastUpdatedBy.id,
+        firstName: existing.lastUpdatedBy.firstName,
+        lastName: existing.lastUpdatedBy.lastName,
+      }
+      : null,
+
+    closingMessage: existing.closingMessage,
+  };
+
   const [updated] = await prisma.$transaction([
     prisma.ticket.update({
       where: { id: args.id },
@@ -113,14 +149,30 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
         assignedToId: assignedToId,
         closedAt,
         dueDate,
+        lastUpdatedById: session.userId,
+        closingMessage,
       },
       include: { category: true, createdBy: true, assignedTo: true },
     }),
+
+    ...(isClosingTransition
+      ? [
+        prisma.ticketMessage.create({
+          data: {
+            ticketId: args.id,
+            authorId: session.userId,
+            content: closingMessage!,
+            isClosingMessage: true,
+          },
+        }),
+      ]
+      : []),
+
     prisma.ticketHistory.create({
       data: {
         ticketId: args.id,
         actorId: session.userId,
-        snapshotBefore: JSON.parse(JSON.stringify(existing)),
+        snapshotBefore,
       },
     }),
   ]);

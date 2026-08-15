@@ -73,14 +73,15 @@ model User {
   permissions     UserPermission[]
   refreshTokens   RefreshToken[]
 
-  ticketsCreated  Ticket[]        @relation("CreatedTickets")
-  ticketsAssigned Ticket[]        @relation("AssignedTickets")
-  ticketMessages  TicketMessage[] @relation("TicketMessages")
-  ticketHistory TicketHistory[]
+  ticketsCreated     Ticket[]        @relation("CreatedTickets")
+  ticketsAssigned    Ticket[]        @relation("AssignedTickets")
+  ticketsLastUpdated Ticket[]        @relation("LastUpdatedTickets")
+  ticketMessages     TicketMessage[] @relation("TicketMessages")
+  ticketHistory      TicketHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}  
+}
 
 model UserSpecialization {
   id Int @id @default(autoincrement())
@@ -106,10 +107,10 @@ model UserPermission {
 }
 
 model Ticket {
-  id          Int          @id @default(autoincrement())
+  id          Int            @id @default(autoincrement())
   title       String
   description String
-  status      TicketStatus @default(OPEN)
+  status      TicketStatus   @default(OPEN)
   priority    TicketPriority @default(MEDIUM)
 
   categoryId Int?
@@ -121,9 +122,13 @@ model Ticket {
   assignedToId Int?
   assignedTo   User? @relation("AssignedTickets", fields: [assignedToId], references: [id])
 
-  sourceDepartmentForUser Department
-  ticketDepartment Department
+  lastUpdatedById Int?
+  lastUpdatedBy   User? @relation("LastUpdatedTickets", fields: [lastUpdatedById], references: [id])
 
+  closingMessage String?
+
+  sourceDepartmentForUser Department
+  ticketDepartment        Department
 
   messages TicketMessage[]
 
@@ -139,6 +144,10 @@ model Ticket {
 model TicketMessage {
   id      Int    @id @default(autoincrement())
   content String
+
+  // true quando il messaggio è stato generato in chiusura/rifiuto del ticket
+  // (in coppia con Ticket.closingMessage, scritti nella stessa transazione)
+  isClosingMessage Boolean @default(false)
 
   ticketId Int
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
@@ -158,7 +167,12 @@ model TicketHistory {
   actorId Int?
   actor   User? @relation(fields: [actorId], references: [id])
 
-  snapshotBefore Json 
+  snapshotBefore Json
+
+  // Campi effettivamente modificati in questo evento, es. ["status", "priority", "dueDate"].
+  // Evita di dover fare il diff tra snapshotBefore e lo stato attuale (che nel frattempo
+  // può essere ulteriormente cambiato) per capire cosa è variato.
+  changedFields String[]
 
   createdAt DateTime @default(now())
 }

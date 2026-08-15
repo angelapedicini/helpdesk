@@ -88,7 +88,7 @@ export default function TicketForDepPage() {
 
     // ---- COLUMNS ----
     const ticketColumns = useMemo(
-        () => createTicketColumns(ability, ticketModal.open, deleteModal.open),
+        () => createTicketColumns(ability, ticketModal.open, deleteModal.open, scope),
         [ability, ticketModal.open, deleteModal.open]
     );
 

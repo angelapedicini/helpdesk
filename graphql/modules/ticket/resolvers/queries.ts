@@ -46,7 +46,7 @@ export const ticketQueries = {
           skip,
           cursor,
           where,
-          include: { category: true, createdBy: true, assignedTo: true },
+          include: { category: true, createdBy: true, assignedTo: true, lastUpdatedBy: true, },
           orderBy,
         }),
     });
