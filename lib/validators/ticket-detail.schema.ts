@@ -29,6 +29,8 @@ export const UpdateTicketSchema = z
     categoryId: z.coerce.number().int().positive().nullable().optional(),
     assignedToId: z.coerce.number().int().positive().nullable().optional(),
     closingMessage: z.string().min(1, "Questo campo deve contenere almeno un carattere").optional(),
+    // dueDate: z.coerce.date().transform((d) => d?.toISOString()).optional(),
+    dueDate: z.coerce.date().optional(),
   })
   .superRefine((data, ctx) => {
     if (

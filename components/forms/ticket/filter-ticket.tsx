@@ -278,14 +278,6 @@ export default function FilterTicketForm({
                                     toCalendarUTCDate(date)
                                 )
                             }
-                        // slotProps={{
-                        //     textField: {
-                        //         fullWidth: true,
-                        //         error: !!errors.dueDateTo,
-                        //         helperText:
-                        //             errors.dueDateTo?.message,
-                        //     },
-                        // }}
                         />
                     )}
                 />

@@ -1,6 +1,6 @@
 // components/table.tsx
 "use client";
-import { ReactNode, useCallback, useEffect, useRef } from "react";
+import { ComponentType, ReactNode, useCallback, useEffect, useRef } from "react";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -9,6 +9,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import Tooltip from "@mui/material/Tooltip";
+import IconButton from "@mui/material/IconButton";
 import { Box } from "@mui/material";
 
 export type SortDirection = "ASC" | "DESC";
@@ -17,13 +18,34 @@ export type SortState<TSortField extends string = string> = {
   direction: SortDirection;
 } | null;
 
-export type Column<T, TSortField extends string = string> = {
-  header: string;
-  render: (row: T) => ReactNode;
-  width?: string | number;
-  maxWidth?: string | number;
-  sortField?: TSortField;
+// ---- NUOVO: azione dichiarativa per riga ----
+export type RowAction<T> = {
+  icon: ComponentType<{ fontSize?: "small" }>;
+  label: string; // usato come tooltip di default
+  onClick: (row: T) => void;
+  disabled?: (row: T) => boolean;
+  disabledReason?: (row: T) => string | undefined;
+  hidden?: (row: T) => boolean;
 };
+
+export type Column<T, TSortField extends string = string> =
+  // aggiungi al tipo Column (variante non-actions):
+  | {
+    kind?: "custom";
+    header: string;
+    render: (row: T) => ReactNode;
+    width?: string | number;
+    maxWidth?: string | number;
+    sortField?: TSortField;
+    highlight?: (row: T) => boolean; // ← nuovo
+    wrap?: boolean; // ← nuovo: permette al testo di andare a capo in questa colonna
+  }
+  | {
+    kind: "actions";
+    header?: string;
+    width?: string | number;
+    actions: RowAction<T>[];
+  };
 
 type TableProps<T, TSortField extends string = string> = {
   data: T[];
@@ -38,6 +60,39 @@ type TableProps<T, TSortField extends string = string> = {
   sort?: SortState<TSortField>;
   onSortChange?: (sort: SortState<TSortField>) => void;
 };
+
+function ActionsCell<T>({ actions, row }: { actions: RowAction<T>[]; row: T }) {
+  return (
+    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "nowrap" }}>
+      {actions
+        .filter((action) => !action.hidden?.(row))
+        .map((action) => {
+          const disabled = action.disabled?.(row) ?? false;
+          const Icon = action.icon;
+          const title = disabled ? action.disabledReason?.(row) ?? "" : action.label;
+
+          return (
+            <Tooltip key={action.label} title={title}>
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={disabled}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onMouseUp={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    action.onClick(row);
+                  }}
+                >
+                  <Icon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          );
+        })}
+    </Box>
+  );
+}
 
 export default function AppTable<T, TSortField extends string = string>({
   data,
@@ -71,7 +126,7 @@ export default function AppTable<T, TSortField extends string = string>({
   );
 
   const handleHeaderClick = (col: Column<T, TSortField>) => {
-    if (!col.sortField || !onSortChange) return;
+    if (col.kind === "actions" || !col.sortField || !onSortChange) return;
     const isSameField = sort?.field === col.sortField;
     const nextDirection: SortDirection =
       isSameField && sort?.direction === "ASC" ? "DESC" : "ASC";
@@ -112,22 +167,22 @@ export default function AppTable<T, TSortField extends string = string>({
       <Table stickyHeader size="small" sx={{ tableLayout: "fixed" }}>
         <TableHead>
           <TableRow>
-            {columns.map((col) => (
+            {columns.map((col, i) => (
               <TableCell
-                key={col.header}
+                key={col.header ?? `col-${i}`}
                 onClick={() => handleHeaderClick(col)}
                 sx={{
                   fontWeight: 600,
                   bgcolor: "grey.100",
                   width: col.width,
-                  maxWidth: col.maxWidth ?? col.width,
-                  cursor: col.sortField ? "pointer" : "default",
+                  maxWidth: col.kind === "actions" ? col.width : col.maxWidth ?? col.width,
+                  cursor: col.kind !== "actions" && col.sortField ? "pointer" : "default",
                   userSelect: "none",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                 }}
               >
-                <Tooltip title={col.header} enterDelay={400}>
+                <Tooltip title={col.header ?? ""} enterDelay={400}>
                   <Box
                     component="span"
                     sx={{
@@ -148,7 +203,7 @@ export default function AppTable<T, TSortField extends string = string>({
                       {col.header}
                     </span>
 
-                    {col.sortField && (
+                    {col.kind !== "actions" && col.sortField && (
                       <span
                         style={{
                           flexShrink: 0,
@@ -178,23 +233,35 @@ export default function AppTable<T, TSortField extends string = string>({
               onMouseUp={onRowClick ? (e) => handleRowMouseUp(e, row) : undefined}
               sx={{
                 cursor: onRowClick ? "pointer" : "default",
-                height: rowHeight,
+                minHeight: rowHeight, // era "height": ora la riga può crescere se una cella wrappa
               }}
             >
-              {columns.map((col) => (
-                <TableCell
-                  key={col.header}
-                  sx={{
-                    height: rowHeight,
-                    maxWidth: col.maxWidth ?? col.width,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {col.render(row)}
-                </TableCell>
-              ))}
+              {columns.map((col, i) => {
+                const wrap = col.kind !== "actions" && col.wrap;
+
+                return (
+                  <TableCell
+                    key={col.header ?? `col-${i}`}
+                    sx={{
+                      height: wrap ? "auto" : rowHeight,
+                      maxWidth: col.kind === "actions" ? col.width : col.maxWidth ?? col.width,
+                      overflow: wrap ? "visible" : "hidden",
+                      textOverflow: wrap ? "clip" : "ellipsis",
+                      whiteSpace: wrap ? "normal" : "nowrap",
+                      wordBreak: wrap ? "break-word" : undefined,
+                      verticalAlign: wrap ? "top" : "middle",
+                      bgcolor:
+                        col.kind !== "actions" && col.highlight?.(row) ? "#44402d" : undefined, // giallo
+                    }}
+                  >
+                    {col.kind === "actions" ? (
+                      <ActionsCell actions={col.actions} row={row} />
+                    ) : (
+                      col.render(row)
+                    )}
+                  </TableCell>
+                );
+              })}
             </TableRow>
           ))}
         </TableBody>

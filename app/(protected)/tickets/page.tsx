@@ -8,7 +8,6 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 
 import AppTable from "@/components/table";
 import type { SortState } from "@/components/table";
-import { createTicketColumns } from "./column.def";
 
 import { useModalState } from "@/components/hooks/use-modal-state";
 import Modal from "@/components/modal";
@@ -16,6 +15,7 @@ import SureForm from "@/components/forms/sure-form";
 
 import { useAbility } from "@/lib/casl/abilityContext";
 import { TicketFieldsFragmentDoc, TicketScope } from "@/apollo-client/gql/graphql";
+import { useFragment } from "@/apollo-client/gql/fragment-masking";
 
 import {
     GET_TICKETS,
@@ -23,16 +23,16 @@ import {
     TicketSortField,
 } from "@/apollo-client/queries/ticket/ticket.queries";
 import { DELETE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
-import { useUnmaskedEdges } from "@/apollo-client/hooks/use-unmasked-edges";
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
 import FiltersSidebar from "@/components/filters-sidebar";
 import FilterTicketForm from "@/components/forms/ticket/filter-ticket";
 import { useFilterState } from "@/components/hooks/use-filter-state";
 import { FilterTicketOutput } from "@/lib/validators/ticket-detail.schema";
+import { createTicketColumns } from "@/lib/ticket/column.def";
 
 const PAGE_SIZE = 20;
 
-export default function TicketForDepPage() {
+export default function Page() {
     const router = useRouter();
     const ability = useAbility();
 
@@ -62,7 +62,12 @@ export default function TicketForDepPage() {
         notifyOnNetworkStatusChange: true,
     });
 
-    const tickets = useUnmaskedEdges(data?.tickets, TicketFieldsFragmentDoc);
+    // ---- UNMASKING (standard codegen useFragment, fatto qui perché è il punto di consumo) ----
+    const tickets: Ticket[] = useFragment(
+        TicketFieldsFragmentDoc,
+        data?.tickets?.edges.map((edge) => edge.node) ?? []
+    );
+
     const { hasNextPage, loadMore } = useCursorPagination(data?.tickets?.pageInfo, fetchMore);
 
     // ---- MODALS ----
@@ -88,8 +93,14 @@ export default function TicketForDepPage() {
 
     // ---- COLUMNS ----
     const ticketColumns = useMemo(
-        () => createTicketColumns(ability, ticketModal.open, deleteModal.open, scope),
-        [ability, ticketModal.open, deleteModal.open]
+        () => createTicketColumns(
+            ability,
+            ticketModal.open,
+            deleteModal.open,
+            (row) => router.push(`/ticketHistory/${row.id}`),
+            scope
+        ),
+        [ability, ticketModal.open, deleteModal.open, router, scope]
     );
 
     return (
@@ -109,7 +120,6 @@ export default function TicketForDepPage() {
                 </IconButton>
 
                 <Typography variant="h5">I miei ticket</Typography>
-
             </Stack>
 
             <AppTable

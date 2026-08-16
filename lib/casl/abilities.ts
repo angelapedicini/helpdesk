@@ -48,6 +48,8 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
 
     can("update", "Ticket", ["dueDate"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
     can("update", "Ticket", ["assignedToId"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
+    can("update", "Ticket", ["dueDate"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
+
 
     // il divieto vale SOLO quando il technician sta agendo da assegnatario,
     // non quando è lui il creatore del ticket

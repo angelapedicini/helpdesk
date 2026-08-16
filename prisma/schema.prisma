@@ -77,7 +77,7 @@ model User {
   ticketsAssigned    Ticket[]        @relation("AssignedTickets")
   ticketsLastUpdated Ticket[]        @relation("LastUpdatedTickets")
   ticketMessages     TicketMessage[] @relation("TicketMessages")
-  ticketHistory      TicketHistory[]
+  // ticketHistory      TicketHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -164,15 +164,7 @@ model TicketHistory {
   ticketId Int
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
-  actorId Int?
-  actor   User? @relation(fields: [actorId], references: [id])
-
-  snapshotBefore Json
-
-  // Campi effettivamente modificati in questo evento, es. ["status", "priority", "dueDate"].
-  // Evita di dover fare il diff tra snapshotBefore e lo stato attuale (che nel frattempo
-  // può essere ulteriormente cambiato) per capire cosa è variato.
-  changedFields String[]
+  snapshot Json
 
   createdAt DateTime @default(now())
 }

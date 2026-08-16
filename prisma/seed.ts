@@ -1,4 +1,3 @@
-// prisma/seed.ts
 import { Department, PrismaClient } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
@@ -42,12 +41,66 @@ const lastNames = [
   "Mancini", "Rizzo", "Lombardi", "Moretti", "Barbieri", "Fontana",
   "Santoro", "Mariani", "Rinaldi", "Caruso", "Ferrara", "Galli",
   "Martini", "Leone", "Longo", "Gentile", "Martinelli", "Vitale",
-  "Sala", "Serra", "Farina", "Piras", "Grasso", "Pellegrini",
-  "Palumbo", "Sanna", "Amato", "Vitali", "Testa", "Silvestri",
-  "Guerra", "Parisi", "Ferraro", "Basile", "Monti", "Coppola",
+  "Sala", "Serra", "Farina", "Piras", "Grasso", "Pellegrini", "Palumbo",
+  "Sanna", "Amato", "Vitali", "Testa", "Silvestri", "Guerra", "Parisi",
+  "Ferraro", "Basile", "Monti", "Coppola",
 ];
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
+
+// Stesso shape usato dai resolver create.ts / update.ts: sotto-oggetti
+// ridotti a id + campi display, mai l'entità Prisma completa.
+type SnapshotPerson = { id: number; firstName: string; lastName: string };
+type SnapshotCategory = { id: number; name: string; department: Department };
+
+function buildSnapshot(params: {
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  category: SnapshotCategory | null;
+  createdBy: SnapshotPerson;
+  assignedTo: SnapshotPerson | null;
+  createdAt: Date;
+  updatedAt: Date;
+  closedAt: Date | null;
+  dueDate: Date | null;
+  deletedAt: Date | null;
+  sourceDepartmentForUser: Department;
+  ticketDepartment: Department;
+  lastUpdatedBy: SnapshotPerson | null;
+  closingMessage: string | null;
+}) {
+  const toPerson = (p: SnapshotPerson | null) =>
+    p ? { id: p.id, firstName: p.firstName, lastName: p.lastName } : null;
+
+  return {
+    title: params.title,
+    description: params.description,
+    status: params.status,
+    priority: params.priority,
+
+    category: params.category
+      ? { id: params.category.id, name: params.category.name, department: params.category.department }
+      : null,
+
+    createdBy: toPerson(params.createdBy),
+    assignedTo: toPerson(params.assignedTo),
+
+    createdAt: params.createdAt,
+    updatedAt: params.updatedAt,
+    closedAt: params.closedAt,
+    dueDate: params.dueDate,
+    deletedAt: params.deletedAt,
+
+    sourceDepartmentForUser: params.sourceDepartmentForUser,
+    ticketDepartment: params.ticketDepartment,
+
+    lastUpdatedBy: toPerson(params.lastUpdatedBy),
+
+    closingMessage: params.closingMessage,
+  };
+}
 
 export async function main() {
   await prisma.ticketHistory.deleteMany();
@@ -81,8 +134,8 @@ export async function main() {
     categoriesByDept[dept] = created;
   }
 
-  const techniciansByDept: Record<string, { id: number }[]> = {};
-  const employeesByDept: Record<string, { id: number }[]> = {};
+  const techniciansByDept: Record<string, { id: number; firstName: string; lastName: string }[]> = {};
+  const employeesByDept: Record<string, { id: number; firstName: string; lastName: string }[]> = {};
 
   let personIndex = 0;
 
@@ -171,12 +224,7 @@ export async function main() {
       const author = employees[i % employees.length];
       const technician = technicians[i % technicians.length];
 
-      let status:
-        | "OPEN"
-        | "ASSIGNED"
-        | "IN_PROGRESS"
-        | "CLOSED"
-        | "REFUSED";
+      let status: "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "CLOSED" | "REFUSED";
 
       /*
         Distribuzione stati:
@@ -187,7 +235,6 @@ export async function main() {
         3 -> CLOSED
         4 -> REFUSED
       */
-
       switch (i % 5) {
         case 0:
           status = "OPEN";
@@ -210,12 +257,19 @@ export async function main() {
           break;
       }
 
+      const priority = PRIORITIES[i % PRIORITIES.length];
+
       /*
-        Messaggio di chiusura: definito prima della creazione del ticket
-        così da poter popolare subito Ticket.closingMessage (cache) e
-        riusare lo stesso contenuto nel relativo TicketMessage
-        (isClosingMessage: true), mantenendo le due scritture coerenti.
+        La dueDate viene calcolata quando il ticket viene creato,
+        indipendentemente dallo stato finale che avrà nel seed.
+
+        In questo modo lo snapshot iniziale contiene la dueDate
+        effettivamente presente nel ticket appena creato.
       */
+      const initialDueDate = new Date(
+        Date.now() + (i + 2) * 24 * 60 * 60 * 1000
+      );
+
       const closingMessageContent =
         status === "CLOSED"
           ? "Problema risolto. Puoi effettuare una verifica."
@@ -224,13 +278,8 @@ export async function main() {
             : null;
 
       /*
-        lastUpdatedBy: chi ha effettuato l'ultima modifica al ticket.
-        - OPEN: nessuna modifica dopo la creazione, resta l'autore
-        - tutti gli altri stati: il tecnico è intervenuto per ultimo
-          (assegnazione, lavorazione, chiusura/rifiuto)
+        Il ticket viene creato SEMPRE nello stato iniziale OPEN.
       */
-      const lastUpdatedById = status === "OPEN" ? author.id : technician.id;
-
       const ticket = await prisma.ticket.create({
         data: {
           title: `Richiesta ${category.name.toLowerCase()} #${i + 1}`,
@@ -239,78 +288,113 @@ export async function main() {
             `Ticket di esempio per la categoria "${category.name}" ` +
             `del reparto ${dept}.`,
 
-          status,
+          status: "OPEN",
 
-          priority: PRIORITIES[i % PRIORITIES.length],
+          priority,
 
           categoryId: category.id,
 
           createdById: author.id,
 
-          lastUpdatedById,
+          assignedToId: null,
 
-          closingMessage: closingMessageContent,
+          lastUpdatedById: author.id,
 
-          /*
-            OPEN:
-            nessun tecnico assegnato
+          closingMessage: null,
 
-            tutti gli altri stati:
-            hanno un tecnico assegnato
-          */
-          assignedToId: status === "OPEN" ? null : technician.id,
-
-          // reparto di appartenenza dell'autore al momento della creazione
           sourceDepartmentForUser: dept,
 
-          // reparto target del ticket: dato che qui la categoria è sempre presente,
-          // coincide con il reparto della categoria stessa
           ticketDepartment: category.department,
 
-          dueDate:
-            status === "CLOSED" || status === "REFUSED"
-              ? null
-              : new Date(Date.now() + (i + 2) * 24 * 60 * 60 * 1000),
+          dueDate: initialDueDate,
 
-          closedAt:
-            status === "CLOSED" || status === "REFUSED"
-              ? new Date(Date.now() - 24 * 60 * 60 * 1000)
-              : null,
+          closedAt: null,
         },
       });
 
       /*
-        Storico modifiche (TicketHistory)
+        Primo snapshot: fotografa il ticket appena creato, coerentemente
+        con quanto fa createTicket resolver (uno snapshot "di nascita"
+        per ogni ticket, indipendentemente dal fatto che venga poi
+        modificato o meno).
+      */
+      await prisma.ticketHistory.create({
+        data: {
+          ticketId: ticket.id,
+          snapshot: buildSnapshot({
+            title: ticket.title,
+            description: ticket.description,
+            status: ticket.status,
+            priority: ticket.priority,
+            category,
+            createdBy: author,
+            assignedTo: null,
+            createdAt: ticket.createdAt,
+            updatedAt: ticket.updatedAt,
+            closedAt: ticket.closedAt,
+            dueDate: ticket.dueDate,
+            deletedAt: ticket.deletedAt,
+            sourceDepartmentForUser: ticket.sourceDepartmentForUser,
+            ticketDepartment: ticket.ticketDepartment,
+            lastUpdatedBy: author,
+            closingMessage: null,
+          }),
+        },
+      });
 
-        Per i ticket che hanno subito una transizione dallo stato OPEN
-        iniziale, salviamo uno snapshot "prima" della modifica insieme
-        ai campi effettivamente cambiati. actorId = tecnico, dato che
-        è lui a intervenire su assegnazione/lavorazione/chiusura.
+      /*
+        Se il ticket deve avere uno stato diverso da OPEN, applichiamo
+        l'update e scriviamo un secondo snapshot che fotografa lo stato
+        DOPO la modifica — coerente con updateTicket resolver.
       */
       if (status !== "OPEN") {
+        const updatedTicket = await prisma.ticket.update({
+          where: {
+            id: ticket.id,
+          },
+
+          data: {
+            status,
+
+            assignedToId: technician.id,
+
+            lastUpdatedById: technician.id,
+
+            closingMessage: closingMessageContent,
+
+            dueDate:
+              status === "CLOSED" || status === "REFUSED"
+                ? null
+                : initialDueDate,
+
+            closedAt:
+              status === "CLOSED" || status === "REFUSED"
+                ? new Date(Date.now() - 24 * 60 * 60 * 1000)
+                : null,
+          },
+        });
+
         await prisma.ticketHistory.create({
           data: {
             ticketId: ticket.id,
-            actorId: technician.id,
-            snapshotBefore: {
-              status: "OPEN",
-              assignedToId: null,
-              lastUpdatedById: author.id,
-              closingMessage: null,
-              closedAt: null,
-              dueDate: null,
-            },
-            changedFields:
-              status === "CLOSED" || status === "REFUSED"
-                ? [
-                  "status",
-                  "assignedToId",
-                  "lastUpdatedById",
-                  "closingMessage",
-                  "closedAt",
-                  "dueDate",
-                ]
-                : ["status", "assignedToId", "lastUpdatedById", "dueDate"],
+            snapshot: buildSnapshot({
+              title: updatedTicket.title,
+              description: updatedTicket.description,
+              status: updatedTicket.status,
+              priority: updatedTicket.priority,
+              category,
+              createdBy: author,
+              assignedTo: technician,
+              createdAt: updatedTicket.createdAt,
+              updatedAt: updatedTicket.updatedAt,
+              closedAt: updatedTicket.closedAt,
+              dueDate: updatedTicket.dueDate,
+              deletedAt: updatedTicket.deletedAt,
+              sourceDepartmentForUser: updatedTicket.sourceDepartmentForUser,
+              ticketDepartment: updatedTicket.ticketDepartment,
+              lastUpdatedBy: technician,
+              closingMessage: closingMessageContent,
+            }),
           },
         });
       }
@@ -318,7 +402,6 @@ export async function main() {
       /*
         Messaggi per ticket IN_PROGRESS
       */
-
       if (status === "IN_PROGRESS") {
         await prisma.ticketMessage.createMany({
           data: [
@@ -341,7 +424,6 @@ export async function main() {
       /*
         Messaggi per ticket CLOSED
       */
-
       if (status === "CLOSED") {
         await prisma.ticketMessage.createMany({
           data: [
@@ -368,7 +450,6 @@ export async function main() {
       /*
         Messaggi per ticket REFUSED
       */
-
       if (status === "REFUSED") {
         await prisma.ticketMessage.createMany({
           data: [

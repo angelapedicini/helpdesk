@@ -24,6 +24,7 @@ import { authRefreshLink } from "./apollo-links/auth-refresh-link";
  */
 const CURSOR_PAGINATED_FIELDS_CONFIG = {
   tickets: ["orderBy", "filter", "scope"],
+  ticketHistory: ["ticketId"],
   users: [],
   categories: [],
 } as const;

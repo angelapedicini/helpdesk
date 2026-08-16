@@ -106,6 +106,7 @@ input TicketUpdateInput {
     categoryId: Int
     assignedToId: Int
     closingMessage: String
+    dueDate: Date
 }
 
 

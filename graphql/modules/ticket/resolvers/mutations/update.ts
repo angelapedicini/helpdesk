@@ -52,10 +52,13 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     closedAt = new Date();
   }
 
-  if (input.priority !== undefined && input.priority !== existing.priority) {
+  if (input.priority !== undefined && input.priority !== existing.priority && input.dueDate === undefined) {
     dueDate = computeDueDate(input.priority);
   }
 
+  if (input.dueDate !== undefined) {
+    dueDate = input.dueDate;
+  }
   const categoryId = input.categoryId !== undefined ? input.categoryId : existing.categoryId;
 
   if (input.assignedToId !== undefined && input.assignedToId !== null && categoryId !== null) {
@@ -99,46 +102,11 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   const isClosingTransition = status === "CLOSED" || status === "REFUSED";
   const closingMessage = isClosingTransition ? input.closingMessage : undefined;
 
-  const snapshotBefore = {
-    title: existing.title,
-    description: existing.description,
-    status: existing.status,
-    priority: existing.priority,
-
-    category: existing.category
-      ? { id: existing.category.id, name: existing.category.name }
-      : null,
-
-    createdBy: {
-      id: existing.createdBy.id,
-      firstName: existing.createdBy.firstName,
-      lastName: existing.createdBy.lastName,
-    },
-
-    assignedTo: existing.assignedTo
-      ? {
-        id: existing.assignedTo.id,
-        firstName: existing.assignedTo.firstName,
-        lastName: existing.assignedTo.lastName,
-      }
-      : null,
-
-    dueDate: existing.dueDate,
-    closedAt: existing.closedAt,
-
-    lastUpdatedBy: existing.lastUpdatedBy
-      ? {
-        id: existing.lastUpdatedBy.id,
-        firstName: existing.lastUpdatedBy.firstName,
-        lastName: existing.lastUpdatedBy.lastName,
-      }
-      : null,
-
-    closingMessage: existing.closingMessage,
-  };
-
-  const [updated] = await prisma.$transaction([
-    prisma.ticket.update({
+  // Transazione interattiva: lo snapshot ora fotografa lo stato DOPO
+  // l'update (coerente con lo snapshot "di nascita" in create.ts), quindi
+  // serve il risultato di ticket.update prima di poterlo costruire.
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.ticket.update({
       where: { id: args.id },
       data: {
         title: input.title,
@@ -152,30 +120,77 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
         lastUpdatedById: session.userId,
         closingMessage,
       },
-      include: { category: true, createdBy: true, assignedTo: true },
-    }),
+      include: { category: true, createdBy: true, assignedTo: true, lastUpdatedBy: true },
+    });
 
-    ...(isClosingTransition
-      ? [
-        prisma.ticketMessage.create({
-          data: {
-            ticketId: args.id,
-            authorId: session.userId,
-            content: closingMessage!,
-            isClosingMessage: true,
-          },
-        }),
-      ]
-      : []),
+    if (isClosingTransition) {
+      await tx.ticketMessage.create({
+        data: {
+          ticketId: args.id,
+          authorId: session.userId,
+          content: closingMessage!,
+          isClosingMessage: true,
+        },
+      });
+    }
 
-    prisma.ticketHistory.create({
+    const snapshotAfter = {
+      title: result.title,
+      description: result.description,
+      status: result.status,
+      priority: result.priority,
+
+      category: result.category
+        ? {
+          id: result.category.id,
+          name: result.category.name,
+          department: result.category.department,
+        }
+        : null,
+
+      createdBy: {
+        id: result.createdBy.id,
+        firstName: result.createdBy.firstName,
+        lastName: result.createdBy.lastName,
+      },
+
+      assignedTo: result.assignedTo
+        ? {
+          id: result.assignedTo.id,
+          firstName: result.assignedTo.firstName,
+          lastName: result.assignedTo.lastName,
+        }
+        : null,
+
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+      closedAt: result.closedAt,
+      dueDate: result.dueDate,
+      deletedAt: result.deletedAt,
+
+      sourceDepartmentForUser: result.sourceDepartmentForUser,
+      ticketDepartment: result.ticketDepartment,
+
+      lastUpdatedBy: result.lastUpdatedBy
+        ? {
+          id: result.lastUpdatedBy.id,
+          firstName: result.lastUpdatedBy.firstName,
+          lastName: result.lastUpdatedBy.lastName,
+        }
+        : null,
+
+      closingMessage: result.closingMessage,
+    };
+
+    await tx.ticketHistory.create({
       data: {
         ticketId: args.id,
-        actorId: session.userId,
-        snapshotBefore,
+        snapshot: snapshotAfter,
       },
-    }),
-  ]);
+    });
+
+    return result;
+  });
 
   return updated;
 }

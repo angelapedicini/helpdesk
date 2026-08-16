@@ -46,19 +46,76 @@ export async function createTicket(_parent: unknown, args: { input: unknown }) {
   // assignedToId = await autoAssign(input.categoryId, session.userId);
   const dueDate = computeDueDate(input.priority);
 
-  return prisma.ticket.create({
-    data: {
-      title: input.title,
-      description: input.description,
-      status: assignedToId ? "ASSIGNED" : "OPEN",
-      categoryId: input.categoryId,
-      priority: input.priority,
-      createdById: session.userId,
-      assignedToId,
-      ticketDepartment: input.department,
-      sourceDepartmentForUser: session.department,
-      dueDate,
-    },
-    include: { category: true, createdBy: true, assignedTo: true },
+  // Transazione interattiva: serve l'id del ticket appena creato per
+  // poter scrivere la prima riga di TicketHistory (lo snapshot "di nascita").
+  const ticket = await prisma.$transaction(async (tx) => {
+    const created = await tx.ticket.create({
+      data: {
+        title: input.title,
+        description: input.description,
+        status: assignedToId ? "ASSIGNED" : "OPEN",
+        categoryId: input.categoryId,
+        priority: input.priority,
+        createdById: session.userId,
+        assignedToId,
+        ticketDepartment: input.department,
+        sourceDepartmentForUser: session.department,
+        dueDate,
+      },
+      include: { category: true, createdBy: true, assignedTo: true },
+    });
+
+    const snapshot = {
+      title: created.title,
+      description: created.description,
+      status: created.status,
+      priority: created.priority,
+
+      category: created.category
+        ? {
+          id: created.category.id,
+          name: created.category.name,
+          department: created.category.department,
+        }
+        : null,
+
+      createdBy: {
+        id: created.createdBy.id,
+        firstName: created.createdBy.firstName,
+        lastName: created.createdBy.lastName,
+      },
+
+      assignedTo: created.assignedTo
+        ? {
+          id: created.assignedTo.id,
+          firstName: created.assignedTo.firstName,
+          lastName: created.assignedTo.lastName,
+        }
+        : null,
+
+      createdAt: created.createdAt,
+      updatedAt: created.updatedAt,
+      closedAt: created.closedAt,
+      dueDate: created.dueDate,
+      deletedAt: created.deletedAt,
+
+      sourceDepartmentForUser: created.sourceDepartmentForUser,
+      ticketDepartment: created.ticketDepartment,
+
+      lastUpdatedBy: null,
+
+      closingMessage: created.closingMessage,
+    };
+
+    await tx.ticketHistory.create({
+      data: {
+        ticketId: created.id,
+        snapshot,
+      },
+    });
+
+    return created;
   });
+
+  return ticket;
 }

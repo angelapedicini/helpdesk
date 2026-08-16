@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
     Alert,
@@ -42,6 +42,8 @@ import { AppSelect } from "../inputs/select-input";
 import { useResetRegistry } from "../hooks/use-reset-registry";
 import { SearchInput, SearchResult } from "../inputs/search-input";
 import { SOLE_SPECIALIST_CATEGORY_IDS } from "@/apollo-client/queries/user-specialization/user-specialization.queries.ts";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
 
 
 type TicketDetailFormProps = {
@@ -62,6 +64,8 @@ function mapTicketToFormValues(
         categoryId: ticket.category?.id ?? null,
         assignedToId: ticket.assignedTo?.id ?? null,
         closingMessage: ticket.closingMessage ?? undefined,
+        dueDate: ticket.dueDate ?? undefined,
+
     };
 }
 
@@ -82,6 +86,14 @@ export default function TicketDetailForm({
         [ticket]
     );
 
+    console.log("========== CASL DEBUG ==========");
+    console.log("TICKET SUBJECT:", ticketSubject);
+    console.log(
+        "CAN UPDATE DUE DATE:",
+        ability.can("update", ticketSubject, "dueDate")
+    );
+    console.log("CASL RULES:", ability.rules);
+    console.log("================================");
     const fieldPermissions = useMemo(
         () => ({
             title: ability.can("update", ticketSubject, "title"),
@@ -90,6 +102,7 @@ export default function TicketDetailForm({
             priority: ability.can("update", ticketSubject, "priority"),
             categoryId: ability.can("update", ticketSubject, "categoryId"),
             assignedToId: ability.can("update", ticketSubject, "assignedToId"),
+            dueDate: ability.can("update", ticketSubject, "dueDate"),
         }),
         [ability, ticketSubject]
     );
@@ -268,6 +281,10 @@ export default function TicketDetailForm({
             changedValues.closingMessage = values.closingMessage;
         }
 
+        if (values.dueDate !== defaultValuesOutput.dueDate) {
+            changedValues.dueDate = values.dueDate;
+        }
+
         /*
          * Nessuna modifica reale.
          * Evitiamo completamente la mutation GraphQL.
@@ -283,7 +300,10 @@ export default function TicketDetailForm({
         const result = await updateTicket({
             variables: {
                 id: ticket.id,
-                input: changedValues,
+                input: {
+                    ...changedValues,
+                    dueDate: changedValues.dueDate?.toISOString(),
+                },
             },
         });
 
@@ -326,6 +346,22 @@ export default function TicketDetailForm({
                     disabled={!fieldPermissions.title}
                     error={!!errors.title}
                     helperText={errors.title?.message}
+                />
+
+                <Controller
+                    name="dueDate"
+                    control={control}
+                    disabled={!fieldPermissions.dueDate}
+                    render={({ field }) => (
+                        <DatePicker
+                            label="Scadenza"
+                            value={toPickerValue(field.value)}
+                            onChange={(date) => {
+                                field.onChange(toCalendarUTCDate(date));
+                            }}
+                            disabled={!fieldPermissions.dueDate}
+                        />
+                    )}
                 />
 
                 <TextField
@@ -390,6 +426,7 @@ export default function TicketDetailForm({
                         minRows={3}
                         error={!!errors.closingMessage}
                         helperText={errors.closingMessage?.message}
+                        disabled={!fieldPermissions.status}
                         sx={{
                             gridColumn: {
                                 md: "1 / -1",

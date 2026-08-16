@@ -9,6 +9,7 @@ import { useState } from "react";
 import Link from "next/link";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import { useMutation } from "@apollo/client/react";
 import {
   Box,
   Paper,
@@ -22,7 +23,6 @@ import {
 } from "@mui/material";
 import { RegisterSchema } from "@/lib/validators/auth.schema";
 import { REGISTER } from "@/apollo-client/queries/auth/register/register.mutation";
-import { useAppMutation } from "@/apollo-client/hooks/mutation-hook";
 
 const DEPARTMENT_OPTIONS = [
   { value: "HR", label: "Risorse Umane" },
@@ -47,10 +47,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const { mutate: createUser, loading } = useAppMutation(
-    REGISTER,
-    "Registrazione avvenuta con successo."
-  );
+  const [createUser, { loading, error }] = useMutation(REGISTER);
 
   const {
     register,
@@ -64,9 +61,11 @@ export default function RegisterPage() {
   const onSubmit: SubmitHandler<RegisterFormOutput> = async (values) => {
     const { confirmPassword, ...payload } = values;
 
-    const result = await createUser({ input: payload });
+    const { data, error: mutationErrors } = await createUser({
+      variables: { input: payload },
+    });
 
-    if (result.data && !result.error) {
+    if (data && !mutationErrors) {
       router.replace("/");
     }
   };
@@ -193,6 +192,12 @@ export default function RegisterPage() {
               },
             }}
           />
+
+          {error && (
+            <Typography color="error" variant="body2">
+              {error.message}
+            </Typography>
+          )}
 
           <Button type="submit" variant="contained" size="large" disabled={loading}>
             {loading ? "Registrazione..." : "Registrati"}
