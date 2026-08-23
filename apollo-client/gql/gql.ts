@@ -17,6 +17,9 @@ type Documents = {
     "\n  mutation Login($input: LoginInput!) {\n    login(input: $input) {\n      user {\n        id\n        email\n        firstName\n        lastName\n      }\n    }\n  }\n": typeof types.LoginDocument,
     "\n  mutation Logout {\n    logout {\n      success\n    }\n  }\n": typeof types.LogoutDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n": typeof types.CreateUserDocument,
+    "\n  mutation CreateTicketNotificationSubscription($ticketId: Int!) {\n    createTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.CreateTicketNotificationSubscriptionDocument,
+    "\n  mutation DeleteTicketNotificationSubscription($ticketId: Int!) {\n    deleteTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.DeleteTicketNotificationSubscriptionDocument,
+    "\n  query TicketNotificationSubscription($ticketId: Int!) {\n    ticketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.TicketNotificationSubscriptionDocument,
     "\n  query Categories($department: Department) {\n    categories(department: $department) {\n      id\n      name\n      department\n    }\n  }\n": typeof types.CategoriesDocument,
     "\n  fragment TicketSnapshotFields on TicketSnapshot {\n    id\n    title\n    description\n    status\n    priority\n    category {\n      id\n      name\n      department\n    }\n    createdBy {\n      id\n      firstName\n      lastName\n    }\n    assignedTo {\n      id\n      firstName\n      lastName\n    }\n    createdAt\n    updatedAt\n    closedAt\n    dueDate\n    deletedAt\n    sourceDepartmentForUser\n    ticketDepartment\n    lastUpdatedBy {\n      id\n      firstName\n      lastName\n    }\n    closingMessage\n  }\n": typeof types.TicketSnapshotFieldsFragmentDoc,
     "\n  query GetTicketHistory($ticketId: Int!, $first: Int, $after: String) {\n    ticketHistory(ticketId: $ticketId, first: $first, after: $after) {\n      edges {\n        cursor\n        node {\n          id\n          ticketId\n          createdAt\n\n          snapshotBefore {\n            ...TicketSnapshotFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": typeof types.GetTicketHistoryDocument,
@@ -41,6 +44,9 @@ const documents: Documents = {
     "\n  mutation Login($input: LoginInput!) {\n    login(input: $input) {\n      user {\n        id\n        email\n        firstName\n        lastName\n      }\n    }\n  }\n": types.LoginDocument,
     "\n  mutation Logout {\n    logout {\n      success\n    }\n  }\n": types.LogoutDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n": types.CreateUserDocument,
+    "\n  mutation CreateTicketNotificationSubscription($ticketId: Int!) {\n    createTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.CreateTicketNotificationSubscriptionDocument,
+    "\n  mutation DeleteTicketNotificationSubscription($ticketId: Int!) {\n    deleteTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.DeleteTicketNotificationSubscriptionDocument,
+    "\n  query TicketNotificationSubscription($ticketId: Int!) {\n    ticketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.TicketNotificationSubscriptionDocument,
     "\n  query Categories($department: Department) {\n    categories(department: $department) {\n      id\n      name\n      department\n    }\n  }\n": types.CategoriesDocument,
     "\n  fragment TicketSnapshotFields on TicketSnapshot {\n    id\n    title\n    description\n    status\n    priority\n    category {\n      id\n      name\n      department\n    }\n    createdBy {\n      id\n      firstName\n      lastName\n    }\n    assignedTo {\n      id\n      firstName\n      lastName\n    }\n    createdAt\n    updatedAt\n    closedAt\n    dueDate\n    deletedAt\n    sourceDepartmentForUser\n    ticketDepartment\n    lastUpdatedBy {\n      id\n      firstName\n      lastName\n    }\n    closingMessage\n  }\n": types.TicketSnapshotFieldsFragmentDoc,
     "\n  query GetTicketHistory($ticketId: Int!, $first: Int, $after: String) {\n    ticketHistory(ticketId: $ticketId, first: $first, after: $after) {\n      edges {\n        cursor\n        node {\n          id\n          ticketId\n          createdAt\n\n          snapshotBefore {\n            ...TicketSnapshotFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": types.GetTicketHistoryDocument,
@@ -88,6 +94,18 @@ export function graphql(source: "\n  mutation Logout {\n    logout {\n      succ
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n"): (typeof documents)["\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation CreateTicketNotificationSubscription($ticketId: Int!) {\n    createTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n"): (typeof documents)["\n  mutation CreateTicketNotificationSubscription($ticketId: Int!) {\n    createTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DeleteTicketNotificationSubscription($ticketId: Int!) {\n    deleteTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n"): (typeof documents)["\n  mutation DeleteTicketNotificationSubscription($ticketId: Int!) {\n    deleteTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query TicketNotificationSubscription($ticketId: Int!) {\n    ticketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n"): (typeof documents)["\n  query TicketNotificationSubscription($ticketId: Int!) {\n    ticketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

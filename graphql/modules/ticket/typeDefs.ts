@@ -61,7 +61,6 @@ export const ticketTypeDefs = `#graphql
     ticketDepartment: Department!
     lastUpdatedBy: User
     closingMessage: String
-
   }
 
   input TicketInput {

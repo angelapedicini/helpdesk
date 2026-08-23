@@ -14,10 +14,10 @@ import type { TicketFieldsFragment, TicketScope } from "@/apollo-client/gql/grap
 interface TicketRowActionsProps {
     ticket: TicketFieldsFragment;
     scope: TicketScope;
-    onOpen: (ticket: TicketFieldsFragment) => void;
-    onHistory: (ticket: TicketFieldsFragment) => void;
-    onDelete: (ticket: TicketFieldsFragment) => void;
-    onMessage: (ticket: TicketFieldsFragment) => void;
+    onOpen?: (ticket: TicketFieldsFragment) => void;
+    onHistory?: (ticket: TicketFieldsFragment) => void;
+    onDelete?: (ticket: TicketFieldsFragment) => void;
+    onMessage?: (ticket: TicketFieldsFragment) => void;
 }
 
 export default function TicketRowActions({
@@ -30,25 +30,31 @@ export default function TicketRowActions({
 }: TicketRowActionsProps) {
     return (
         <>
-            <Tooltip title="Apri ticket" arrow>
-                <IconButton color="primary" onClick={() => onOpen(ticket)} aria-label="Apri ticket">
-                    <VisibilityIcon />
-                </IconButton>
-            </Tooltip>
+            {onOpen && (
+                <Tooltip title="Apri ticket" arrow>
+                    <IconButton color="primary" onClick={() => onOpen(ticket)} aria-label="Apri ticket">
+                        <VisibilityIcon />
+                    </IconButton>
+                </Tooltip>
+            )}
 
-            <Tooltip title="Storico ticket" arrow>
-                <IconButton color="info" onClick={() => onHistory(ticket)} aria-label="Storico ticket">
-                    <HistoryIcon />
-                </IconButton>
-            </Tooltip>
+            {onHistory && (
+                <Tooltip title="Storico ticket" arrow>
+                    <IconButton color="info" onClick={() => onHistory(ticket)} aria-label="Storico ticket">
+                        <HistoryIcon />
+                    </IconButton>
+                </Tooltip>
+            )}
 
-            <Tooltip title="Messaggi" arrow>
-                <IconButton color="info" onClick={() => onMessage(ticket)} aria-label="Storico ticket">
-                    <MessageIcon />
-                </IconButton>
-            </Tooltip>
+            {onMessage && (
+                <Tooltip title="Messaggi" arrow>
+                    <IconButton color="info" onClick={() => onMessage(ticket)} aria-label="Messaggi">
+                        <MessageIcon />
+                    </IconButton>
+                </Tooltip>
+            )}
 
-            {scope === "MINE" && (
+            {scope === "MINE" && onDelete && (
                 <Tooltip title="Elimina ticket" arrow>
                     <IconButton color="error" onClick={() => onDelete(ticket)} aria-label="Elimina ticket">
                         <DeleteIcon />

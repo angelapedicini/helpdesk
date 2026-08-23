@@ -9,7 +9,13 @@ export const ticketReadStateMutations = {
         _parent: unknown,
         args: { ticketId: number }
     ) => {
+
         const session = await requireSession();
+        console.log(">>> MARK READ START", {
+            userId: session.userId,
+            ticketId: args.ticketId,
+            time: new Date().toISOString(),
+        });
         const ability = defineAbilityFor(session);
 
         // stessa regola di visibilità usata in ticketMessageQueries.messages
@@ -54,7 +60,13 @@ export const ticketReadStateMutations = {
             });
         }
 
-        return prisma.ticketReadState.upsert({
+        console.log(">>> BEFORE UPSERT", {
+            userId: session.userId,
+            ticketId: ticket.id,
+            lastMessageId: lastMessageFromOthers.id,
+        });
+
+        const result = await prisma.ticketReadState.upsert({
             where: {
                 userId_ticketId: { userId: session.userId, ticketId: ticket.id },
             },
@@ -75,5 +87,14 @@ export const ticketReadStateMutations = {
                 },
             },
         });
+
+        console.log(">>> AFTER UPSERT", {
+            userId: session.userId,
+            ticketId: ticket.id,
+        });
+
+        return result;
+
+
     },
 };

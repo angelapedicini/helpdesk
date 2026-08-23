@@ -23,6 +23,8 @@ import { ticketMessageTypeDefs } from "./modules/ticket-messages/typeDefs";
 import { ticketMessageResolvers } from "./modules/ticket-messages";
 import { ticketReadStateTypeDefs } from "./modules/ticket-readState/typeDefs";
 import { ticketReadStateResolvers } from "./modules/ticket-readState";
+import { ticketAdminNotificationSubTypeDefs } from "./modules/ticket-adminNotificationSub/typeDefs";
+import { ticketAdminNotificationResolvers } from "./modules/ticket-adminNotificationSub";
 
 
 export const typeDefs = [
@@ -38,6 +40,7 @@ export const typeDefs = [
   ticketHistoryTypeDefs,
   ticketMessageTypeDefs,
   ticketReadStateTypeDefs,
+  ticketAdminNotificationSubTypeDefs,
 ];
 
 export const resolvers = {
@@ -48,7 +51,8 @@ export const resolvers = {
     ...userSpecializationResolvers.Query,
     ...ticketHistoryResolvers.Query,
     ...ticketMessageResolvers.Query,
-    ...ticketReadStateResolvers.Query
+    ...ticketReadStateResolvers.Query,
+    ...ticketAdminNotificationResolvers.Query
   },
   Mutation: {
     ...registerResolvers.Mutation,
@@ -58,6 +62,7 @@ export const resolvers = {
     ...ticketResolvers.Mutation,
     ...userSpecializationResolvers.Mutation,
     ...ticketMessageResolvers.Mutation,
-    ...ticketReadStateResolvers.Mutation
+    ...ticketReadStateResolvers.Mutation,
+     ...ticketAdminNotificationResolvers.Mutation,
   },
 };
