@@ -27,33 +27,30 @@ const NAV_LINKS: NavLinkItem[] = [
     label: "Dashboard",
     href: "/dashboard",
     icon: <DataObjectIcon />,
-    // nessun 'roles' => visibile a tutti
   },
   {
     label: "I miei ticket",
-    href: "/tickets",
+    href: "/tickets?scope=mine",
     icon: <DataObjectIcon />,
   },
   {
     label: "Ticket assegnati a me",
-    href: "/ticketsAssignedToMe",
+    href: "/tickets?scope=assigned_to_me",
     icon: <DataObjectIcon />,
     roles: ["TECHNICIAN"],
   },
   {
     label: "Ticket del dipartimento",
-    href: "/ticketsForDep",
+    href: "/tickets?scope=department",
     icon: <DataObjectIcon />,
     roles: ["ADMIN"],
   },
-   {
+  {
     label: "Specializzazioni del dipartimento",
     href: "/userCategory",
     icon: <DataObjectIcon />,
     roles: ["ADMIN", "TECHNICIAN"],
   },
-
-
 ];
 
 export default function Navbar() {
@@ -82,7 +79,7 @@ export default function Navbar() {
   const handleNotifClick = (ticketId: number) => {
     setNotifAnchor(null);
     setDismissedTicketIds((prev) => new Set(prev).add(ticketId));
-    router.push(`/ticketMessage/${ticketId}`); // adegua alla tua route reale
+    router.push(`/tickets/${ticketId}/messages`);
   };
 
   return (

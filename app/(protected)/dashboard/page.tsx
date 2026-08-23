@@ -1,7 +1,7 @@
 "use client";
 
 import { DepartmentEnum } from "@/lib/validators/enums.schema";
-import { Box, Button } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import Link from "next/link";
 
 const DEPARTMENT_LABELS: Record<string, string> = {
@@ -17,13 +17,16 @@ export default function Page() {
         <Box
             sx={{
                 display: "flex",
-                justifyContent: "center", // centro orizzontale
-                alignItems: "center",     // centro verticale
+                justifyContent: "center",
+                alignItems: "center",
                 width: "100%",
                 minHeight: "70vh",
+                flexDirection: "column"
             }}
         >
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 3, width: 320 }}>
+            <Typography variant="h5">Seleziona dipartimento per apertura ticket</Typography>
+
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3, width: 320, mt: 5 }}>
                 {DepartmentEnum.options.map((dept) => (
                     <Button
                         key={dept}

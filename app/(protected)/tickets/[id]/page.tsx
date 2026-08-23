@@ -13,20 +13,9 @@ import {
     Typography,
 } from "@mui/material";
 import TicketDetailForm from "@/components/forms/ticket/update-ticket";
+import { toDatetimeLocalValue } from "@/lib/helper/date-helper";
 
-function toDatetimeLocalValue(value: unknown): string {
-    if (!value) return "";
 
-    const d = new Date(value as Date | string);
-
-    if (isNaN(d.getTime())) return "";
-
-    const pad = (n: number) => String(n).padStart(2, "0");
-
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
-        d.getDate()
-    )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export default function Page() {
     const { id } = useParams();

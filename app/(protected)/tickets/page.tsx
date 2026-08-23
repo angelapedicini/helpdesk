@@ -1,14 +1,9 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
-import {
-    Badge,
-    Box,
-    IconButton,
-    Stack,
-    Typography,
-} from "@mui/material";
+import { Badge, Box, IconButton, Stack, Typography } from "@mui/material";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import FiltersSidebar from "@/components/filters-sidebar";
 import FilterTicketForm from "@/components/forms/ticket/filter-ticket";
@@ -22,16 +17,9 @@ import {
     type TicketFieldsFragment,
     type TicketScope,
 } from "@/apollo-client/gql/graphql";
-
-import {
-    GET_TICKETS,
-    Ticket,
-} from "@/apollo-client/queries/ticket/ticket.queries";
-
+import { GET_TICKETS, Ticket } from "@/apollo-client/queries/ticket/ticket.queries";
 import { DELETE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
-
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
-
 import { FilterTicketOutput } from "@/lib/validators/ticket-detail.schema";
 import { useFragment } from "@/apollo-client/gql";
 import { isTicketOverdue } from "@/lib/ticket/expired-status";
@@ -41,8 +29,24 @@ import TicketRowActions from "@/components/ticket/actions";
 
 const PAGE_SIZE = 20;
 
-export default function TicketPage() {
+const SCOPE_TITLES: Record<TicketScope, string> = {
+    MINE: "I miei ticket",
+    DEPARTMENT: "Ticket del dipartimento",
+    ASSIGNED_TO_ME: "Ticket assegnati a me",
+};
+
+const VALID_SCOPES: TicketScope[] = ["MINE", "DEPARTMENT", "ASSIGNED_TO_ME"];
+
+export default function TicketsPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const scopeParam = searchParams.get("scope")?.toUpperCase();
+    const scope: TicketScope = VALID_SCOPES.includes(scopeParam as TicketScope)
+        ? (scopeParam as TicketScope)
+        : "MINE";
+
+    const title = SCOPE_TITLES[scope];
 
     // --------------------------------
     // FILTRI
@@ -51,13 +55,7 @@ export default function TicketPage() {
     const ticketFilters = useFilterState<FilterTicketOutput>();
 
     // --------------------------------
-    // SCOPE
-    // --------------------------------
-
-    const scope: TicketScope = "MINE";
-
-    // --------------------------------
-    // SORT (stato controllato: guida sia la query BE che le frecce in tabella)
+    // SORT
     // --------------------------------
 
     const { order, orderBy, onRequestSort, sortDirection } =
@@ -83,18 +81,10 @@ export default function TicketPage() {
         notifyOnNetworkStatusChange: true,
     });
 
-    // --------------------------------
-    // TICKETS
-    // --------------------------------
-
     const tickets: Ticket[] = useFragment(
         TicketFieldsFragmentDoc,
         data?.tickets?.edges?.map((edge) => edge.node) ?? []
     );
-
-    // --------------------------------
-    // PAGINATION
-    // --------------------------------
 
     const { hasNextPage, loadMore } = useCursorPagination(
         data?.tickets?.pageInfo,
@@ -108,28 +98,18 @@ export default function TicketPage() {
     const deleteModal = useModalState<TicketFieldsFragment>();
 
     const [deleteTicket] = useMutation(DELETE_TICKET, {
-        refetchQueries: [
-            {
-                query: GET_TICKETS,
-                variables: queryVariables,
-            },
-        ],
+        refetchQueries: [{ query: GET_TICKETS, variables: queryVariables }],
     });
 
     const handleConfirmDelete = async () => {
-        if (!deleteModal.value) {
-            return;
-        }
+        if (!deleteModal.value) return;
 
         const result = await deleteTicket({
             variables: { id: deleteModal.value.id },
             context: { successMessage: "Ticket eliminato con successo." },
         });
 
-        if (result.error) {
-            return;
-        }
-
+        if (result.error) return;
         deleteModal.close();
     };
 
@@ -138,15 +118,15 @@ export default function TicketPage() {
     // --------------------------------
 
     const handleOpen = (ticket: TicketFieldsFragment) => {
-        router.push(`/${ticket.id}`);
+        router.push(`/tickets/${ticket.id}`);
     };
 
     const handleHistory = (ticket: TicketFieldsFragment) => {
-        router.push(`/ticketHistory/${ticket.id}`);
+        router.push(`/tickets/${ticket.id}/history`);
     };
 
     const handleMessage = (ticket: TicketFieldsFragment) => {
-        router.push(`/ticketMessage/${ticket.id}`);
+        router.push(`/tickets/${ticket.id}/messages`);
     };
 
     const handleDelete = (ticket: TicketFieldsFragment) => {
@@ -176,7 +156,7 @@ export default function TicketPage() {
                     </Badge>
                 </IconButton>
 
-                <Typography variant="h5">I miei ticket</Typography>
+                <Typography variant="h5">{title}</Typography>
             </Stack>
 
             <Box sx={{ height: "78vh" }}>
@@ -189,7 +169,7 @@ export default function TicketPage() {
                     hasNextPage={hasNextPage}
                     onLoadMore={loadMore}
                     getRowClassName={(ticket) => (isTicketOverdue(ticket) ? "error-row" : undefined)}
-                    actionsWidth="152px"
+                    actionsWidth="195px"
                     actions={(ticket) => (
                         <TicketRowActions
                             ticket={ticket}
@@ -198,37 +178,23 @@ export default function TicketPage() {
                             onHistory={handleHistory}
                             onDelete={handleDelete}
                             onMessage={handleMessage}
-
                         />
                     )}
                 />
             </Box>
 
-            {/* FILTRI */}
             <FiltersSidebar open={ticketFilters.isOpen} onClose={ticketFilters.close}>
                 <Box sx={{ p: 2 }}>
                     <Typography variant="h6" sx={{ mb: 2 }}>
                         Filtri ticket
                     </Typography>
 
-                    <FilterTicketForm
-                        onApply={ticketFilters.apply}
-                        onReset={ticketFilters.reset}
-                    />
+                    <FilterTicketForm onApply={ticketFilters.apply} onReset={ticketFilters.reset} />
                 </Box>
             </FiltersSidebar>
 
-            {/* DELETE MODAL */}
-            <Modal
-                title="Elimina Ticket"
-                isOpen={deleteModal.isOpen}
-                onClose={deleteModal.close}
-            >
-                <SureForm
-                    testo="eliminare"
-                    onConfirm={handleConfirmDelete}
-                    onCancel={deleteModal.close}
-                />
+            <Modal title="Elimina Ticket" isOpen={deleteModal.isOpen} onClose={deleteModal.close}>
+                <SureForm testo="eliminare" onConfirm={handleConfirmDelete} onCancel={deleteModal.close} />
             </Modal>
         </Box>
     );

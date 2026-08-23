@@ -86,7 +86,7 @@ export default function UsersByDepartmentPage() {
                     </IconButton>
                 )}
 
-                <Typography variant="h5">Utenti per dipartimento</Typography>
+                <Typography variant="h5">Specializzazioni utente dipartimento {meData?.me?.department}</Typography>
             </Stack>
 
             <Box sx={{ height: "78vh" }}>
