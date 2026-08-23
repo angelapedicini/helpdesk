@@ -27,6 +27,7 @@ const CURSOR_PAGINATED_FIELDS_CONFIG = {
   ticketHistory: ["ticketId"],
   users: [],
   categories: [],
+  messages: ["ticketId"],
 } as const;
 
 /**

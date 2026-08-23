@@ -2,14 +2,20 @@
 "use client";
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
+import Badge from "@mui/material/Badge";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import MenuIcon from "@mui/icons-material/Menu";
+import NotificationsIcon from "@mui/icons-material/Notifications";
 import DataObjectIcon from "@mui/icons-material/DataObject";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
+import { UNREAD_TICKET_MESSAGES } from "@/apollo-client/queries/ticket-read-state/ticket-read-state.queries";
 import NavUser from "./navuser";
 import { NavLinkItem } from "./types/navlink";
 import NavSidebar from "./sidebar";
@@ -27,36 +33,57 @@ const NAV_LINKS: NavLinkItem[] = [
     label: "I miei ticket",
     href: "/tickets",
     icon: <DataObjectIcon />,
-    // nessun 'roles' => visibile a tutti
   },
   {
     label: "Ticket assegnati a me",
     href: "/ticketsAssignedToMe",
     icon: <DataObjectIcon />,
-    // nessun 'roles' => visibile a tutti
+    roles: ["TECHNICIAN"],
   },
   {
     label: "Ticket del dipartimento",
     href: "/ticketsForDep",
     icon: <DataObjectIcon />,
-    // nessun 'roles' => visibile a tutti
+    roles: ["ADMIN"],
   },
-  // {
-  //   label: "Statistiche",
-  //   href: "/assegnazione/stats",
-  //   icon: <BarChartIcon />,
-  //   roles: ["ADMIN"],
-  // },
+   {
+    label: "Specializzazioni del dipartimento",
+    href: "/userCategory",
+    icon: <DataObjectIcon />,
+    roles: ["ADMIN", "TECHNICIAN"],
+  },
+
+
 ];
 
 export default function Navbar() {
+  const router = useRouter();
   const { data, loading } = useQuery(ME_QUERY);
+  const { data: unreadData } = useQuery(UNREAD_TICKET_MESSAGES);
   const [open, setOpen] = React.useState(false);
+  const [notifAnchor, setNotifAnchor] = React.useState<null | HTMLElement>(null);
+  // ticketId visti localmente: nascosti dalla lista finché la query non
+  // rifetcha e conferma (lato server) che non ci sono più messaggi non letti
+  const [dismissedTicketIds, setDismissedTicketIds] = React.useState<Set<number>>(new Set());
   const toggleDrawer = (newOpen: boolean) => () => setOpen(newOpen);
 
   if (loading) return null;
   const user = data?.me;
   if (!user) return null;
+
+  const unreadList = (unreadData?.unreadTicketMessages ?? []).filter(
+    (u) => !dismissedTicketIds.has(u.ticketId)
+  );
+  const totalUnread = unreadList.reduce((sum, u) => sum + u.count, 0);
+
+  const handleNotifOpen = (e: React.MouseEvent<HTMLElement>) => setNotifAnchor(e.currentTarget);
+  const handleNotifClose = () => setNotifAnchor(null);
+
+  const handleNotifClick = (ticketId: number) => {
+    setNotifAnchor(null);
+    setDismissedTicketIds((prev) => new Set(prev).add(ticketId));
+    router.push(`/ticketMessage/${ticketId}`); // adegua alla tua route reale
+  };
 
   return (
     <>
@@ -80,7 +107,24 @@ export default function Navbar() {
               </Typography>
             </Link>
           </Box>
-          <NavUser />
+
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <IconButton color="inherit" onClick={handleNotifOpen} sx={{ mr: 1 }}>
+              <Badge badgeContent={totalUnread} color="error">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+            <Menu anchorEl={notifAnchor} open={Boolean(notifAnchor)} onClose={handleNotifClose}>
+              {unreadList.length === 0 && <MenuItem disabled>Nessuna notifica</MenuItem>}
+              {unreadList.map((u) => (
+                <MenuItem key={u.ticketId} onClick={() => handleNotifClick(u.ticketId)}>
+                  Ticket #{u.ticketId} — {u.count} nuovi messaggi
+                </MenuItem>
+              ))}
+            </Menu>
+
+            <NavUser />
+          </Box>
         </Toolbar>
       </AppBar>
       <Toolbar />

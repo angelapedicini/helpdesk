@@ -5,4 +5,8 @@ export const SOLE_SPECIALIST_CATEGORY_IDS = graphql(`
   query SoleSpecialistCategoryIds($department: Department!, $userId: Int) {
     soleSpecialistCategoryIds(department: $department, userId: $userId)
   }
+
+  
 `);
+
+

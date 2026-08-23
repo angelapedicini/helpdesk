@@ -5,4 +5,5 @@ declare module "@mui/material/styles" {
   interface TypeBackground {
     subtle: string;
   }
+  
 }

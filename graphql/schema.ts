@@ -19,6 +19,10 @@ import { userSpecializationResolvers } from "./modules/user-specialization/resol
 import { userSpecializationTypeDefs } from "./modules/user-specialization/typeDef";
 import { ticketHistoryResolvers } from "./modules/ticket-history/resolver";
 import { ticketHistoryTypeDefs } from "./modules/ticket-history/typeDef";
+import { ticketMessageTypeDefs } from "./modules/ticket-messages/typeDefs";
+import { ticketMessageResolvers } from "./modules/ticket-messages";
+import { ticketReadStateTypeDefs } from "./modules/ticket-readState/typeDefs";
+import { ticketReadStateResolvers } from "./modules/ticket-readState";
 
 
 export const typeDefs = [
@@ -32,6 +36,8 @@ export const typeDefs = [
   ticketCategoryTypeDefs,
   userSpecializationTypeDefs,
   ticketHistoryTypeDefs,
+  ticketMessageTypeDefs,
+  ticketReadStateTypeDefs,
 ];
 
 export const resolvers = {
@@ -41,12 +47,17 @@ export const resolvers = {
     ...categoryResolvers.Query,
     ...userSpecializationResolvers.Query,
     ...ticketHistoryResolvers.Query,
+    ...ticketMessageResolvers.Query,
+    ...ticketReadStateResolvers.Query
   },
   Mutation: {
     ...registerResolvers.Mutation,
     ...loginResolvers.Mutation,
     ...refreshResolvers.Mutation,
     ...logoutResolvers.Mutation, 
-    ...ticketResolvers.Mutation
+    ...ticketResolvers.Mutation,
+    ...userSpecializationResolvers.Mutation,
+    ...ticketMessageResolvers.Mutation,
+    ...ticketReadStateResolvers.Mutation
   },
 };

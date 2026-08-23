@@ -1,134 +1,148 @@
-import type { Column } from "@/components/table";
-import type { ChangedFields } from "@/lib/ticket/diff";
+"use client";
 
-import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+
+import {
+    TicketPriority,
+    TicketStatus,
+} from "@/apollo-client/gql/graphql";
+
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
-import { fmt } from "@/lib/helper/formt-helpers";
-import { Box, Chip } from "@mui/material";
+import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
+import { HeadCell } from "@/components/table";
 
-// column.def.tsx
-import type { TicketSnapshotFieldsFragment } from "@/apollo-client/gql/graphql";
+// ⚠️ aggiusta il path in base a dove hai spostato tab.tsx
 
-export type TicketHistoryRow = {
+// --------------------------------
+// ROW (flattened, stesso spirito di TicketFieldsFragment per la page)
+// --------------------------------
+
+export interface TicketHistoryRow {
     id: number;
     ticketId: number;
-    createdAt: string | Date;
-    ticket: TicketSnapshotFieldsFragment;
-    changedFields: ChangedFields;
-};
+    createdAt: string;
 
-export function createTicketHistoryColumns(): Column<TicketHistoryRow>[] {
+    title: string;
+    description: string;
+    status: TicketStatus;
+    priority: TicketPriority;
+    category: string;
+    createdBy: string;
+    assignedTo: string;
+    updatedAt: string;
+    closedAt: string | null;
+    dueDate: string | null;
+    sourceDepartmentForUser: string;
+    ticketDepartment: string;
+    lastUpdatedBy: string;
+    closingMessage: string | null;
+
+    changedFields: string[];
+}
+
+// --------------------------------
+// COLUMNS
+// --------------------------------
+export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
     return [
-        // {
-        //     header: "Data modifica",
-        //     render: (row) => (row.isCurrent ? "Attuale" : fmt(row.createdAt)),
-        //     width: 120,
-        // },
+        { id: "id", label: "ID", sortable: false },
+
         {
-            header: "Titolo",
-            render: (row) => row.ticket.title,
-            highlight: (row) => row.changedFields.has("title"),
-            wrap: true,
+            id: "createdAt",
+            label: "Data modifica",
+            sortable: false,
+            render: (row) => new Date(row.createdAt).toLocaleString("it-IT"),
         },
+
+        { id: "title", label: "Titolo", sortable: false },
+
+        { id: "description", label: "Descrizione", sortable: false },
+
         {
-            header: "Descrizione",
-            render: (row) => row.ticket.description ?? "",
-            highlight: (row) => row.changedFields.has("description"),
-            wrap: true,
-        },
-        {
-            header: "Stato",
-            width: 50,
+            id: "status",
+            label: "Stato",
+            sortable: false,
             render: (row) => {
-                const { label, icon: Icon, color } = TICKET_STATUS_CONFIG[row.ticket.status];
+                const config = TICKET_STATUS_CONFIG[row.status];
+                const Icon = config.icon;
                 return (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, color }}>
-                        <Icon fontSize="small" sx={{ color }} />
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Icon sx={{ color: config.color, fontSize: 20 }} />
+                        <Typography component="span" sx={{ color: config.color }}>
+                            {/* {config.label} */}
+                        </Typography>
                     </Box>
                 );
             },
-            highlight: (row) => row.changedFields.has("status"),
         },
+
         {
-            header: "Priorità",
-            width: 50,
+            id: "priority",
+            label: "Priorità",
+            sortable: false,
             render: (row) => {
-                if (!row.ticket.priority) return "-";
-                const { label, icon: Icon, color } = TICKET_PRIORITY_CONFIG[row.ticket.priority];
+                const config = TICKET_PRIORITY_CONFIG[row.priority];
+                const Icon = config.icon;
                 return (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, color }}>
-                        <Icon fontSize="small" sx={{ color }} />
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Icon sx={{ color: config.color, fontSize: 20 }} />
+                        <Typography component="span" sx={{ color: config.color }}>
+                            {/* {config.label} */}
+                        </Typography>
                     </Box>
                 );
             },
-            highlight: (row) => row.changedFields.has("priority"),
         },
+
+        { id: "category", label: "Categoria", sortable: false },
+
+        { id: "createdBy", label: "Creato da", sortable: false },
+
+        { id: "assignedTo", label: "Assegnato a", sortable: false },
+
         {
-            header: "Categoria",
-            render: (row) => row.ticket.category?.name ?? "-",
-            highlight: (row) => row.changedFields.has("category"),
+            id: "updatedAt",
+            label: "Ultimo aggiornamento",
+            sortable: false,
+            render: (row) => new Date(row.updatedAt).toLocaleString("it-IT"),
         },
+
         {
-            header: "Creato da",
-            render: (row) => {
-                const c = row.ticket.createdBy;
-                return c ? `${c.lastName} ${c.firstName} ` : "-";
-            },
+            id: "closedAt",
+            label: "Chiusura",
+            sortable: false,
+            render: (row) =>
+                row.closedAt
+                    ? new Date(row.closedAt).toLocaleString("it-IT")
+                    : "-",
         },
+
         {
-            header: "Assegnato a",
-            render: (row) => {
-                const a = row.ticket.assignedTo;
-                return a ? `${a.lastName} ${a.firstName}` : "Non assegnato";
-            },
-            highlight: (row) => row.changedFields.has("assignedTo"),
+            id: "dueDate",
+            label: "Entro",
+            sortable: false,
+            render: (row) =>
+                row.dueDate
+                    ? new Date(row.dueDate).toLocaleDateString("it-IT")
+                    : "-",
         },
+
         {
-            header: "Ultima modifica di",
-            render: (row) => {
-                const u = row.ticket.lastUpdatedBy;
-                return u ? `${u.lastName} ${u.firstName}` : "-";
-            },
+            id: "sourceDepartmentForUser",
+            label: "Dipartimento origine",
+            sortable: false,
         },
+
+        { id: "ticketDepartment", label: "Dipartimento", sortable: false },
+
+        { id: "lastUpdatedBy", label: "Modificato da", sortable: false },
+
         {
-            header: "Reparto richiedente",
-            width: 60,
-            render: (row) => row.ticket.sourceDepartmentForUser ?? "-",
-            highlight: (row) => row.changedFields.has("sourceDepartmentForUser"),
-        },
-        {
-            header: "Reparto (ticket)",
-            width: 60,
-            render: (row) => row.ticket.ticketDepartment ?? "-",
-            highlight: (row) => row.changedFields.has("ticketDepartment"),
-        },
-        {
-            header: "Creato il",
-            render: (row) => (row.ticket.createdAt ? fmt(row.ticket.createdAt) : "-"),
-        },
-        {
-            header: "Aggiornato il",
-            render: (row) => (row.ticket.updatedAt ? fmt(row.ticket.updatedAt) : "-"),
-        },
-        {
-            header: "Scadenza",
-            render: (row) => (row.ticket.dueDate ? fmt(row.ticket.dueDate) : "-"),
-            highlight: (row) => row.changedFields.has("dueDate"),
-        },
-        {
-            header: "Chiuso il",
-            render: (row) => (row.ticket.closedAt ? fmt(row.ticket.closedAt) : "-"),
-            highlight: (row) => row.changedFields.has("closedAt"),
-        },
-        // {
-        //     header: "Eliminato il",
-        //     render: (row) => (row.ticket.deletedAt ? fmt(row.ticket.deletedAt) : "-"),
-        // },
-        {
-            header: "Messaggio di chiusura",
-            render: (row) => row.ticket.closingMessage ?? "-",
-            highlight: (row) => row.changedFields.has("closingMessage"),
-            wrap: true,
+            id: "closingMessage",
+            label: "Messaggio di chiusura",
+            sortable: false,
+            render: (row) => row.closingMessage ?? "-",
         },
     ];
 }

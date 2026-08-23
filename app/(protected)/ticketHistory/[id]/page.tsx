@@ -3,16 +3,28 @@
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
 
-import { Box, Typography } from "@mui/material";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
-import AppTable from "@/components/table";
 import { useFragment } from "@/apollo-client/gql/fragment-masking";
-import { TicketSnapshotFieldsFragmentDoc } from "@/apollo-client/gql/graphql";
+
+import {
+    TicketSnapshotFieldsFragmentDoc,
+} from "@/apollo-client/gql/graphql";
 
 import { GET_TICKET_HISTORY } from "@/apollo-client/queries/ticket-history/ticket-history.queries";
-import { createTicketHistoryColumns, type TicketHistoryRow } from "./column.def";
-import { diffTickets } from "@/lib/ticket/diff";
+
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
+import { useModalState } from "@/components/hooks/use-modal-state";
+
+import { diffTickets } from "@/lib/ticket/diff";
+import { createTicketHistoryHeadCells, TicketHistoryRow } from "./column.def";
+import TicketHistoryDetailModal from "./_components/ticket-history-detail-modal";
+import Modal from "@/components/modal";
+import EnhancedTable from "@/components/table";
 
 const PAGE_SIZE = 20;
 
@@ -21,8 +33,11 @@ export default function TicketHistoryPage() {
 
     const ticketId = typeof id === "string" ? Number(id) : NaN;
 
-    const { data, loading, fetchMore } = useQuery(GET_TICKET_HISTORY, {
-        variables: { ticketId, first: PAGE_SIZE },
+    const { data, fetchMore } = useQuery(GET_TICKET_HISTORY, {
+        variables: {
+            ticketId,
+            first: PAGE_SIZE,
+        },
         skip: !Number.isInteger(ticketId),
         notifyOnNetworkStatusChange: true,
     });
@@ -32,31 +47,69 @@ export default function TicketHistoryPage() {
         fetchMore
     );
 
+    // --------------------------------
+    // DETAIL MODAL
+    // --------------------------------
+
+    const detailModal = useModalState<TicketHistoryRow>();
+
+    const handleViewDetail = (row: TicketHistoryRow) => {
+        detailModal.open(row);
+    };
+
     if (!Number.isInteger(ticketId)) {
         return <Typography align="center">ID ticket non valido.</Typography>;
     }
 
-    const rawHistory = data?.ticketHistory.edges.map((e) => e.node) ?? [];
+    const rawHistory = data?.ticketHistory.edges.map((edge) => edge.node) ?? [];
 
-    // Unmask qui: la pagina ha bisogno dei campi risolti per calcolare
-    // il diff cross-riga, cosa che column.def non potrebbe fare
-    // (riceve una riga alla volta, senza contesto sulla precedente).
     const snapshots = useFragment(
         TicketSnapshotFieldsFragmentDoc,
-        rawHistory.map((h) => h.snapshotBefore)
+        rawHistory.map((history) => history.snapshotBefore)
     );
 
-    // rawHistory è ordinato DESC (più recente prima), quindi
-    // l'elemento "precedente" (più vecchio) è all'indice i + 1.
-    const history: TicketHistoryRow[] = rawHistory.map((h, i) => ({
-        id: h.id,
-        ticketId: h.ticketId,
-        createdAt: h.createdAt,
-        ticket: snapshots[i],
-        changedFields: diffTickets(snapshots[i], snapshots[i + 1]),
-    }));
+    const history: TicketHistoryRow[] = rawHistory.map((historyItem, index) => {
+        const snapshot = snapshots[index];
 
-    const historyColumns = createTicketHistoryColumns();
+        return {
+            id: historyItem.id,
+            ticketId: historyItem.ticketId,
+            createdAt: historyItem.createdAt,
+
+            title: snapshot.title,
+            description: snapshot.description,
+            status: snapshot.status,
+            priority: snapshot.priority,
+
+            category: snapshot.category
+                ? snapshot.category.name
+                : "Nessuna categoria",
+
+            createdBy: snapshot.createdBy
+                ? `${snapshot.createdBy.firstName} ${snapshot.createdBy.lastName}`
+                : "-",
+
+            assignedTo: snapshot.assignedTo
+                ? `${snapshot.assignedTo.firstName} ${snapshot.assignedTo.lastName}`
+                : "Non assegnato",
+
+            updatedAt: snapshot.updatedAt,
+            closedAt: snapshot.closedAt ?? null,
+            dueDate: snapshot.dueDate ?? null,
+            sourceDepartmentForUser: snapshot.sourceDepartmentForUser,
+            ticketDepartment: snapshot.ticketDepartment,
+
+            lastUpdatedBy: snapshot.lastUpdatedBy
+                ? `${snapshot.lastUpdatedBy.firstName} ${snapshot.lastUpdatedBy.lastName}`
+                : "-",
+
+            closingMessage: snapshot.closingMessage ?? null,
+
+            changedFields: Array.from(diffTickets(snapshot, snapshots[index + 1])),
+        };
+    });
+
+    const headCells = createTicketHistoryHeadCells();
 
     return (
         <Box sx={{ mt: 3, mx: 2 }}>
@@ -64,15 +117,39 @@ export default function TicketHistoryPage() {
                 Ticket History
             </Typography>
 
-            <AppTable
-                maxHeight="75vh"
-                data={history}
-                columns={historyColumns}
-                keyExtractor={(row) => row.id}
-                onLoadMore={loadMore}
-                hasMore={hasNextPage}
-                loadingMore={loading}
-            />
+            <Box sx={{ height: "78vh" }}>
+                <EnhancedTable<TicketHistoryRow>
+                    rows={history}
+                    headCells={headCells}
+                    hasNextPage={hasNextPage}
+                    onLoadMore={loadMore}
+                    getCellClassName={(row, cellId) =>
+                        row.changedFields.includes(cellId as string) ? "highlighted-cell" : undefined
+                    }
+                    actions={(row) => (
+                        <Tooltip title="Dettaglio modifica" arrow>
+                            <IconButton
+                                color="primary"
+                                onClick={() => handleViewDetail(row)}
+                                aria-label="Dettaglio modifica"
+                            >
+                                <VisibilityIcon />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                />
+            </Box>
+
+            <Modal
+                title={`Dettaglio modifica #${detailModal.value?.id}`}
+                isOpen={detailModal.isOpen}
+                onClose={detailModal.close}
+            >
+                {/* DETAIL MODAL */}
+                <TicketHistoryDetailModal
+                    row={detailModal.value}
+                />
+            </Modal>
         </Box>
     );
 }

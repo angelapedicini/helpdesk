@@ -1,191 +1,130 @@
-import { Column } from "@/components/table";
-import { Box } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import HistoryIcon from "@mui/icons-material/History";
+"use client";
+
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+
 
 import {
-    Ticket,
+    TicketFieldsFragment,
+    TicketScope,
     TicketSortField,
-} from "@/apollo-client/queries/ticket/ticket.queries";
+} from "@/apollo-client/gql/graphql";
 
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
-
-import { toTicketSubject, type AppAbility } from "@/lib/casl/types";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
-import { fmt } from "@/lib/helper/formt-helpers";
+import { HeadCell } from "@/components/table";
 
-// Scope disponibili per la tabella dei ticket.
-// Passato dalla pagina che monta la tabella (es. "ASSIGNED_TO_ME" nella pagina
-// "I miei ticket assegnati", "DEPARTMENT" nella pagina di dipartimento, ecc.)
-export type TicketScope = "ASSIGNED_TO_ME" | "DEPARTMENT" | "MINE";
-
-// Estende Column aggiungendo un campo opzionale "scopes":
-// - se omesso -> la colonna è visibile in tutti gli scope
-// - se presente -> la colonna è visibile SOLO negli scope elencati
-type ScopedColumn<T, S extends string> = Column<T, S> & {
-    scopes?: TicketScope[];
+// Mappa: colonna FE -> campo di sort che il BE si aspetta
+export const ticketSortFieldMap: Partial<
+    Record<keyof TicketFieldsFragment, TicketSortField>
+> = {
+    id: "ID",
+    title: "TITLE",
+    status: "STATUS",
+    priority: "PRIORITY",
+    ticketDepartment: "DEPARTMENT",
+    createdAt: "CREATED_AT",
 };
 
-export function createTicketColumns(
-    ability: AppAbility,
-    onEdit: (row: Ticket) => void,
-    onDelete: (row: Ticket) => void,
-    onViewHistory: (row: Ticket) => void,
-    scope: TicketScope,
-): Column<Ticket, TicketSortField>[] {
-    const columns: ScopedColumn<Ticket, TicketSortField>[] = [
-        {
-            header: "Id",
-            width: 70,
-            sortField: "ID",
-            render: (row) => row.id,
-        },
+type TicketHeadCellsOptions = {
+    scope: TicketScope;
+};
+
+export function createTicketHeadCells({
+    scope,
+}: TicketHeadCellsOptions): HeadCell<TicketFieldsFragment>[] {
+    const headCells: HeadCell<TicketFieldsFragment>[] = [
+        { id: "id", label: "ID", width: "75px" },
+        { id: "title", label: "Titolo" },
+        { id: "description", label: "Descrizione", sortable: false },
 
         {
-            header: "Titolo",
-            width: 100,
-            sortField: "TITLE",
-            render: (row) => row.title,
-        },
-        {
-            header: "Descrizione",
-            width: 150,
-            sortField: "DESCRIPTION",
-            render: (row) => row.description,
-        },
-        {
-            header: "Dipartimento",
-            width: 150,
-            sortField: "DESCRIPTION",
-            render: (row) => row.ticketDepartment,
-            // Non serve mostrare il dipartimento se sei già nella vista filtrata per dipartimento
-            scopes: ["ASSIGNED_TO_ME", "MINE"],
-        },
-        {
-            header: "Categoria",
-            width: 150,
-            sortField: "DESCRIPTION",
-            render: (row) => row.category?.name,
-        },
-        {
-            header: "Stato",
-            sortField: "STATUS",
-            render: (row) => {
-                const { label, icon: Icon, color } = TICKET_STATUS_CONFIG[row.status];
+            id: "status",
+            label: "Stato",
+            render: (ticket) => {
+                const config = TICKET_STATUS_CONFIG[ticket.status];
+                const Icon = config.icon;
 
                 return (
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            color,
-                        }}
-                    >
-                        <Icon fontSize="small" sx={{ color }} />
-                        {label}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Icon sx={{ color: config.color, fontSize: 20 }} />
+                        <Typography component="span" sx={{ color: config.color }}>
+                            {config.label}
+                        </Typography>
                     </Box>
                 );
             },
         },
+
         {
-            header: "Priorità",
-            sortField: "PRIORITY",
-            render: (row) => {
-                const { label, icon: Icon, color } = TICKET_PRIORITY_CONFIG[row.priority];
+            id: "priority",
+            label: "Priorità",
+            render: (ticket) => {
+                const config = TICKET_PRIORITY_CONFIG[ticket.priority];
+                const Icon = config.icon;
 
                 return (
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            color,
-                        }}
-                    >
-                        <Icon fontSize="small" sx={{ color }} />
-                        {label}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Icon sx={{ color: config.color, fontSize: 20 }} />
+                        <Typography component="span" sx={{ color: config.color }}>
+                            {config.label}
+                        </Typography>
                     </Box>
                 );
             },
         },
+
         {
-            header: "Creato da",
-            sortField: "CREATED_BY",
-            render: (row) =>
-                `${row.createdBy.firstName} ${row.createdBy.lastName}`,
-            scopes: ["ASSIGNED_TO_ME", "DEPARTMENT"],
+            id: "category",
+            label: "Categoria",
+            sortable: false,
+            render: (ticket) =>
+                ticket.category ? ticket.category.name : "Nessuna categoria",
+        },
+
+        { id: "ticketDepartment", label: "Dipartimento" },
+
+        {
+            id: "createdAt",
+            label: "Creazione",
+            render: (ticket) =>
+                new Date(ticket.createdAt).toLocaleDateString("it-IT"),
         },
 
         {
-            header: "Assegnato a",
-            sortField: "ASSIGNED_TO",
-            render: (row) =>
-                row.assignedTo
-                    ? `${row.assignedTo.firstName} ${row.assignedTo.lastName}`
-                    : "Non assegnato",
-            // Ridondante nella vista "assegnati a me" (sei sempre tu)
-            scopes: ["DEPARTMENT", "MINE"],
-        },
-
-        {
-            header: "Creato il",
-            sortField: "CREATED_AT",
-            render: (row) => fmt(row.createdAt),
-        },
-
-        {
-            header: "Aggiornato da",
-            sortField: "ASSIGNED_TO",
-            render: (row) =>
-                row.lastUpdatedBy
-                    ? `${row.lastUpdatedBy.firstName} ${row.lastUpdatedBy.lastName}`
+            id: "dueDate",
+            label: "Entro",
+            sortable: false,
+            render: (ticket) =>
+                ticket.dueDate
+                    ? new Date(ticket.dueDate).toLocaleDateString("it-IT")
                     : "-",
-            // Ridondante nella vista "assegnati a me" (sei sempre tu)
-            scopes: ["DEPARTMENT", "MINE"],
-        },
-
-        {
-            header: "Aggiornato il",
-            sortField: "UPDATED_AT",
-            render: (row) => fmt(row.updatedAt),
-        },
-
-        {
-            header: "Entro",
-            sortField: "CLOSED_AT",
-            render: (row) => (row.dueDate ? fmt(row.dueDate) : "-"),
-        },
-
-        {
-            header: "Chiuso",
-            sortField: "CLOSED_AT",
-            render: (row) => (row.closedAt ? fmt(row.closedAt) : "-"),
-        },
-
-        {
-            header: "Azioni",
-            kind: "actions",
-            width: 110,
-            actions: [
-                {
-                    icon: HistoryIcon,
-                    label: "Storico modifiche",
-                    onClick: onViewHistory,
-                },
-                {
-                    icon: DeleteIcon,
-                    label: "Elimina",
-                    onClick: onDelete,
-                    hidden: () => scope !== "MINE",
-                    disabled: (row) => !ability.can("delete", toTicketSubject(row)),
-                    disabledReason: (row) =>
-                        ability.relevantRuleFor("delete", toTicketSubject(row))?.reason
-                        ?? "Non eliminabile",
-                },
-            ],
         },
     ];
 
-    return columns.filter((col) => !col.scopes || col.scopes.includes(scope));
+    if (scope === "MINE" || scope === "DEPARTMENT") {
+        headCells.push({
+            id: "assignedTo",
+            label: "Assegnato a",
+            sortable: false,
+            render: (ticket) =>
+                ticket.assignedTo
+                    ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
+                    : "Non assegnato",
+        });
+    }
+
+    if (scope === "ASSIGNED_TO_ME" || scope === "DEPARTMENT") {
+        headCells.push({
+            id: "createdBy",
+            label: "Creato da",
+            sortable: false,
+            render: (ticket) =>
+                ticket.createdBy
+                    ? `${ticket.createdBy.firstName} ${ticket.createdBy.lastName}`
+                    : "Non assegnato",
+        });
+    }
+
+    return headCells;
 }

@@ -61,10 +61,10 @@ export default function Page() {
             sx={{
                 width: "100%",
                 boxSizing: "border-box",
-                p: { xs: 2, sm: 4 },
+                p: { xs: 2, },
             }}
         >
-            <Typography variant="h4" sx={{ mb: 5 }}>
+            <Typography variant="h4" sx={{ mb: 2 }}>
                 Ticket # {ticket.id}
             </Typography>
 

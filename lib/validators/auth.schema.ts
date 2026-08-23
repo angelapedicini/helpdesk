@@ -2,8 +2,6 @@ import { z } from "zod";
 import { DepartmentEnum } from "./enums.schema";
 
 
-
-
 export const RegisterSchema = z.object({
   firstName: z.string().trim().min(1, "Il nome è obbligatorio"),
   lastName: z.string().trim().min(1, "Il cognome è obbligatorio"),

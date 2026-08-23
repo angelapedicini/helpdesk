@@ -1,6 +1,6 @@
 // lib/theme/theme.components.ts
 import type { Components, Theme } from "@mui/material/styles";
-import type {} from "@mui/x-date-pickers/themeAugmentation";
+import type { } from "@mui/x-date-pickers/themeAugmentation";
 
 export const sharedComponents: Components<Theme> = {
     MuiCssBaseline: {
@@ -57,9 +57,6 @@ export const sharedComponents: Components<Theme> = {
     MuiTableBody: {
         styleOverrides: {
             root: ({ theme }) => ({
-                "& .MuiTableRow-root:hover": {
-                    backgroundColor: theme.palette.action.hover,
-                },
                 "& .MuiTableCell-root": {
                     fontSize: "0.875rem",
                     borderBottom: `1px solid ${theme.palette.divider}`,
@@ -76,7 +73,34 @@ export const sharedComponents: Components<Theme> = {
             }),
         },
     },
-    
+    MuiTableRow: {
+        styleOverrides: {
+            root: ({ theme }) => ({
+                "&:hover": {
+                    backgroundColor: theme.palette.action.hover,
+                },
+                "&.highlighted-row": {
+                    backgroundColor: theme.palette.mode === "dark" ? "#581414" : "#fde8e8",
+                },
+                "&.error-row": {
+                    backgroundColor: theme.palette.mode === "dark" ? "#581414" : "#fd7f7f",
+                    "&:hover": {
+                        backgroundColor: theme.palette.mode === "dark" ? "#6b1a1a" : "#ff9c9c",
+                    },
+                },
+            }),
+        },
+    },
+    MuiTableCell: {
+        styleOverrides: {
+            root: ({ theme }) => ({
+                "&.highlighted-cell": {
+                    backgroundColor: theme.palette.mode === "dark" ? "#44402d" : "#fde8a3",
+                },
+            }),
+        },
+    },
+
     MuiButton: {
         defaultProps: { variant: "contained" },
         styleOverrides: {

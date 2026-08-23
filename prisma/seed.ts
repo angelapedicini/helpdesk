@@ -436,7 +436,6 @@ export async function main() {
               ticketId: ticket.id,
               authorId: technician.id,
               content: closingMessageContent!,
-              isClosingMessage: true,
             },
             {
               ticketId: ticket.id,
@@ -457,7 +456,6 @@ export async function main() {
               ticketId: ticket.id,
               authorId: technician.id,
               content: closingMessageContent!,
-              isClosingMessage: true,
             },
           ],
         });

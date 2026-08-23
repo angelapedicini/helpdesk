@@ -1,271 +1,336 @@
-// components/table.tsx
 "use client";
-import { ComponentType, ReactNode, useCallback, useEffect, useRef } from "react";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import Tooltip from "@mui/material/Tooltip";
-import IconButton from "@mui/material/IconButton";
-import { Box } from "@mui/material";
 
-export type SortDirection = "ASC" | "DESC";
-export type SortState<TSortField extends string = string> = {
-  field: TSortField;
-  direction: SortDirection;
-} | null;
+import * as React from 'react';
+import Box from '@mui/material/Box';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TableSortLabel from '@mui/material/TableSortLabel';
+import Tooltip from '@mui/material/Tooltip';
+import Paper from '@mui/material/Paper';
+import { visuallyHidden } from '@mui/utils';
 
-// ---- NUOVO: azione dichiarativa per riga ----
-export type RowAction<T> = {
-  icon: ComponentType<{ fontSize?: "small" }>;
-  label: string; // usato come tooltip di default
-  onClick: (row: T) => void;
-  disabled?: (row: T) => boolean;
-  disabledReason?: (row: T) => string | undefined;
-  hidden?: (row: T) => boolean;
-};
+// --------------------------------
+// TYPES
+// --------------------------------
 
-export type Column<T, TSortField extends string = string> =
-  // aggiungi al tipo Column (variante non-actions):
-  | {
-    kind?: "custom";
-    header: string;
-    render: (row: T) => ReactNode;
-    width?: string | number;
-    maxWidth?: string | number;
-    sortField?: TSortField;
-    highlight?: (row: T) => boolean; // ← nuovo
-    wrap?: boolean; // ← nuovo: permette al testo di andare a capo in questa colonna
-  }
-  | {
-    kind: "actions";
-    header?: string;
-    width?: string | number;
-    actions: RowAction<T>[];
-  };
+export type Order = 'asc' | 'desc';
 
-type TableProps<T, TSortField extends string = string> = {
-  data: T[];
-  columns: Column<T, TSortField>[];
-  keyExtractor: (row: T) => string | number;
-  onRowClick?: (row: T) => void;
-  maxHeight?: string;
-  rowHeight?: number;
-  onLoadMore?: () => void;
-  hasMore?: boolean;
-  loadingMore?: boolean;
-  sort?: SortState<TSortField>;
-  onSortChange?: (sort: SortState<TSortField>) => void;
-};
-
-function ActionsCell<T>({ actions, row }: { actions: RowAction<T>[]; row: T }) {
-  return (
-    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "nowrap" }}>
-      {actions
-        .filter((action) => !action.hidden?.(row))
-        .map((action) => {
-          const disabled = action.disabled?.(row) ?? false;
-          const Icon = action.icon;
-          const title = disabled ? action.disabledReason?.(row) ?? "" : action.label;
-
-          return (
-            <Tooltip key={action.label} title={title}>
-              <span>
-                <IconButton
-                  size="small"
-                  disabled={disabled}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onMouseUp={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    action.onClick(row);
-                  }}
-                >
-                  <Icon fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
-          );
-        })}
-    </Box>
-  );
+export interface RowBase {
+    id: number | string;
 }
 
-export default function AppTable<T, TSortField extends string = string>({
-  data,
-  columns,
-  keyExtractor,
-  onRowClick,
-  maxHeight,
-  rowHeight = 44,
-  onLoadMore,
-  hasMore,
-  loadingMore,
-  sort,
-  onSortChange,
-}: TableProps<T, TSortField>) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mouseDownPos = useRef<{ x: number; y: number } | null>(null);
+export interface HeadCell<T> {
+    id: keyof T;
+    label: string;
+    numeric?: boolean;
+    disablePadding?: boolean;
+    sortable?: boolean;
+    /**
+     * Larghezza opzionale della colonna.
+     * - number  -> interpretato come percentuale (es. 15 => "15%")
+     * - string  -> usato così com'è (es. "120px"), ma NON viene sottratto
+     *              con precisione dal calcolo automatico delle altre colonne
+     * Se omesso, la colonna occupa una quota proporzionale dello spazio
+     * residuo, assieme alle altre colonne senza width esplicita.
+     */
+    width?: number | string;
+    render?: (row: T) => React.ReactNode;
+}
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || !onLoadMore || !hasMore || loadingMore) return;
-    if (el.scrollHeight <= el.clientHeight) onLoadMore();
-  }, [data, hasMore, loadingMore, onLoadMore]);
+interface EnhancedTableProps<T extends RowBase> {
+    rows: T[];
+    headCells: readonly HeadCell<T>[];
+    /**
+     * Props di ordinamento opzionali.
+     * Se `onRequestSort` non viene passato, la tabella non è ordinabile:
+     * le colonne vengono renderizzate come semplici label troncabili,
+     * senza TableSortLabel né icone.
+     */
+    order?: Order;
+    orderBy?: keyof T;
+    onRequestSort?: (property: keyof T) => void;
+    actions?: (row: T) => React.ReactNode;
+    /** Larghezza della colonna azioni (number = %, string = valore CSS). Default: 120. */
+    actionsWidth?: number | string;
+    hasNextPage?: boolean;
+    onLoadMore?: () => void;
+    getRowClassName?: (row: T) => string | undefined;
+    getCellClassName?: (row: T, headCellId: keyof T) => string | undefined;
+    /** Altezza massima oltre la quale la tabella scrolla internamente. Default: '70vh'. */
+    maxHeight?: string | number;
+}
 
-  const handleScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
-      if (!onLoadMore || !hasMore || loadingMore) return;
-      const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-      if (scrollHeight - scrollTop - clientHeight < 150) onLoadMore();
-    },
-    [onLoadMore, hasMore, loadingMore]
-  );
+// --------------------------------
+// COLUMN WIDTH RESOLUTION
+// --------------------------------
 
-  const handleHeaderClick = (col: Column<T, TSortField>) => {
-    if (col.kind === "actions" || !col.sortField || !onSortChange) return;
-    const isSameField = sort?.field === col.sortField;
-    const nextDirection: SortDirection =
-      isSameField && sort?.direction === "ASC" ? "DESC" : "ASC";
-    onSortChange({ field: col.sortField, direction: nextDirection });
-  };
+function resolveColumnWidths<T>(
+    headCells: readonly HeadCell<T>[],
+    hasActions: boolean,
+    actionsWidth: number | string
+): (number | string)[] {
+    const declaredWidths: (number | string | undefined)[] = headCells.map(
+        (hc) => hc.width
+    );
 
-  const handleRowMouseDown = (e: React.MouseEvent) => {
-    mouseDownPos.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handleRowMouseUp = (e: React.MouseEvent, row: T) => {
-    if (!onRowClick) return;
-
-    const selection = window.getSelection();
-    if (selection && selection.toString().length > 0) {
-      mouseDownPos.current = null;
-      return;
+    if (hasActions) {
+        declaredWidths.push(actionsWidth);
     }
 
-    const start = mouseDownPos.current;
-    mouseDownPos.current = null;
-    if (start) {
-      const dx = Math.abs(e.clientX - start.x);
-      const dy = Math.abs(e.clientY - start.y);
-      if (dx > 4 || dy > 4) return;
-    }
+    const explicitPercentTotal = declaredWidths.reduce<number>(
+        (sum, w) => (typeof w === 'number' ? sum + w : sum),
+        0
+    );
 
-    onRowClick(row);
-  };
+    const undefinedCount = declaredWidths.filter((w) => w === undefined).length;
+    const remainingPercent = Math.max(0, 100 - explicitPercentTotal);
+    const autoPercent = undefinedCount > 0 ? remainingPercent / undefinedCount : 0;
 
-  return (
-    <TableContainer
-      ref={containerRef}
-      component={Paper}
-      onScroll={handleScroll}
-      sx={{ maxHeight: maxHeight ?? "none", overflow: "auto" }}
-    >
-      <Table stickyHeader size="small" sx={{ tableLayout: "fixed" }}>
-        <TableHead>
-          <TableRow>
-            {columns.map((col, i) => (
-              <TableCell
-                key={col.header ?? `col-${i}`}
-                onClick={() => handleHeaderClick(col)}
+    return declaredWidths.map((w) => {
+        if (w === undefined) return `${autoPercent}%`;
+        if (typeof w === 'number') return `${w}%`;
+        return w;
+    });
+}
+
+// --------------------------------
+// TRUNCATABLE LABEL (ellipsis sul testo, Tooltip sempre presente)
+// --------------------------------
+
+function TruncatableLabel({ label }: { label: React.ReactNode }) {
+    return (
+        <Tooltip title={label} arrow>
+            <Box
+                component="span"
                 sx={{
-                  fontWeight: 600,
-                  bgcolor: "grey.100",
-                  width: col.width,
-                  maxWidth: col.kind === "actions" ? col.width : col.maxWidth ?? col.width,
-                  cursor: col.kind !== "actions" && col.sortField ? "pointer" : "default",
-                  userSelect: "none",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
+                    display: 'block',
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                 }}
-              >
-                <Tooltip title={col.header ?? ""} enterDelay={400}>
-                  <Box
-                    component="span"
-                    sx={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      whiteSpace: "nowrap",
-                      maxWidth: "100%",
-                    }}
-                  >
-                    <span
-                      style={{
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {col.header}
-                    </span>
-
-                    {col.kind !== "actions" && col.sortField && (
-                      <span
-                        style={{
-                          flexShrink: 0,
-                          fontSize: "0.75em",
-                          opacity: sort?.field === col.sortField ? 1 : 0.35,
-                        }}
-                      >
-                        {sort?.field === col.sortField
-                          ? sort.direction === "ASC"
-                            ? "▲"
-                            : "▼"
-                          : "⇅"}
-                      </span>
-                    )}
-                  </Box>
-                </Tooltip>
-              </TableCell>
-            ))}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {data.map((row) => (
-            <TableRow
-              key={keyExtractor(row)}
-              hover={!!onRowClick}
-              onMouseDown={onRowClick ? handleRowMouseDown : undefined}
-              onMouseUp={onRowClick ? (e) => handleRowMouseUp(e, row) : undefined}
-              sx={{
-                cursor: onRowClick ? "pointer" : "default",
-                minHeight: rowHeight, // era "height": ora la riga può crescere se una cella wrappa
-              }}
             >
-              {columns.map((col, i) => {
-                const wrap = col.kind !== "actions" && col.wrap;
+                {label}
+            </Box>
+        </Tooltip>
+    );
+}
 
-                return (
-                  <TableCell
-                    key={col.header ?? `col-${i}`}
-                    sx={{
-                      height: wrap ? "auto" : rowHeight,
-                      maxWidth: col.kind === "actions" ? col.width : col.maxWidth ?? col.width,
-                      overflow: wrap ? "visible" : "hidden",
-                      textOverflow: wrap ? "clip" : "ellipsis",
-                      whiteSpace: wrap ? "normal" : "nowrap",
-                      wordBreak: wrap ? "break-word" : undefined,
-                      verticalAlign: wrap ? "top" : "middle",
-                      bgcolor:
-                        col.kind !== "actions" && col.highlight?.(row) ? "#44402d" : undefined, // giallo
-                    }}
-                  >
-                    {col.kind === "actions" ? (
-                      <ActionsCell actions={col.actions} row={row} />
-                    ) : (
-                      col.render(row)
-                    )}
-                  </TableCell>
-                );
-              })}
+// --------------------------------
+// HEADER
+// --------------------------------
+
+interface EnhancedTableHeadProps<T> {
+    headCells: readonly HeadCell<T>[];
+    order?: Order;
+    orderBy?: keyof T;
+    onRequestSort?: (property: keyof T) => void;
+    hasActions: boolean;
+    columnWidths: (number | string)[];
+    actionsWidth: number | string;
+}
+
+function EnhancedTableHead<T>(props: EnhancedTableHeadProps<T>) {
+    const {
+        headCells,
+        order,
+        orderBy,
+        onRequestSort,
+        hasActions,
+        columnWidths,
+        actionsWidth,
+    } = props;
+
+    // Se non viene passato onRequestSort, l'intera tabella è considerata
+    // non ordinabile: ogni colonna diventa una semplice label troncabile.
+    const sortingEnabled = !!onRequestSort;
+
+    return (
+        <TableHead>
+            <TableRow>
+                {headCells.map((headCell, index) => {
+                    const isSortable = sortingEnabled && headCell.sortable !== false;
+
+                    return (
+                        <TableCell
+                            key={String(headCell.id)}
+                            align={headCell.numeric ? 'right' : 'left'}
+                            padding={headCell.disablePadding ? 'none' : 'normal'}
+                            sortDirection={isSortable && orderBy === headCell.id ? order : false}
+                            sx={{
+                                backgroundColor: 'background.paper',
+                                zIndex: 2,
+                                width: columnWidths[index],
+                                maxWidth: columnWidths[index],
+                                overflow: 'hidden',
+                            }}
+                        >
+                            {!isSortable ? (
+                                <TruncatableLabel label={headCell.label} />
+                            ) : (
+                                <TableSortLabel
+                                    active={orderBy === headCell.id}
+                                    direction={orderBy === headCell.id ? order : 'asc'}
+                                    onClick={() => onRequestSort!(headCell.id)}
+                                    sx={{
+                                        width: '100%',
+                                        '& .MuiTableSortLabel-icon': { flexShrink: 0 },
+                                    }}
+                                >
+                                    <TruncatableLabel label={headCell.label} />
+                                    {orderBy === headCell.id ? (
+                                        <Box component="span" sx={visuallyHidden}>
+                                            {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                                        </Box>
+                                    ) : null}
+                                </TableSortLabel>
+                            )}
+                        </TableCell>
+                    );
+                })}
+                {hasActions && (
+                    <TableCell
+                        align="left"
+                        sx={{
+                            backgroundColor: 'background.paper',
+                            zIndex: 2,
+                            width: actionsWidth,
+                        }}
+                    >
+                        Azioni
+                    </TableCell>
+                )}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
+        </TableHead>
+    );
+}
+
+// --------------------------------
+// TABLE
+// --------------------------------
+
+const SCROLL_THRESHOLD_PX = 100;
+const DEFAULT_MAX_HEIGHT = '78vh';
+const DEFAULT_ACTIONS_WIDTH = 11;
+
+export default function EnhancedTable<T extends RowBase>({
+    rows,
+    headCells,
+    order,
+    orderBy,
+    onRequestSort,
+    actions,
+    actionsWidth = DEFAULT_ACTIONS_WIDTH,
+    hasNextPage = false,
+    onLoadMore,
+    getRowClassName,
+    getCellClassName,
+    maxHeight = DEFAULT_MAX_HEIGHT,
+}: EnhancedTableProps<T>) {
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const loadingLockRef = React.useRef(false);
+
+    const columnWidths = React.useMemo(
+        () => resolveColumnWidths(headCells, !!actions, actionsWidth),
+        [headCells, actions, actionsWidth]
+    );
+
+    React.useEffect(() => {
+        loadingLockRef.current = false;
+    }, [rows.length, hasNextPage]);
+
+    const requestLoadMore = React.useCallback(() => {
+        if (!hasNextPage || !onLoadMore || loadingLockRef.current) {
+            return;
+        }
+        loadingLockRef.current = true;
+        onLoadMore();
+    }, [hasNextPage, onLoadMore]);
+
+    const handleScroll = () => {
+        const container = containerRef.current;
+        if (!container) {
+            return;
+        }
+
+        const distanceFromBottom =
+            container.scrollHeight - container.scrollTop - container.clientHeight;
+
+        if (distanceFromBottom <= SCROLL_THRESHOLD_PX) {
+            requestLoadMore();
+        }
+    };
+
+    React.useEffect(() => {
+        const container = containerRef.current;
+        if (!container) {
+            return;
+        }
+
+        if (container.scrollHeight <= container.clientHeight) {
+            requestLoadMore();
+        }
+    }, [rows, hasNextPage, requestLoadMore]);
+
+    return (
+        <Box sx={{ width: '100%' }}>
+            <Paper sx={{ width: '100%' }}>
+                <TableContainer
+                    ref={containerRef}
+                    onScroll={handleScroll}
+                    sx={{ maxHeight, overflowX: 'hidden', overflowY: 'auto' }}
+                >
+                    <Table
+                        stickyHeader
+                        sx={{ width: '100%', tableLayout: 'fixed' }}
+                    >
+                        <EnhancedTableHead<T>
+                            headCells={headCells}
+                            order={order}
+                            orderBy={orderBy}
+                            onRequestSort={onRequestSort}
+                            hasActions={!!actions}
+                            columnWidths={columnWidths}
+                            actionsWidth={actionsWidth}
+                        />
+                        <TableBody>
+                            {rows.map((row) => (
+                                <TableRow hover key={row.id} className={getRowClassName?.(row)}>
+                                    {headCells.map((headCell, index) => (
+                                        <TableCell
+                                            key={String(headCell.id)}
+                                            component={index === 0 ? 'th' : undefined}
+                                            scope={index === 0 ? 'row' : undefined}
+                                            align={headCell.numeric ? 'right' : 'left'}
+                                            padding={headCell.disablePadding ? 'none' : 'normal'}
+                                            className={getCellClassName?.(row, headCell.id)}
+                                            sx={{
+                                                width: columnWidths[index],
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            {headCell.render
+                                                ? headCell.render(row)
+                                                : String(row[headCell.id])}
+                                        </TableCell>
+                                    ))}
+                                    {actions && (
+                                        <TableCell align="left" sx={{ width: actionsWidth }}>
+                                            {actions(row)}
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
+        </Box>
+    );
 }

@@ -37,22 +37,13 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
   });
 
   if (user.role === "TECHNICIAN") {
-    // ASSIGNED -> REFUSED: il technician può rifiutare, quindi deve poter
-    // inviare anche closingMessage insieme allo status
     can("update", "Ticket", ["status", "closingMessage"], { assignedToId: user.userId, status: "ASSIGNED" });
     can("update", "Ticket", ["priority"], { assignedToId: user.userId, status: "ASSIGNED" });
-
-    // IN_PROGRESS -> CLOSED: idem, il messaggio di chiusura va insieme
-    // a status e closedAt nella stessa transizione
     can("update", "Ticket", ["status", "closedAt", "closingMessage"], { assignedToId: user.userId, status: "IN_PROGRESS" });
-
     can("update", "Ticket", ["dueDate"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
     can("update", "Ticket", ["assignedToId"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
     can("update", "Ticket", ["dueDate"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
 
-
-    // il divieto vale SOLO quando il technician sta agendo da assegnatario,
-    // non quando è lui il creatore del ticket
     cannot("update", "Ticket", ["createdById", "categoryId"], {
       assignedToId: user.userId,
     }).because("Il technician non può modificare creatore o categoria di un ticket assegnatogli");
@@ -64,24 +55,18 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
       status: { in: ["OPEN", "ASSIGNED"] },
     });
 
-    // OPEN -> REFUSED (vedi ALLOWED_STATUS_TRANSITIONS): l'admin può rifiutare
-    // un ticket ancora aperto, quindi deve poter inviare closingMessage
     can("update", "Ticket", ["status", "closingMessage"], { ticketDepartment: user.department, status: "OPEN" });
 
     cannot("update", "Ticket", ["status"], {
       status: { in: ["IN_PROGRESS", "CLOSED"] },
     }).because("L'admin non può intervenire su un ticket già in lavorazione");
 
-    // il divieto vale SOLO quando l'admin sta gestendo un ticket del reparto
-    // che non ha creato lui stesso — se è il creatore, valgono le regole base da employee
-    cannot("update", "Ticket", ["createdById",], {
+    cannot("update", "Ticket", ["createdById"], {
       ticketDepartment: user.department,
-      // createdById: { not: user.userId },
     }).because("L'admin non può modificare creatore o categoria di un ticket che non ha creato lui stesso");
 
     can("update", "Ticket", ["categoryId"], {
       ticketDepartment: user.department,
-      // createdById: { not: user.userId },
       status: { in: ["OPEN", "ASSIGNED"] },
     });
 
@@ -92,7 +77,41 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
   }
 
   // --- DELETE ---
-  can("delete", "Ticket", { createdById: user.userId, status: { in: ["OPEN", "ASSIGNED"] }, });
+  can("delete", "Ticket", { createdById: user.userId, status: { in: ["OPEN", "ASSIGNED"] } });
+
+  // ================= TicketMessage =================
+
+  // --- CREATE ---
+  // Employee: può scrivere solo sui ticket che ha creato, finché non sono chiusi/rifiutati
+  // ================= TicketMessage =================
+
+  // ================= TicketMessage =================
+
+  // --- CREATE ---
+  // Employee: può scrivere solo sui ticket che ha creato, finché non sono chiusi/rifiutati
+  can("create", "TicketMessage", {
+    "ticket.createdById": user.userId,
+    "ticket.status": { notIn: ["CLOSED", "REFUSED"] },
+  });
+
+  if (user.role === "TECHNICIAN") {
+    // può scrivere sui ticket assegnati a lui, mentre sono in lavorazione
+    can("create", "TicketMessage", {
+      "ticket.assignedToId": user.userId,
+      "ticket.status": { in: ["ASSIGNED", "IN_PROGRESS"] },
+    });
+  }
+
+  if (user.role === "ADMIN") {
+    can("create", "TicketMessage", {
+      "ticket.ticketDepartment": user.department,
+      "ticket.status": { notIn: ["CLOSED", "REFUSED"] },
+    });
+  }
+
+  // --- DELETE ---
+  // Solo l'autore può cancellare un proprio messaggio
+  can("delete", "TicketMessage", { authorId: user.userId });
 
   return build();
 }

@@ -1,115 +1,172 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useQuery, useMutation } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
-import { Box, Stack, Typography, IconButton, Badge, Button } from "@mui/material";
+import {
+    Badge,
+    Box,
+    IconButton,
+    Stack,
+    Typography,
+} from "@mui/material";
 import FilterListIcon from "@mui/icons-material/FilterList";
-
-import AppTable from "@/components/table";
-import type { SortState } from "@/components/table";
-
-import { useModalState } from "@/components/hooks/use-modal-state";
+import FiltersSidebar from "@/components/filters-sidebar";
+import FilterTicketForm from "@/components/forms/ticket/filter-ticket";
 import Modal from "@/components/modal";
 import SureForm from "@/components/forms/sure-form";
-
-import { useAbility } from "@/lib/casl/abilityContext";
-import { TicketFieldsFragmentDoc, TicketScope } from "@/apollo-client/gql/graphql";
-import { useFragment } from "@/apollo-client/gql/fragment-masking";
+import { useFilterState } from "@/components/hooks/use-filter-state";
+import { useModalState } from "@/components/hooks/use-modal-state";
+import { useSortState } from "@/components/hooks/use-sort-state";
+import {
+    TicketFieldsFragmentDoc,
+    type TicketFieldsFragment,
+    type TicketScope,
+} from "@/apollo-client/gql/graphql";
 
 import {
     GET_TICKETS,
     Ticket,
-    TicketSortField,
 } from "@/apollo-client/queries/ticket/ticket.queries";
+
 import { DELETE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
+
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
-import FiltersSidebar from "@/components/filters-sidebar";
-import FilterTicketForm from "@/components/forms/ticket/filter-ticket";
-import { useFilterState } from "@/components/hooks/use-filter-state";
+
 import { FilterTicketOutput } from "@/lib/validators/ticket-detail.schema";
-import { createTicketColumns } from "@/lib/ticket/column.def";
+import { useFragment } from "@/apollo-client/gql";
+import { isTicketOverdue } from "@/lib/ticket/expired-status";
+import EnhancedTable from "@/components/table";
+import { createTicketHeadCells, ticketSortFieldMap } from "@/lib/ticket/column.def";
+import TicketRowActions from "@/components/ticket/actions";
 
 const PAGE_SIZE = 20;
 
-export default function Page() {
+export default function TicketPage() {
     const router = useRouter();
-    const ability = useAbility();
 
-    // ---- FILTRI ----
+    // --------------------------------
+    // FILTRI
+    // --------------------------------
+
     const ticketFilters = useFilterState<FilterTicketOutput>();
 
-    // ---- SCOPE ----
+    // --------------------------------
+    // SCOPE
+    // --------------------------------
+
     const scope: TicketScope = "DEPARTMENT";
 
-    // ---- SORT ----
-    const [sort, setSort] = useState<SortState<TicketSortField>>({
-        field: "ID",
-        direction: "DESC",
-    });
+    // --------------------------------
+    // SORT (stato controllato: guida sia la query BE che le frecce in tabella)
+    // --------------------------------
 
-    // ---- QUERY ----
+    const { order, orderBy, onRequestSort, sortDirection } =
+        useSortState<keyof TicketFieldsFragment>("id");
+
+    // --------------------------------
+    // QUERY
+    // --------------------------------
+
     const queryVariables = {
         first: PAGE_SIZE,
         after: null,
-        orderBy: sort ?? undefined,
+        orderBy: {
+            field: ticketSortFieldMap[orderBy] ?? "ID",
+            direction: sortDirection,
+        },
         scope,
         filter: ticketFilters.filter,
     };
 
-    const { data, loading, fetchMore } = useQuery(GET_TICKETS, {
+    const { data, fetchMore } = useQuery(GET_TICKETS, {
         variables: queryVariables,
         notifyOnNetworkStatusChange: true,
     });
 
-    // ---- UNMASKING (standard codegen useFragment, fatto qui perché è il punto di consumo) ----
+    // --------------------------------
+    // TICKETS
+    // --------------------------------
+
     const tickets: Ticket[] = useFragment(
         TicketFieldsFragmentDoc,
-        data?.tickets?.edges.map((edge) => edge.node) ?? []
+        data?.tickets?.edges?.map((edge) => edge.node) ?? []
     );
 
-    const { hasNextPage, loadMore } = useCursorPagination(data?.tickets?.pageInfo, fetchMore);
+    // --------------------------------
+    // PAGINATION
+    // --------------------------------
 
-    // ---- MODALS ----
-    const ticketModal = useModalState<Ticket>();
-    const deleteModal = useModalState<Ticket>();
+    const { hasNextPage, loadMore } = useCursorPagination(
+        data?.tickets?.pageInfo,
+        fetchMore
+    );
 
-    // ---- DELETE MUTATION ----
-    const [deleteTicket, { loading: deleting }] = useMutation(DELETE_TICKET, {
-        refetchQueries: [{ query: GET_TICKETS, variables: queryVariables }],
+    // --------------------------------
+    // DELETE MODAL
+    // --------------------------------
+
+    const deleteModal = useModalState<TicketFieldsFragment>();
+
+    const [deleteTicket] = useMutation(DELETE_TICKET, {
+        refetchQueries: [
+            {
+                query: GET_TICKETS,
+                variables: queryVariables,
+            },
+        ],
     });
 
     const handleConfirmDelete = async () => {
-        if (!deleteModal.value) return;
+        if (!deleteModal.value) {
+            return;
+        }
 
         const result = await deleteTicket({
             variables: { id: deleteModal.value.id },
             context: { successMessage: "Ticket eliminato con successo." },
         });
 
-        if (result.error) return;
+        if (result.error) {
+            return;
+        }
+
         deleteModal.close();
     };
 
-    // ---- COLUMNS ----
-    const ticketColumns = useMemo(
-        () => createTicketColumns(
-            ability,
-            ticketModal.open,
-            deleteModal.open,
-            (row) => router.push(`/ticketHistory/${row.id}`),
-            scope
-        ),
-        [ability, ticketModal.open, deleteModal.open, router, scope]
-    );
+    // --------------------------------
+    // ACTIONS
+    // --------------------------------
+
+    const handleOpen = (ticket: TicketFieldsFragment) => {
+        router.push(`/${ticket.id}`);
+    };
+
+    const handleHistory = (ticket: TicketFieldsFragment) => {
+        router.push(`/ticketHistory/${ticket.id}`);
+    };
+
+    const handleMessage = (ticket: TicketFieldsFragment) => {
+        router.push(`/ticketMessage/${ticket.id}`);
+    };
+
+    const handleDelete = (ticket: TicketFieldsFragment) => {
+        deleteModal.open(ticket);
+    };
+
+    // --------------------------------
+    // COLUMNS
+    // --------------------------------
+
+    const headCells = createTicketHeadCells({ scope });
+
+    // --------------------------------
+    // RENDER
+    // --------------------------------
 
     return (
         <Box sx={{ mt: 3, mx: 2 }}>
-            <Stack
-                direction="row"
-                sx={{ justifyContent: "", alignItems: "center", mb: 3 }}
-            >
-                <IconButton onClick={ticketFilters.open}>
+            <Stack direction="row" sx={{ alignItems: "center", mb: 3 }}>
+                <IconButton onClick={ticketFilters.open} aria-label="Filtri">
                     <Badge
                         badgeContent={ticketFilters.activeCount}
                         color="primary"
@@ -122,23 +179,33 @@ export default function Page() {
                 <Typography variant="h5">I miei ticket</Typography>
             </Stack>
 
-            <AppTable
-                maxHeight="75vh"
-                data={tickets}
-                columns={ticketColumns}
-                sort={sort}
-                onSortChange={setSort}
-                onLoadMore={loadMore}
-                hasMore={hasNextPage}
-                loadingMore={loading}
-                keyExtractor={(row) => row.id}
-                onRowClick={(row) => router.push(`/${row.id}`)}
-            />
+            <Box sx={{ height: "78vh" }}>
+                <EnhancedTable<TicketFieldsFragment>
+                    rows={tickets}
+                    headCells={headCells}
+                    order={order}
+                    orderBy={orderBy}
+                    onRequestSort={onRequestSort}
+                    hasNextPage={hasNextPage}
+                    onLoadMore={loadMore}
+                    getRowClassName={(ticket) => (isTicketOverdue(ticket) ? "error-row" : undefined)}
+                    actionsWidth="152px"
+                    actions={(ticket) => (
+                        <TicketRowActions
+                            ticket={ticket}
+                            scope={scope}
+                            onOpen={handleOpen}
+                            onHistory={handleHistory}
+                            onDelete={handleDelete}
+                            onMessage={handleMessage}
 
-            <FiltersSidebar
-                open={ticketFilters.isOpen}
-                onClose={ticketFilters.close}
-            >
+                        />
+                    )}
+                />
+            </Box>
+
+            {/* FILTRI */}
+            <FiltersSidebar open={ticketFilters.isOpen} onClose={ticketFilters.close}>
                 <Box sx={{ p: 2 }}>
                     <Typography variant="h6" sx={{ mb: 2 }}>
                         Filtri ticket
@@ -151,6 +218,7 @@ export default function Page() {
                 </Box>
             </FiltersSidebar>
 
+            {/* DELETE MODAL */}
             <Modal
                 title="Elimina Ticket"
                 isOpen={deleteModal.isOpen}
