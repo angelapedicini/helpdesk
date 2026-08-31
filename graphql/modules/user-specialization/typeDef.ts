@@ -12,6 +12,7 @@ export const userSpecializationTypeDefs = `#graphql
 
   extend type Query {
     soleSpecialistCategoryIds(department: Department!, userId: Int): [Int!]!
+    usersForCategoryId(categoryId: Int!, search: String): [UserBasicInfo!]!
   }
 
   extend type Mutation {

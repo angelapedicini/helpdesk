@@ -7,6 +7,7 @@ export const ticketCategoryTypeDefs = `#graphql
 
   extend type Query {
     categories(department: Department): [TicketCategory!]!
+    categoryById(id: Int!): TicketCategory
   }
 `
 

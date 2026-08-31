@@ -2,15 +2,16 @@
 import prisma from "@/lib/prisma";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
-import { defineAbilityFor } from "@/lib/casl/abilities";
 import { autoAssign } from "@/lib/ticket/autoAssign";
 import { CreateTicketSchema } from "@/lib/validators/ticket-detail.schema";
 import { computeDueDate } from "@/lib/ticket/dueDate";
-import { assertCanCreateTicket } from "@/lib/casl/ticket.guard";
+import { assertCanCreateTicket } from "@/lib/casl/abilities/ticket/guards";
+import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+
 
 export async function createTicket(_parent: unknown, args: { input: unknown }) {
   const session = await requireSession();
-  const ability = defineAbilityFor(session);
+  const ability = defineAbilityForTicket(session);
 
   assertCanCreateTicket(ability);
 

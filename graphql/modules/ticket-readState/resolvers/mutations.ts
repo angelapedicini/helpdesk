@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { requireSession } from "@/lib/auth/session";
-import { defineAbilityFor } from "@/lib/casl/abilities";
+import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
 import { accessibleBy } from "@casl/prisma";
 import { GraphQLError } from "graphql/error";
 
@@ -16,7 +16,7 @@ export const ticketReadStateMutations = {
             ticketId: args.ticketId,
             time: new Date().toISOString(),
         });
-        const ability = defineAbilityFor(session);
+        const ability = defineAbilityForTicket(session);
 
         // stessa regola di visibilità usata in ticketMessageQueries.messages
         const ticket = await prisma.ticket.findFirst({

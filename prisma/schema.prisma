@@ -39,8 +39,8 @@ enum Department {
   HR
   IT
   FINANCE
-  SALES
-  MARKETING
+  SUPPORT
+  LOGISTIC
 }
 
 enum TicketStatus {
@@ -56,9 +56,23 @@ model TicketCategory {
   name       String
   department Department
 
+  accessGrants    TicketCategoryAccess[]   // <-- nuova relazione
   specializations UserSpecialization[]
   tickets         Ticket[]
 }
+
+model TicketCategoryAccess {
+  id Int @id @default(autoincrement())
+
+  categoryId Int
+  category   TicketCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  requesterDepartment Department?          // null = tutti i dipartimenti
+  requesterMinRole    Role       @default(EMPLOYEE)  // ruolo minimo richiesto (gerarchia EMPLOYEE < TECHNICIAN < ADMIN)
+
+  @@unique([categoryId, requesterDepartment, requesterMinRole])
+}
+
 
 model User {
   id         Int        @id @default(autoincrement())
@@ -132,17 +146,24 @@ model Ticket {
   sourceDepartmentForUser Department
   ticketDepartment        Department
 
+  // Ticket specifics
+  itSpecific        TicketITSpecific?
+  hrSpecific        TicketHRSpecific?
+  financeSpecific   TicketFinanceSpecific?
+  supportSpecific     TicketSupportSpecific?
+  logisticSpecific TicketLogisticSpecific?
+
   messages TicketMessage[]
   history  TicketHistory[]
 
-  readStates TicketReadState[] 
+  readStates TicketReadState[]
   adminNotificationSubscriptions TicketAdminNotificationSubscription[]
 
-  createdAt                            DateTime                              @default(now())
-  updatedAt                            DateTime                              @updatedAt
-  dueDate                              DateTime?
-  closedAt                             DateTime?
-  deletedAt                            DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  dueDate   DateTime?
+  closedAt  DateTime?
+  deletedAt DateTime?
 }
 
 model TicketMessage {
@@ -196,4 +217,109 @@ model TicketHistory {
   snapshot Json
 
   createdAt DateTime @default(now())
+}
+
+
+model TicketITSpecific {
+  id       Int @id @default(autoincrement())
+  ticketId Int @unique
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  hardwareType HardwareType?
+  software     Software?
+}
+
+model TicketHRSpecific {
+  id Int @id @default(autoincrement())
+  ticketId Int @unique
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  payrollReference  String?
+  employeeReference String?
+}
+
+model TicketFinanceSpecific {
+  id Int @id @default(autoincrement())
+  ticketId Int @unique
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  customer         Customer?
+  invoiceReference String?
+  budgetType       BudgetType?
+}
+
+model TicketSupportSpecific {
+  id Int @id @default(autoincrement())
+  ticketId Int @unique
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  customer Customer?
+}
+
+model TicketLogisticSpecific {
+  id Int @id @default(autoincrement())
+  ticketId Int @unique
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  customer          Customer?
+  shipmentReference String?
+}
+
+enum HardwareType {
+  LAPTOP
+  DESKTOP
+  MONITOR
+  KEYBOARD
+  MOUSE
+  DOCKING_STATION
+  PRINTER
+  SMARTPHONE
+  TABLET
+  SERVER
+}
+
+enum Software {
+  JIRA
+  SLACK
+  MICROSOFT_TEAMS
+  OUTLOOK
+  EXCEL
+  WORD
+  POWERPOINT
+  SAP
+  SALESFORCE
+  GITHUB
+  GITLAB
+  CONFLUENCE
+}
+
+enum Customer {
+  ACME
+  MICROSOFT
+  GOOGLE
+  AMAZON
+  APPLE
+  IBM
+  ORACLE
+  SAP
+  DELOITTE
+  ACCENTURE
+}
+
+enum BudgetType {
+  NEW_HARDWARE
+  SOFTWARE_LICENSE
+  CLOUD_SERVICES
+  IT_INFRASTRUCTURE
+  OFFICE_EQUIPMENT
+  CONSULTING
+  TRAINING
+  MAINTENANCE
+  SECURITY
+  TRAVEL
 }

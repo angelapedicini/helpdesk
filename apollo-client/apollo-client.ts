@@ -59,15 +59,20 @@ const cursorPaginationPolicies = Object.fromEntries(
   ])
 );
 
-/**
- * Tutte le field policies della Query.
- */
+const readFromCachePolicy = (typename: string) => ({
+  read(existing: unknown, { args, toReference }: any) {
+    return existing ?? toReference({ __typename: typename, id: args?.id });
+  },
+});
+
 const queryFieldPolicies = {
   ...cursorPaginationPolicies,
 
   ...Object.fromEntries(
     REPLACE_POLICY_FIELDS.map((field) => [field, replacePolicy])
   ),
+
+  categoryById: readFromCachePolicy("TicketCategory"),
 };
 
 export function createApolloClient() {

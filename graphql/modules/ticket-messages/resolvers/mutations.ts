@@ -1,11 +1,8 @@
 import prisma from "@/lib/prisma";
 import { requireSession } from "@/lib/auth/session";
-import { defineAbilityFor } from "@/lib/casl/abilities";
-import {
-    assertCanCreateTicketMessage,
-    assertCanDeleteTicketMessage,
-} from "@/lib/casl/ticketMessage.guards";
+import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
 import { GraphQLError } from "graphql/error";
+import { assertCanCreateTicketMessage, assertCanDeleteTicketMessage } from "@/lib/casl/abilities/ticket/guards";
 
 export const ticketMessageMutations = {
     createTicketMessage: async (
@@ -13,7 +10,7 @@ export const ticketMessageMutations = {
         args: { input: { ticketId: number; content: string } }
     ) => {
         const session = await requireSession();
-        const ability = defineAbilityFor(session);
+        const ability = defineAbilityForTicket(session);
 
         if (!args.input.content?.trim()) {
             throw new GraphQLError("Il messaggio non può essere vuoto", {
@@ -80,7 +77,7 @@ export const ticketMessageMutations = {
 
     deleteTicketMessage: async (_parent: unknown, args: { id: number }) => {
         const session = await requireSession();
-        const ability = defineAbilityFor(session);
+        const ability = defineAbilityForTicket(session);
 
         const existing = await prisma.ticketMessage.findUnique({
             where: { id: args.id },

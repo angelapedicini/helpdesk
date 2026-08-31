@@ -10,3 +10,12 @@ export const GET_CATEGORIES = graphql(`
   }
 `);
 
+export const GET_CATEGORY_BY_ID = graphql(`
+  query CategoryById($id: Int!) {
+    categoryById(id: $id) {
+      id
+      name
+      department
+    }
+  }
+`);

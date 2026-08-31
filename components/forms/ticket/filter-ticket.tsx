@@ -44,11 +44,13 @@ import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
 type FilterTicketFormProps = {
     onApply: (filter: FilterTicketOutput) => void;
     onReset?: () => void;
+    scope?: string;
 };
 
 export default function FilterTicketForm({
     onApply,
     onReset,
+    scope,
 }: FilterTicketFormProps) {
     const { registerReset, resetAll } = useResetRegistry();
 
@@ -171,14 +173,16 @@ export default function FilterTicketForm({
                     error={!!errors.status}
                 />
 
-                <SearchInput
-                    name="createdById"
-                    label="Creato da"
-                    control={control}
-                    onSearch={handleCreatedBy}
-                    loading={loadingUsers}
-                    registerReset={registerReset}
-                />
+                {scope !== "MINE" && (
+                    <SearchInput
+                        name="createdById"
+                        label="Creato da"
+                        control={control}
+                        onSearch={handleCreatedBy}
+                        loading={loadingUsers}
+                        registerReset={registerReset}
+                    />
+                )}
 
                 <SearchInput
                     name="assignedToId"

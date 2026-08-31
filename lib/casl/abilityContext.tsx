@@ -1,16 +1,16 @@
 // lib/casl/AbilityContext.tsx
 "use client";
 import { createContext, useContext, useMemo } from "react";
-import { createPrismaAbility, type PrismaQuery, type Subjects } from "@casl/prisma";
-import type { AppAbility } from "./types";
+import { createPrismaAbility } from "@casl/prisma";
+import type { TicketAbility } from "./abilities/ticket/types";
 
-const AbilityContext = createContext<AppAbility | null>(null);
+const AbilityContext = createContext<TicketAbility | null>(null);
 
 export function AbilityProvider({
     initialRules,
     children,
 }: {
-    initialRules: AppAbility["rules"];
+    initialRules: TicketAbility["rules"];
     children: React.ReactNode;
 }) {
     const ability = useMemo(
@@ -24,7 +24,7 @@ export function AbilityProvider({
     return <AbilityContext.Provider value={ability}>{children}</AbilityContext.Provider>;
 }
 
-export function useAbility(): AppAbility {
+export function useAbility(): TicketAbility {
     const ctx = useContext(AbilityContext);
     if (!ctx) throw new Error("useAbility must be used within AbilityProvider");
     return ctx;

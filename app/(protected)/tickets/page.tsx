@@ -24,8 +24,8 @@ import { FilterTicketOutput } from "@/lib/validators/ticket-detail.schema";
 import { useFragment } from "@/apollo-client/gql";
 import { isTicketOverdue } from "@/lib/ticket/expired-status";
 import EnhancedTable from "@/components/table";
-import { createTicketHeadCells, ticketSortFieldMap } from "@/lib/ticket/column.def";
-import TicketRowActions from "@/components/ticket/actions";
+import { createTicketHeadCells, ticketSortFieldMap } from "@/app/(protected)/tickets/_components/column.def";
+import TicketRowActions from "@/app/(protected)/tickets/_components/actions";
 
 const PAGE_SIZE = 20;
 
@@ -189,7 +189,7 @@ export default function TicketsPage() {
                         Filtri ticket
                     </Typography>
 
-                    <FilterTicketForm onApply={ticketFilters.apply} onReset={ticketFilters.reset} />
+                    <FilterTicketForm onApply={ticketFilters.apply} onReset={ticketFilters.reset} scope={scope}/>
                 </Box>
             </FiltersSidebar>
 

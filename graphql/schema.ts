@@ -15,7 +15,6 @@ import { ticketTypeDefs } from "./modules/ticket/typeDefs";
 import { ticketCategoryTypeDefs } from "./modules/ticket-category/typeDefs";
 import { categoryResolvers } from "./modules/ticket-category/resolver";
 import { ticketResolvers } from "./modules/ticket/resolvers";
-import { userSpecializationResolvers } from "./modules/user-specialization/resolver";
 import { userSpecializationTypeDefs } from "./modules/user-specialization/typeDef";
 import { ticketHistoryResolvers } from "./modules/ticket-history/resolver";
 import { ticketHistoryTypeDefs } from "./modules/ticket-history/typeDef";
@@ -25,6 +24,7 @@ import { ticketReadStateTypeDefs } from "./modules/ticket-readState/typeDefs";
 import { ticketReadStateResolvers } from "./modules/ticket-readState";
 import { ticketAdminNotificationSubTypeDefs } from "./modules/ticket-adminNotificationSub/typeDefs";
 import { ticketAdminNotificationResolvers } from "./modules/ticket-adminNotificationSub";
+import { userSpecializationResolvers } from "./modules/user-specialization";
 
 
 export const typeDefs = [

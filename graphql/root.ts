@@ -18,8 +18,8 @@ export const rootTypeDefs = `#graphql
     HR
     IT
     FINANCE
-    SALES
-    MARKETING
+    SUPPORT
+    LOGISTIC
   }
 
 

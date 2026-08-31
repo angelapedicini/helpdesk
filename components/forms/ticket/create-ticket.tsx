@@ -24,10 +24,11 @@ import { SOLE_SPECIALIST_CATEGORY_IDS } from "@/apollo-client/queries/user-speci
 
 type TicketDetailFormProps = {
     department?: Department;
+    categoryId?: number;
     onSubmit: (values: CreateTicketFormOutput) => void | Promise<void>;
 };
 
-export default function CreateTicket({ department, onSubmit }: TicketDetailFormProps) {
+export default function CreateTicket({ categoryId, department, onSubmit }: TicketDetailFormProps) {
     const router = useRouter();
     const { data: meData } = useQuery(ME_QUERY);
 
@@ -48,17 +49,8 @@ export default function CreateTicket({ department, onSubmit }: TicketDetailFormP
 
     useEffect(() => {
         setValue("department", department as Department);
+        setValue("categoryId", categoryId as number);
     }, [department, setValue]);
-
-    const { data: categoriesData } = useQuery(GET_CATEGORIES, {
-        variables: { department },
-        skip: !department,
-    });
-
-    const categoryOptions = (categoriesData?.categories ?? []).map((c) => ({
-        id: c.id,
-        label: c.name,
-    }));
 
     const priorityOptions = (
         Object.keys(TICKET_PRIORITY_CONFIG) as TicketPriority[]
@@ -135,6 +127,13 @@ export default function CreateTicket({ department, onSubmit }: TicketDetailFormP
                     helperText={errors.title?.message}
                 />
 
+                <AppSelect
+                    name="priority"
+                    label="Priorità"
+                    control={control}
+                    options={priorityOptions}
+                />
+
                 <TextField
                     {...register("description")}
                     label="Descrizione"
@@ -150,20 +149,15 @@ export default function CreateTicket({ department, onSubmit }: TicketDetailFormP
                     }}
                 />
 
-                <AppSelect
-                    name="priority"
-                    label="Priorità"
-                    control={control}
-                    options={priorityOptions}
-                />
 
-                <AppSelect
+
+                {/* <AppSelect
                     name="categoryId"
                     label="Categoria"
                     control={control}
                     options={categoryOptions}
                     disabled={!department}
-                />
+                /> */}
 
                 {isSoleSpecialist && (
                     <Alert severity="info" sx={{ gridColumn: { md: "1 / -1" } }}>

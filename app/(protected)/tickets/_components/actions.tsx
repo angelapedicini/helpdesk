@@ -10,6 +10,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import MessageIcon from '@mui/icons-material/Message';
 
 import type { TicketFieldsFragment, TicketScope } from "@/apollo-client/gql/graphql";
+import { useTicketDeletePermission } from "@/lib/casl/abilities/ticket/presentation";
 
 interface TicketRowActionsProps {
     ticket: TicketFieldsFragment;
@@ -28,6 +29,8 @@ export default function TicketRowActions({
     onDelete,
     onMessage,
 }: TicketRowActionsProps) {
+    const canDelete = useTicketDeletePermission(ticket);
+
     return (
         <>
             {onOpen && (
@@ -54,7 +57,7 @@ export default function TicketRowActions({
                 </Tooltip>
             )}
 
-            {scope === "MINE" && onDelete && (
+            {scope === "MINE" && canDelete && onDelete && (
                 <Tooltip title="Elimina ticket" arrow>
                     <IconButton color="error" onClick={() => onDelete(ticket)} aria-label="Elimina ticket">
                         <DeleteIcon />

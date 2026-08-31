@@ -1,13 +1,13 @@
 import prisma from "@/lib/prisma";
 import { Prisma } from "@/app/generated/prisma/client";
 import { requireSession } from "@/lib/auth/session";
-import { defineAbilityFor } from "@/lib/casl/abilities";
+import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
 import { accessibleBy } from "@casl/prisma";
 
 export const ticketReadStateQueries = {
     unreadTicketMessages: async () => {
         const session = await requireSession();
-        const ability = defineAbilityFor(session);
+        const ability = defineAbilityForTicket(session);
 
         // Ticket accessibili in lettura:
         // - employee: propri ticket creati

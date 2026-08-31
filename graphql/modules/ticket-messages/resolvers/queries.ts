@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { requireSession } from "@/lib/auth/session";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
-import { defineAbilityFor } from "@/lib/casl/abilities";
+import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
 import { accessibleBy } from "@casl/prisma";
 
 export const ticketMessageQueries = {
@@ -10,7 +10,7 @@ export const ticketMessageQueries = {
     args: { ticketId: number; first?: number; after?: string }
   ) => {
     const session = await requireSession();
-    const ability = defineAbilityFor(session);
+    const ability = defineAbilityForTicket(session);
 
     // la visibilità dei messaggi dipende esclusivamente da quella
     // del ticket padre: nessuna regola diretta su TicketMessage per "read"

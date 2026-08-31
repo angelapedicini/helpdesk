@@ -4,9 +4,9 @@ import { requireSession } from "@/lib/auth/session";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
 import type { Prisma } from "@/app/generated/prisma/client";
 import { SortArg, toPrismaOrderBy } from "@/graphql/sorting/sorting";
-import { defineAbilityFor } from "@/lib/casl/abilities";
 import { accessibleBy } from "@casl/prisma";
 import { TicketSortField, TICKET_SORT_FIELD_MAP, TicketScope, buildTicketWhere, buildScopeWhere } from "./where";
+import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
 
 export const ticketQueries = {
   tickets: async (
@@ -20,7 +20,7 @@ export const ticketQueries = {
     }
   ) => {
     const session = await requireSession();
-    const ability = defineAbilityFor(session);
+    const ability = defineAbilityForTicket(session);
 
     const orderBy = toPrismaOrderBy<TicketSortField, Prisma.TicketOrderByWithRelationInput>(
       args.orderBy,
@@ -54,7 +54,7 @@ export const ticketQueries = {
 
   ticket: async (_parent: unknown, args: { id: number }) => {
     const session = await requireSession();
-    const ability = defineAbilityFor(session);
+    const ability = defineAbilityForTicket(session);
 
     return prisma.ticket.findFirst({
       where: {

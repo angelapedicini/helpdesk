@@ -3,15 +3,16 @@
 import prisma from "@/lib/prisma";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
-import { defineAbilityFor } from "@/lib/casl/abilities";
-import { assertCanDeleteTicket } from "@/lib/casl/ticket.guard";
+import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+import { assertCanDeleteTicket } from "@/lib/casl/abilities/ticket/guards";
+
 
 export async function deleteTicket(
   _parent: unknown,
   args: { id: number }
 ) {
   const session = await requireSession();
-  const ability = defineAbilityFor(session);
+  const ability = defineAbilityForTicket(session);
 
   const existing = await prisma.ticket.findUnique({
     where: { id: args.id },

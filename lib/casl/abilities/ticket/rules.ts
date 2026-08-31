@@ -1,10 +1,10 @@
 import { AbilityBuilder } from "@casl/ability";
 import { createPrismaAbility } from "@casl/prisma";
-import type { AppAbility } from "./types";
+import type { TicketAbility } from "./types";
 import type { AccessTokenPayload } from "@/lib/auth/jwt";
 
-export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
-  const { can, cannot, build } = new AbilityBuilder<AppAbility>(createPrismaAbility);
+export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility {
+  const { can, cannot, build } = new AbilityBuilder<TicketAbility>(createPrismaAbility);
 
   const BASE_CREATE_FIELDS = ["title", "description", "categoryId", "priority", "department"] as const;
 
@@ -30,7 +30,7 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
     can("read", "Ticket", { ticketDepartment: user.department });
   }
 
-  // --- UPDATE (invariato rispetto a prima) ---
+  // --- UPDATE ---
   can("update", "Ticket", ["title", "description", "categoryId", "priority"], {
     createdById: user.userId,
     status: { in: ["OPEN", "ASSIGNED"] },
@@ -42,7 +42,6 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
     can("update", "Ticket", ["status", "closedAt", "closingMessage"], { assignedToId: user.userId, status: "IN_PROGRESS" });
     can("update", "Ticket", ["dueDate"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
     can("update", "Ticket", ["assignedToId"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
-    can("update", "Ticket", ["dueDate"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
 
     cannot("update", "Ticket", ["createdById", "categoryId"], {
       assignedToId: user.userId,
@@ -83,19 +82,12 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
 
   // --- CREATE ---
   // Employee: può scrivere solo sui ticket che ha creato, finché non sono chiusi/rifiutati
-  // ================= TicketMessage =================
-
-  // ================= TicketMessage =================
-
-  // --- CREATE ---
-  // Employee: può scrivere solo sui ticket che ha creato, finché non sono chiusi/rifiutati
   can("create", "TicketMessage", {
     "ticket.createdById": user.userId,
     "ticket.status": { notIn: ["CLOSED", "REFUSED"] },
   });
 
   if (user.role === "TECHNICIAN") {
-    // può scrivere sui ticket assegnati a lui, mentre sono in lavorazione
     can("create", "TicketMessage", {
       "ticket.assignedToId": user.userId,
       "ticket.status": { in: ["ASSIGNED", "IN_PROGRESS"] },
@@ -110,7 +102,6 @@ export function defineAbilityFor(user: AccessTokenPayload): AppAbility {
   }
 
   // --- DELETE ---
-  // Solo l'autore può cancellare un proprio messaggio
   can("delete", "TicketMessage", { authorId: user.userId });
 
   return build();

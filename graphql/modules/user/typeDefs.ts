@@ -35,6 +35,12 @@ export const userTypeDefs = `#graphql
     specializations: [TicketCategory!]!
   }
 
+  type UserBasicInfo {
+  id: Int!
+  firstName: String!
+  lastName: String!
+  }
+
   extend type Query {
     me: User
     searchUsers(search: String, role: Role, department: Department): [User!]!

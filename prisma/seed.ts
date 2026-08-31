@@ -9,20 +9,15 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-const DEPARTMENT_CATEGORIES: Record<
-  "HR" | "IT" | "FINANCE" | "SALES" | "MARKETING",
-  string[]
-> = {
-  IT: ["Hardware", "Bug", "Nuovo software"],
-  HR: ["Contratti", "Buste paga", "Onboarding"],
-  FINANCE: ["Fatture", "Revisione contratti"],
-  SALES: ["Lead", "Richiesta contratto"],
-  MARKETING: ["Correzione dati cliente", "Richiesta campagna"],
+const DEPARTMENT_CATEGORIES: Record<Department, string[]> = {
+  IT: ["Hardware", "Bug", "Sistemi e accessi"],
+  HR: ["Buste paga", "Dati del dipendente"],
+  FINANCE: ["Sconti per cliente", "Problemi contabili", "Budget"],
+  SUPPORT: ["Dati cliente errati", "Comunicazione cliente"],
+  LOGISTIC: ["Spedizione", "Problemi di consegna", "Reso"],
 };
 
-const DEPARTMENTS = Object.keys(DEPARTMENT_CATEGORIES) as Array<
-  keyof typeof DEPARTMENT_CATEGORIES
->;
+const DEPARTMENTS = Object.keys(DEPARTMENT_CATEGORIES) as Department[];
 
 const firstNames = [
   "Mario", "Giuseppe", "Anna", "Luca", "Sara", "Marco", "Elena", "Paolo",
@@ -48,10 +43,17 @@ const lastNames = [
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 
-// Stesso shape usato dai resolver create.ts / update.ts: sotto-oggetti
-// ridotti a id + campi display, mai l'entità Prisma completa.
-type SnapshotPerson = { id: number; firstName: string; lastName: string };
-type SnapshotCategory = { id: number; name: string; department: Department };
+type SnapshotPerson = {
+  id: number;
+  firstName: string;
+  lastName: string;
+};
+
+type SnapshotCategory = {
+  id: number;
+  name: string;
+  department: Department;
+};
 
 function buildSnapshot(params: {
   title: string;
@@ -72,7 +74,13 @@ function buildSnapshot(params: {
   closingMessage: string | null;
 }) {
   const toPerson = (p: SnapshotPerson | null) =>
-    p ? { id: p.id, firstName: p.firstName, lastName: p.lastName } : null;
+    p
+      ? {
+        id: p.id,
+        firstName: p.firstName,
+        lastName: p.lastName,
+      }
+      : null;
 
   return {
     title: params.title,
@@ -81,7 +89,11 @@ function buildSnapshot(params: {
     priority: params.priority,
 
     category: params.category
-      ? { id: params.category.id, name: params.category.name, department: params.category.department }
+      ? {
+        id: params.category.id,
+        name: params.category.name,
+        department: params.category.department,
+      }
       : null,
 
     createdBy: toPerson(params.createdBy),
@@ -103,22 +115,45 @@ function buildSnapshot(params: {
 }
 
 export async function main() {
+  /*
+   * Pulizia database.
+   *
+   * TicketCategoryAccess viene eliminata prima di TicketCategory
+   * per rispettare la relazione FK.
+   */
   await prisma.ticketHistory.deleteMany();
   await prisma.ticketMessage.deleteMany();
   await prisma.ticket.deleteMany();
+
+  await prisma.ticketCategoryAccess.deleteMany();
+
   await prisma.userPermission.deleteMany();
   await prisma.userSpecialization.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.user.deleteMany();
+
   await prisma.ticketCategory.deleteMany();
 
   const hashedPassword = await bcrypt.hash("Password123!", 10);
 
   const categoriesByDept: Record<
-    string,
-    { id: number; name: string; department: Department }[]
-  > = {};
+    Department,
+    {
+      id: number;
+      name: string;
+      department: Department;
+    }[]
+  > = {
+    IT: [],
+    HR: [],
+    FINANCE: [],
+    SUPPORT: [],
+    LOGISTIC: [],
+  };
 
+  /*
+   * Creazione categorie.
+   */
   for (const dept of DEPARTMENTS) {
     const created = await Promise.all(
       DEPARTMENT_CATEGORIES[dept].map((name) =>
@@ -134,8 +169,163 @@ export async function main() {
     categoriesByDept[dept] = created;
   }
 
-  const techniciansByDept: Record<string, { id: number; firstName: string; lastName: string }[]> = {};
-  const employeesByDept: Record<string, { id: number; firstName: string; lastName: string }[]> = {};
+  /*
+ * ACCESSO ALLE CATEGORIE
+ *
+ * Il dipartimento proprietario ha sempre accesso automaticamente.
+ *
+ * requesterMinRole = EMPLOYEE significa:
+ * EMPLOYEE, TECHNICIAN e ADMIN.
+ */
+
+  /*
+   * IT
+   *
+   * Tutti i dipartimenti, tutti i ruoli.
+   */
+  for (const category of categoriesByDept.IT) {
+    await prisma.ticketCategoryAccess.create({
+      data: {
+        categoryId: category.id,
+        requesterDepartment: null,
+        requesterMinRole: "EMPLOYEE",
+      },
+    });
+  }
+
+  /*
+   * HR
+   *
+   * Tutti i dipartimenti, tutti i ruoli.
+   */
+  for (const category of categoriesByDept.HR) {
+    await prisma.ticketCategoryAccess.create({
+      data: {
+        categoryId: category.id,
+        requesterDepartment: null,
+        requesterMinRole: "EMPLOYEE",
+      },
+    });
+  }
+
+  /*
+   * FINANCE
+   *
+   * Sconti per cliente e Problemi contabili:
+   * visibili a tutti i ruoli di SUPPORT.
+   */
+  for (const categoryName of [
+    "Sconti per cliente",
+    "Problemi contabili",
+  ]) {
+    const category = categoriesByDept.FINANCE.find(
+      (category) => category.name === categoryName
+    );
+
+    if (!category) {
+      throw new Error(
+        `Categoria FINANCE "${categoryName}" non trovata`
+      );
+    }
+
+    await prisma.ticketCategoryAccess.create({
+      data: {
+        categoryId: category.id,
+        requesterDepartment: Department.SUPPORT,
+        requesterMinRole: "EMPLOYEE",
+      },
+    });
+  }
+
+  /*
+   * FINANCE
+   *
+   * Budget:
+   * visibile agli ADMIN di qualsiasi dipartimento.
+   */
+  const budgetCategory = categoriesByDept.FINANCE.find(
+    (category) => category.name === "Budget"
+  );
+
+  if (!budgetCategory) {
+    throw new Error('Categoria FINANCE "Budget" non trovata');
+  }
+
+  await prisma.ticketCategoryAccess.create({
+    data: {
+      categoryId: budgetCategory.id,
+      requesterDepartment: null,
+      requesterMinRole: "ADMIN",
+    },
+  });
+
+  /*
+   * SUPPORT
+   *
+   * Tutte le categorie SUPPORT:
+   * visibili a tutti i ruoli di FINANCE e LOGISTIC.
+   */
+  for (const category of categoriesByDept.SUPPORT) {
+    for (const requesterDepartment of [
+      Department.FINANCE,
+      Department.LOGISTIC,
+    ]) {
+      await prisma.ticketCategoryAccess.create({
+        data: {
+          categoryId: category.id,
+          requesterDepartment,
+          requesterMinRole: "EMPLOYEE",
+        },
+      });
+    }
+  }
+
+  /*
+   * LOGISTIC
+   *
+   * Tutte le categorie LOGISTIC:
+   * visibili a tutti i ruoli di SUPPORT.
+   */
+  for (const category of categoriesByDept.LOGISTIC) {
+    await prisma.ticketCategoryAccess.create({
+      data: {
+        categoryId: category.id,
+        requesterDepartment: Department.SUPPORT,
+        requesterMinRole: "EMPLOYEE",
+      },
+    });
+  }
+
+
+  const techniciansByDept: Record<
+    Department,
+    {
+      id: number;
+      firstName: string;
+      lastName: string;
+    }[]
+  > = {
+    IT: [],
+    HR: [],
+    FINANCE: [],
+    SUPPORT: [],
+    LOGISTIC: [],
+  };
+
+  const employeesByDept: Record<
+    Department,
+    {
+      id: number;
+      firstName: string;
+      lastName: string;
+    }[]
+  > = {
+    IT: [],
+    HR: [],
+    FINANCE: [],
+    SUPPORT: [],
+    LOGISTIC: [],
+  };
 
   let personIndex = 0;
 
@@ -152,6 +342,9 @@ export async function main() {
     };
   }
 
+  /*
+   * Creazione utenti.
+   */
   for (const dept of DEPARTMENTS) {
     const admin = await prisma.user.create({
       data: {
@@ -212,7 +405,9 @@ export async function main() {
     employeesByDept[dept] = employees;
   }
 
-  // CREAZIONE TICKET
+  /*
+   * CREAZIONE TICKET
+   */
   for (const dept of DEPARTMENTS) {
     const categories = categoriesByDept[dept];
     const employees = employeesByDept[dept];
@@ -224,17 +419,13 @@ export async function main() {
       const author = employees[i % employees.length];
       const technician = technicians[i % technicians.length];
 
-      let status: "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "CLOSED" | "REFUSED";
+      let status:
+        | "OPEN"
+        | "ASSIGNED"
+        | "IN_PROGRESS"
+        | "CLOSED"
+        | "REFUSED";
 
-      /*
-        Distribuzione stati:
-
-        0 -> OPEN
-        1 -> ASSIGNED
-        2 -> IN_PROGRESS
-        3 -> CLOSED
-        4 -> REFUSED
-      */
       switch (i % 5) {
         case 0:
           status = "OPEN";
@@ -259,13 +450,6 @@ export async function main() {
 
       const priority = PRIORITIES[i % PRIORITIES.length];
 
-      /*
-        La dueDate viene calcolata quando il ticket viene creato,
-        indipendentemente dallo stato finale che avrà nel seed.
-
-        In questo modo lo snapshot iniziale contiene la dueDate
-        effettivamente presente nel ticket appena creato.
-      */
       const initialDueDate = new Date(
         Date.now() + (i + 2) * 24 * 60 * 60 * 1000
       );
@@ -277,9 +461,6 @@ export async function main() {
             ? "La richiesta non è di competenza della categoria selezionata. Creare un nuovo ticket con la categoria corretta."
             : null;
 
-      /*
-        Il ticket viene creato SEMPRE nello stato iniziale OPEN.
-      */
       const ticket = await prisma.ticket.create({
         data: {
           title: `Richiesta ${category.name.toLowerCase()} #${i + 1}`,
@@ -312,12 +493,6 @@ export async function main() {
         },
       });
 
-      /*
-        Primo snapshot: fotografa il ticket appena creato, coerentemente
-        con quanto fa createTicket resolver (uno snapshot "di nascita"
-        per ogni ticket, indipendentemente dal fatto che venga poi
-        modificato o meno).
-      */
       await prisma.ticketHistory.create({
         data: {
           ticketId: ticket.id,
@@ -342,11 +517,6 @@ export async function main() {
         },
       });
 
-      /*
-        Se il ticket deve avere uno stato diverso da OPEN, applichiamo
-        l'update e scriviamo un secondo snapshot che fotografa lo stato
-        DOPO la modifica — coerente con updateTicket resolver.
-      */
       if (status !== "OPEN") {
         const updatedTicket = await prisma.ticket.update({
           where: {
@@ -399,9 +569,6 @@ export async function main() {
         });
       }
 
-      /*
-        Messaggi per ticket IN_PROGRESS
-      */
       if (status === "IN_PROGRESS") {
         await prisma.ticketMessage.createMany({
           data: [
@@ -421,9 +588,6 @@ export async function main() {
         });
       }
 
-      /*
-        Messaggi per ticket CLOSED
-      */
       if (status === "CLOSED") {
         await prisma.ticketMessage.createMany({
           data: [
@@ -446,9 +610,6 @@ export async function main() {
         });
       }
 
-      /*
-        Messaggi per ticket REFUSED
-      */
       if (status === "REFUSED") {
         await prisma.ticketMessage.createMany({
           data: [

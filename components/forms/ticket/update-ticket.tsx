@@ -35,15 +35,14 @@ import {
 
 import { UPDATE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
 
-import { toTicketSubject } from "@/lib/casl/types";
-import { useAbility } from "@/lib/casl/abilityContext";
 import { AppSelect } from "../inputs/select-input";
 // import { SearchInput, SearchResult } from "../inputs/search-input3";
 import { useResetRegistry } from "../hooks/use-reset-registry";
 import { SearchInput, SearchResult } from "../inputs/search-input";
-import { SOLE_SPECIALIST_CATEGORY_IDS } from "@/apollo-client/queries/user-specialization/user-specialization.queries.ts";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
+import { useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/presentation";
+import { SOLE_SPECIALIST_CATEGORY_IDS, USERS_SPEC_BY_CATID } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
 
 
 type TicketDetailFormProps = {
@@ -74,40 +73,14 @@ export default function TicketDetailForm({
     onSubmit,
 }: TicketDetailFormProps) {
     const { registerReset, resetAll } = useResetRegistry();
-    const ability = useAbility();
 
     const defaultValues = useMemo(
         () => mapTicketToFormValues(ticket),
         [ticket]
     );
 
-    const ticketSubject = useMemo(
-        () => toTicketSubject(ticket),
-        [ticket]
-    );
-
-    console.log("========== CASL DEBUG ==========");
-    console.log("TICKET SUBJECT:", ticketSubject);
-    console.log(
-        "CAN UPDATE DUE DATE:",
-        ability.can("update", ticketSubject, "dueDate")
-    );
-    console.log("CASL RULES:", ability.rules);
-    console.log("================================");
-    const fieldPermissions = useMemo(
-        () => ({
-            title: ability.can("update", ticketSubject, "title"),
-            description: ability.can("update", ticketSubject, "description"),
-            status: ability.can("update", ticketSubject, "status"),
-            priority: ability.can("update", ticketSubject, "priority"),
-            categoryId: ability.can("update", ticketSubject, "categoryId"),
-            assignedToId: ability.can("update", ticketSubject, "assignedToId"),
-            dueDate: ability.can("update", ticketSubject, "dueDate"),
-        }),
-        [ability, ticketSubject]
-    );
-
-    const hasAnyEditableField = Object.values(fieldPermissions).some(Boolean);
+    const { fields: fieldPermissions, hasAnyEditableField } =
+        useTicketUpdatePermissions(ticket);
 
     // Label iniziale per il campo "Tecnico assegnato"
     const assignedToInitialLabel = ticket.assignedTo
@@ -155,18 +128,17 @@ export default function TicketDetailForm({
     const showClosingMessage =
         selectedStatus === "CLOSED" || selectedStatus === "REFUSED";
 
-    const [searchUsers, { loading: loadingUsers }] = useLazyQuery(SEARCH_USERS);
+    const [searchUsers, { loading: loadingUsers }] = useLazyQuery(USERS_SPEC_BY_CATID);
 
     async function handleSearchUsers(search: string): Promise<SearchResult[]> {
         const { data } = await searchUsers({
             variables: {
                 search,
-                role: "TECHNICIAN",
-                department: ticket.ticketDepartment,
+                categoryId: ticket.category!.id,
             },
         });
 
-        return (data?.searchUsers ?? []).map((u) => ({
+        return (data?.usersForCategoryId ?? []).map((u) => ({
             id: u.id,
             label: `${u.firstName} ${u.lastName}`,
         }));
@@ -293,9 +265,6 @@ export default function TicketDetailForm({
             onSubmit(values);
             return;
         }
-
-        console.log("=== UPDATE PAYLOAD ===");
-        console.log(changedValues);
 
         const result = await updateTicket({
             variables: {
@@ -426,7 +395,7 @@ export default function TicketDetailForm({
                         minRows={3}
                         error={!!errors.closingMessage}
                         helperText={errors.closingMessage?.message}
-                        disabled={!fieldPermissions.status}
+                        disabled={!fieldPermissions.closingMessage}
                         sx={{
                             gridColumn: {
                                 md: "1 / -1",

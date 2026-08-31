@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const TicketPrioritySchema = z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]);
 
-export const DepartmentEnum = z.enum(["HR", "IT", "FINANCE", "SALES", "MARKETING"]);
+export const DepartmentEnum = z.enum(["HR", "IT", "FINANCE", "SUPPORT", "LOGISTIC"]);
 
 export type Department = z.infer<typeof DepartmentEnum>;
 
