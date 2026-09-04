@@ -29,7 +29,7 @@ export const ticketReadStateMutations = {
         });
 
         if (!ticket) {
-            throw new GraphQLError("Ticket non trovato", { extensions: { code: "NOT_FOUND" } });
+            throw new GraphQLError("Ticket not found", { extensions: { code: "NOT_FOUND" } });
         }
 
         // ultimo messaggio NON scritto dall'utente corrente

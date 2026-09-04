@@ -36,6 +36,7 @@ export const TICKET_SNAPSHOT_FIELDS = graphql(`
       lastName
     }
     closingMessage
+    specificValue
   }
 `);
 

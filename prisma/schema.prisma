@@ -51,14 +51,27 @@ enum TicketStatus {
   REFUSED
 }
 
-model TicketCategory {
-  id         Int        @id @default(autoincrement())
-  name       String
-  department Department
+enum TicketSpecificField {
+  HARDWARE_TYPE // IT.itSpecific.hardwareType
+  SOFTWARE // IT.itSpecific.software
+  PAYROLL_REFERENCE // HR.hrSpecific.payrollReference
+  EMPLOYEE_REFERENCE // HR.hrSpecific.employeeReference
+  CUSTOMER // FINANCE/SUPPORT/LOGISTIC .customer
+  INVOICE_REFERENCE // FINANCE.financeSpecific.invoiceReference
+  BUDGET_TYPE // FINANCE.financeSpecific.budgetType
+  SHIPMENT_REFERENCE // LOGISTIC.logisticSpecific.shipmentReference
+}
 
-  accessGrants    TicketCategoryAccess[]   // <-- nuova relazione
+model TicketCategory {
+  id            Int                  @id @default(autoincrement())
+  name          String
+  department    Department
+  specificField TicketSpecificField? // null = nessuna specifica richiesta per questa categoria
+
+  accessGrants    TicketCategoryAccess[]
   specializations UserSpecialization[]
   tickets         Ticket[]
+  ticketHistories TicketHistory2[]
 }
 
 model TicketCategoryAccess {
@@ -67,12 +80,11 @@ model TicketCategoryAccess {
   categoryId Int
   category   TicketCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  requesterDepartment Department?          // null = tutti i dipartimenti
-  requesterMinRole    Role       @default(EMPLOYEE)  // ruolo minimo richiesto (gerarchia EMPLOYEE < TECHNICIAN < ADMIN)
+  requesterDepartment Department? // null = tutti i dipartimenti
+  requesterMinRole    Role        @default(EMPLOYEE) // ruolo minimo richiesto (gerarchia EMPLOYEE < TECHNICIAN < ADMIN)
 
   @@unique([categoryId, requesterDepartment, requesterMinRole])
 }
-
 
 model User {
   id         Int        @id @default(autoincrement())
@@ -97,6 +109,15 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // vecchia history (legacy, da rimuovere in seguito)
+  ticketDeletions TicketHistory[] @relation("TicketDeletions")
+
+  // nuova history (TicketHistory2)
+  ticketHistoriesCreated     TicketHistory2[] @relation("CreatedTicketsHistory")
+  ticketHistoriesAssigned    TicketHistory2[] @relation("AssignedTicketsHistory")
+  ticketHistoriesLastUpdated TicketHistory2[] @relation("LastUpdatedTicketsHistory")
+  ticketHistoryDeletions     TicketHistory2[] @relation("TicketHistoryDeletedBy")
 }
 
 model UserSpecialization {
@@ -147,23 +168,71 @@ model Ticket {
   ticketDepartment        Department
 
   // Ticket specifics
-  itSpecific        TicketITSpecific?
-  hrSpecific        TicketHRSpecific?
-  financeSpecific   TicketFinanceSpecific?
-  supportSpecific     TicketSupportSpecific?
+  itSpecific       TicketITSpecific?
+  hrSpecific       TicketHRSpecific?
+  financeSpecific  TicketFinanceSpecific?
+  supportSpecific  TicketSupportSpecific?
   logisticSpecific TicketLogisticSpecific?
 
   messages TicketMessage[]
   history  TicketHistory[]
 
-  readStates TicketReadState[]
+  readStates                     TicketReadState[]
   adminNotificationSubscriptions TicketAdminNotificationSubscription[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   dueDate   DateTime?
   closedAt  DateTime?
-  deletedAt DateTime?
+  // deletedAt DateTime?
+}
+
+/// Nuova history: mirror 1:1 dei campi del Ticket al momento della cancellazione.
+/// Sostituisce la vecchia TicketHistory basata su snapshot Json.
+model TicketHistory2 {
+  id Int @id @default(autoincrement())
+
+  // riferimento "storico" al ticket originale: NON è una FK vincolante,
+  // il ticket puo' non esistere piu' (hard delete)
+  originalTicketId Int
+
+  title       String
+  description String
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+
+  categoryId Int?
+  category   TicketCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  createdById Int?
+  createdBy   User? @relation("CreatedTicketsHistory", fields: [createdById], references: [id], onDelete: SetNull)
+
+  assignedToId Int?
+  assignedTo   User? @relation("AssignedTicketsHistory", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  lastUpdatedById Int?
+  lastUpdatedBy   User? @relation("LastUpdatedTicketsHistory", fields: [lastUpdatedById], references: [id], onDelete: SetNull)
+
+  closingMessage String?
+
+  sourceDepartmentForUser Department
+  ticketDepartment        Department
+
+  ticketSpecific String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  dueDate   DateTime?
+  closedAt  DateTime?
+
+  deletedAt   DateTime @default(now())
+  deletedById Int?
+  deletedBy   User?    @relation("TicketHistoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+
+  @@index([originalTicketId])
+  @@index([status, deletedAt])
+  @@index([ticketDepartment, deletedAt])
+  @@index([deletedById])
 }
 
 model TicketMessage {
@@ -208,6 +277,9 @@ model TicketAdminNotificationSubscription {
   @@id([userId, ticketId])
 }
 
+///////////////////////
+/// Legacy: history basata su snapshot Json. Da rimuovere quando TicketHistory2
+/// sarà completamente operativa (vedi nota in chat su come farlo senza rotture).
 model TicketHistory {
   id Int @id @default(autoincrement())
 
@@ -216,9 +288,12 @@ model TicketHistory {
 
   snapshot Json
 
+  deletedAt   DateTime?
+  deletedById Int?
+  deletedBy   User?     @relation("TicketDeletions", fields: [deletedById], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
 }
-
 
 model TicketITSpecific {
   id       Int @id @default(autoincrement())
@@ -231,7 +306,7 @@ model TicketITSpecific {
 }
 
 model TicketHRSpecific {
-  id Int @id @default(autoincrement())
+  id       Int @id @default(autoincrement())
   ticketId Int @unique
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
@@ -241,7 +316,7 @@ model TicketHRSpecific {
 }
 
 model TicketFinanceSpecific {
-  id Int @id @default(autoincrement())
+  id       Int @id @default(autoincrement())
   ticketId Int @unique
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
@@ -252,7 +327,7 @@ model TicketFinanceSpecific {
 }
 
 model TicketSupportSpecific {
-  id Int @id @default(autoincrement())
+  id       Int @id @default(autoincrement())
   ticketId Int @unique
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
@@ -261,7 +336,7 @@ model TicketSupportSpecific {
 }
 
 model TicketLogisticSpecific {
-  id Int @id @default(autoincrement())
+  id       Int @id @default(autoincrement())
   ticketId Int @unique
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)

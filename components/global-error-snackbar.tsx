@@ -12,7 +12,7 @@ export function GlobalSnackbar() {
     <Snackbar
       key={notification?.id}
       open={!!notification}
-      autoHideDuration={5000}
+      autoHideDuration={3000}
       onClose={(_event, reason) => {
         if (reason === "clickaway") return;
         notificationVar(null);

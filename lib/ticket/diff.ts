@@ -13,6 +13,7 @@ const COMPARABLE_SCALAR_FIELDS = [
     "dueDate",
     "closedAt",
     "closingMessage",
+    "specificValue",
 ] as const;
 
 function normalize(value: unknown) {

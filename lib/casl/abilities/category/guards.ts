@@ -25,7 +25,7 @@ export async function getAllowedCategories(
 
   return prisma.ticketCategory.findMany({
     where: accessibleBy(ability, "read").ofType("TicketCategory"),
-    select: { id: true, name: true, department: true },
+    select: { id: true, name: true, department: true, specificField: true},
     orderBy: [{ department: "asc" }, { name: "asc" }],
   });
 }

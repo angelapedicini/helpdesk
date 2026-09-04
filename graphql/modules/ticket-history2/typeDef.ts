@@ -19,11 +19,11 @@ export const ticketHistoryTypeDefs = `#graphql
     updatedAt: Date!
     closedAt: Date
     dueDate: Date
-    deletedAt: Date
     sourceDepartmentForUser: Department!
     ticketDepartment: Department!
     lastUpdatedBy: User
     closingMessage: String
+    specificValue: String
   }
 
   type TicketHistory {

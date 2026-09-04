@@ -82,6 +82,17 @@ export function createTicketHeadCells({
                 ticket.category ? ticket.category.name : "Nessuna categoria",
         },
 
+        {
+            id: "specificData",
+            label: "Specifica",
+            sortable: false,
+            render: (ticket) => {
+                if (!ticket.specificData) return "Nessuna specifica";
+                const { __typename, ...fields } = ticket.specificData;
+                return Object.values(fields).filter(Boolean).join(" / ") || "-";
+            },
+        },
+
         { id: "ticketDepartment", label: "Dipartimento" },
 
         {

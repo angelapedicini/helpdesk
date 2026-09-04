@@ -61,6 +61,7 @@ export const ticketTypeDefs = `#graphql
     ticketDepartment: Department!
     lastUpdatedBy: User
     closingMessage: String
+    specificData: TicketSpecific
   }
 
   input TicketInput {
@@ -69,6 +70,7 @@ export const ticketTypeDefs = `#graphql
     categoryId: Int
     priority: TicketPriority!
     department: Department!
+    specificValue: String
   }
 
   input TicketFilter {
@@ -106,6 +108,7 @@ input TicketUpdateInput {
     assignedToId: Int
     closingMessage: String
     dueDate: Date
+    specificValue: String
 }
 
 

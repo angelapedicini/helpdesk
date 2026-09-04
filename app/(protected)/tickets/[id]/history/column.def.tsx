@@ -37,6 +37,7 @@ export interface TicketHistoryRow {
     ticketDepartment: string;
     lastUpdatedBy: string;
     closingMessage: string | null;
+    specificValue: string | null;
 
     changedFields: string[];
 }
@@ -96,6 +97,13 @@ export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
         },
 
         { id: "category", label: "Categoria", sortable: false },
+
+        {
+            id: "specificValue",
+            label: "Specifica",
+            sortable: false,
+            render: (row) => row.specificValue ?? "-",
+        },
 
         { id: "createdBy", label: "Creato da", sortable: false },
 

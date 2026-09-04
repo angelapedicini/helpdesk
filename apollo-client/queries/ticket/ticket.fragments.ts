@@ -8,10 +8,35 @@ export const TICKET_FIELDS = graphql(`
     status
     priority
 
+    specificData {
+      __typename
+      ... on TicketITSpecific {
+        hardwareType
+        software
+      }
+      ... on TicketHRSpecific {
+        payrollReference
+        employeeReference
+      }
+      ... on TicketFinanceSpecific {
+        customer
+        invoiceReference
+        budgetType
+      }
+      ... on TicketSupportSpecific {
+        customer
+      }
+      ... on TicketLogisticSpecific {
+        customer
+        shipmentReference
+      }
+    }
+
     category {
       id
       name
       department
+      specificField
     }
 
     createdBy {

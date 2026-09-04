@@ -6,9 +6,7 @@ const PUBLIC_PATHS = [
   "/",
   "/login",
   "/register",
-  "/api/graphql", // <-- il vecchio endpoint /api/auth/login, /refresh, /register erano pubblici
-                  //     ora tutto passa da qui: login/register/refresh sono mutation pubbliche,
-                  //     le query/mutation protette restano protette a livello di resolver
+  "/api/graphql", 
   "/docs",
   "/api/openapi",
   "/tracking",

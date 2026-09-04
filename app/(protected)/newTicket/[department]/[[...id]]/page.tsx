@@ -46,7 +46,7 @@ export default function Page() {
 
       <CreateTicket
         department={presetDepartment}
-        categoryId={hasCategoryId ? category?.id : undefined}
+        category={category}
         onSubmit={async (values) => {
         }}
       />

@@ -1,7 +1,7 @@
 // components/forms/ticket/ticket.tsx
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -25,8 +25,6 @@ import {
     TicketStatus,
 } from "@/lib/validators/enums.schema";
 
-// import { SearchInput, SearchResult } from "../inputs/search-input";
-
 import {
     UpdateTicketInput,
     UpdateTicketOutput,
@@ -36,9 +34,9 @@ import {
 import { UPDATE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
 
 import { AppSelect } from "../inputs/select-input";
-// import { SearchInput, SearchResult } from "../inputs/search-input3";
 import { useResetRegistry } from "../hooks/use-reset-registry";
 import { SearchInput, SearchResult } from "../inputs/search-input";
+import { SpecificFieldInput } from "../inputs/specific-field-input";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
 import { useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/presentation";
@@ -52,9 +50,25 @@ type TicketDetailFormProps = {
     ) => void | Promise<void>;
 };
 
+// specificField (es. "HARDWARE_TYPE") e la property corrispondente in
+// specificData (es. "hardwareType") differiscono solo per il case,
+// quindi basta una conversione SCREAMING_SNAKE_CASE -> camelCase per
+// leggere il valore attuale del ticket, senza bisogno di una tabella.
 function mapTicketToFormValues(
     ticket: TicketFieldsFragment
 ): UpdateTicketInput {
+    const specificField = ticket.category?.specificField;
+    let specificValue: string | undefined;
+
+    if (specificField && ticket.specificData) {
+        const key = specificField
+            .toLowerCase()
+            .replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+
+        const value = (ticket.specificData as Record<string, unknown>)[key];
+        specificValue = typeof value === "string" ? value : undefined;
+    }
+
     return {
         title: ticket.title,
         description: ticket.description ?? "",
@@ -64,7 +78,7 @@ function mapTicketToFormValues(
         assignedToId: ticket.assignedTo?.id ?? null,
         closingMessage: ticket.closingMessage ?? undefined,
         dueDate: ticket.dueDate ?? undefined,
-
+        specificValue,
     };
 }
 
@@ -92,11 +106,13 @@ export default function TicketDetailForm({
         control,
         handleSubmit,
         reset,
+        setValue,
         watch,
         formState: { errors, isSubmitting, isDirty },
     } = useForm<UpdateTicketInput, undefined, UpdateTicketOutput>({
         resolver: zodResolver(UpdateTicketSchema),
         defaultValues,
+        mode: "onChange",
     });
 
     const createdBy = ticket.createdBy;
@@ -170,10 +186,57 @@ export default function TicketDetailForm({
         return options;
     }, [categoriesData, ticket.category]);
 
+    // Lista "ricca" delle categorie disponibili, con specificField incluso,
+    // usata solo per derivare quale campo dinamico mostrare in base alla
+    // categoria correntemente selezionata nel form (non quella originale
+    // del ticket). categoryOptions sopra resta quella "leggera" per l'AppSelect.
+    const categoriesWithSpecificField = useMemo(() => {
+        const list = categoriesData?.categories ?? [];
+
+        if (ticket.category && !list.some((c) => c.id === ticket.category!.id)) {
+            return [...list, ticket.category];
+        }
+
+        return list;
+    }, [categoriesData, ticket.category]);
+
+    const selectedCategory = useMemo(
+        () => categoriesWithSpecificField.find((c) => c.id === categoryIdForQuery),
+        [categoriesWithSpecificField, categoryIdForQuery]
+    );
+
     useEffect(() => {
         reset(defaultValues);
         resetAll();
     }, [defaultValues, reset, resetAll]);
+
+    // Reset/ripristino di specificValue quando cambia la categoria selezionata,
+    // coerente con la regola lato server (categoria diversa -> specifica azzerata).
+    // Va tenuto separato dall'effect sopra: quello scatta al cambio di `ticket`
+    // (nuovo ticket caricato), questo scatta al cambio di selezione nel form.
+    const previousCategoryIdRef = useRef(defaultValues.categoryId);
+
+    useEffect(() => {
+        previousCategoryIdRef.current = defaultValues.categoryId;
+    }, [defaultValues.categoryId]);
+
+    useEffect(() => {
+        if (selectedCategoryId === previousCategoryIdRef.current) return;
+        previousCategoryIdRef.current = selectedCategoryId;
+
+        if (selectedCategoryId === defaultValues.categoryId) {
+            // l'utente è tornato alla categoria originale del ticket:
+            // ripristina il valore che c'era già, non ha senso perderlo
+            setValue("specificValue", defaultValues.specificValue, {
+                shouldDirty: false,
+            });
+        } else {
+            setValue("specificValue", undefined, {
+                shouldDirty: true,
+                shouldValidate: true,
+            });
+        }
+    }, [selectedCategoryId, defaultValues, setValue]);
 
     const statusOptions = (
         Object.keys(TICKET_STATUS_CONFIG) as TicketStatus[]
@@ -257,6 +320,10 @@ export default function TicketDetailForm({
             changedValues.dueDate = values.dueDate;
         }
 
+        if (values.specificValue !== defaultValuesOutput.specificValue) {
+            changedValues.specificValue = values.specificValue;
+        }
+
         /*
          * Nessuna modifica reale.
          * Evitiamo completamente la mutation GraphQL.
@@ -329,6 +396,12 @@ export default function TicketDetailForm({
                                 field.onChange(toCalendarUTCDate(date));
                             }}
                             disabled={!fieldPermissions.dueDate}
+                            slotProps={{
+                                textField: {
+                                    error: !!errors.dueDate,
+                                    helperText: errors.dueDate?.message,
+                                },
+                            }}
                         />
                     )}
                 />
@@ -349,6 +422,19 @@ export default function TicketDetailForm({
                     }}
                 />
 
+                <AppSelect
+                    name="categoryId"
+                    label="Categoria"
+                    control={control}
+                    options={categoryOptions}
+                    disabled={!fieldPermissions.categoryId}
+                />
+
+                <SpecificFieldInput
+                    specificField={selectedCategory?.specificField}
+                    control={control}
+                    error={errors.specificValue?.message}
+                />
 
                 <AppSelect
                     name="priority"
@@ -356,15 +442,6 @@ export default function TicketDetailForm({
                     control={control}
                     options={priorityOptions}
                     disabled={!fieldPermissions.priority}
-                />
-
-                <AppSelect
-                    name="categoryId"
-                    label="Categoria"
-                    control={control}
-                    options={categoryOptions}
-                    disabled={!fieldPermissions.categoryId}
-
                 />
 
                 <SearchInput

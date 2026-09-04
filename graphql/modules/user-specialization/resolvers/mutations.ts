@@ -9,7 +9,7 @@ export const userSpecMutations = {
       ) => {
         const session = await requireAdmin();
         if (!session) {
-          throw new GraphQLError("Non autorizzato", {
+          throw new GraphQLError("Unauthorized", {
             extensions: { code: "FORBIDDEN" },
           });
         }
@@ -25,7 +25,7 @@ export const userSpecMutations = {
 
           return true;
         } catch (err) {
-          throw new GraphQLError("Specializzazione non trovata", {
+          throw new GraphQLError("Specialization not found", {
             extensions: { code: "NOT_FOUND" },
           });
         }

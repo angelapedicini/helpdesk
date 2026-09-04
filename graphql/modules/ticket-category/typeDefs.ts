@@ -3,6 +3,7 @@ export const ticketCategoryTypeDefs = `#graphql
     id: Int!
     name: String!
     department: Department!
+    specificField: TicketSpecificField
   }
 
   extend type Query {

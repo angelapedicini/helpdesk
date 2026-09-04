@@ -120,6 +120,14 @@ export default function TicketHistoryDetailModal({
                 />
 
                 <TextField
+                    label="Specifica"
+                    value={row.specificValue}
+                    fullWidth
+                    disabled
+                    sx={fieldSx("specificValue")}
+                />
+
+                <TextField
                     label="Creato da"
                     value={row.createdBy}
                     fullWidth

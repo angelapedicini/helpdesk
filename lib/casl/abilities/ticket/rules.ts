@@ -29,9 +29,15 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
   if (user.role === "ADMIN") {
     can("read", "Ticket", { ticketDepartment: user.department });
   }
-
   // --- UPDATE ---
-  can("update", "Ticket", ["title", "description", "categoryId", "priority"], {
+  can("update", "Ticket", ["title", "description", "priority"], {
+    createdById: user.userId,
+    status: { in: ["OPEN", "ASSIGNED"] },
+  });
+
+  // employee (creatore) può modificare categoria e specificValue
+  // finché il ticket è OPEN o ASSIGNED
+  can("update", "Ticket", ["categoryId", "specificValue"], {
     createdById: user.userId,
     status: { in: ["OPEN", "ASSIGNED"] },
   });
@@ -43,9 +49,16 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     can("update", "Ticket", ["dueDate"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
     can("update", "Ticket", ["assignedToId"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
 
-    cannot("update", "Ticket", ["createdById", "categoryId"], {
+    // technician assegnatario può modificare categoria e specificValue
+    // finché il ticket è OPEN o ASSIGNED
+    can("update", "Ticket", ["categoryId", "specificValue"], {
       assignedToId: user.userId,
-    }).because("Il technician non può modificare creatore o categoria di un ticket assegnatogli");
+      status: { in: ["OPEN", "ASSIGNED"] },
+    });
+
+    cannot("update", "Ticket", ["createdById", ], {
+      assignedToId: user.userId,
+    }).because("Il technician non può modificare creatore di un ticket assegnatogli");
   }
 
   if (user.role === "ADMIN") {
@@ -55,6 +68,9 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     });
 
     can("update", "Ticket", ["status", "closingMessage"], { ticketDepartment: user.department, status: "OPEN" });
+
+    // admin del reparto può modificare specificValue solo mentre ASSIGNED
+    can("update", "Ticket", ["specificValue"], { ticketDepartment: user.department, status: { in: ["OPEN", "ASSIGNED"] } });
 
     cannot("update", "Ticket", ["status"], {
       status: { in: ["IN_PROGRESS", "CLOSED"] },
@@ -67,6 +83,7 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     can("update", "Ticket", ["categoryId"], {
       ticketDepartment: user.department,
       status: { in: ["OPEN", "ASSIGNED"] },
+      // categoryId: null,
     });
 
     can("update", "Ticket", ["priority"], {

@@ -31,7 +31,6 @@ export const ticketQueries = {
     const scope: TicketScope = args.scope ?? "MINE";
 
     const where: Prisma.TicketWhereInput = {
-      deletedAt: null,
       AND: [
         accessibleBy(ability, "read").ofType("Ticket"),
         buildScopeWhere(scope, session),
@@ -46,7 +45,18 @@ export const ticketQueries = {
           skip,
           cursor,
           where,
-          include: { category: true, createdBy: true, assignedTo: true, lastUpdatedBy: true, },
+          include: {
+            category: true,
+            createdBy: true,
+            assignedTo: true,
+            lastUpdatedBy: true,
+
+            itSpecific: true,
+            hrSpecific: true,
+            financeSpecific: true,
+            supportSpecific: true,
+            logisticSpecific: true,
+          },
           orderBy,
         }),
     });
@@ -62,7 +72,18 @@ export const ticketQueries = {
         deletedAt: null,
         AND: [accessibleBy(ability, "read").ofType("Ticket")],
       },
-      include: { category: true, createdBy: true, assignedTo: true },
+      include: {
+        category: true,
+        createdBy: true,
+        assignedTo: true,
+        lastUpdatedBy: true,
+
+        itSpecific: true,
+        hrSpecific: true,
+        financeSpecific: true,
+        supportSpecific: true,
+        logisticSpecific: true,
+      },
     });
   },
 };

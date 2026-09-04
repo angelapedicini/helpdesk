@@ -104,6 +104,7 @@ export default function TicketHistoryPage() {
                 : "-",
 
             closingMessage: snapshot.closingMessage ?? null,
+            specificValue: snapshot.specificValue ?? null,
 
             changedFields: Array.from(diffTickets(snapshot, snapshots[index + 1])),
         };

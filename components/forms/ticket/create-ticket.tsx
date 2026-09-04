@@ -9,26 +9,27 @@ import {
     CreateTicketFormValues,
     CreateTicketSchema,
 } from "@/lib/validators/ticket-detail.schema";
-import { GET_CATEGORIES } from "@/apollo-client/queries/ticket-category/ticket-category.queries";
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
-import { Role, type Department } from "@/apollo-client/gql/graphql";
+import { CategoryByIdQuery, Role, type Department } from "@/apollo-client/gql/graphql";
 import { skipToken, useMutation, useQuery } from "@apollo/client/react";
 import { TicketPriority } from "@/lib/validators/enums.schema";
 import { CREATE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
 import { AppSelect } from "../inputs/select-input";
 import { useRouter } from "next/navigation";
-// import { useAppQuery } from "@/apollo-client/hooks/query-hook";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
-import { SOLE_SPECIALIST_CATEGORY_IDS } from "@/apollo-client/queries/user-specialization/user-specialization.queries.ts";
+import { SOLE_SPECIALIST_CATEGORY_IDS } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
+import { SpecificFieldInput } from "../inputs/specific-field-input";
 
 
 type TicketDetailFormProps = {
     department?: Department;
-    categoryId?: number;
+    category?: CategoryByIdQuery["categoryById"];
     onSubmit: (values: CreateTicketFormOutput) => void | Promise<void>;
 };
 
-export default function CreateTicket({ categoryId, department, onSubmit }: TicketDetailFormProps) {
+
+
+export default function CreateTicket({ category, department, onSubmit }: TicketDetailFormProps) {
     const router = useRouter();
     const { data: meData } = useQuery(ME_QUERY);
 
@@ -41,15 +42,17 @@ export default function CreateTicket({ categoryId, department, onSubmit }: Ticke
         formState: { errors, isSubmitting },
     } = useForm<CreateTicketFormValues, unknown, CreateTicketFormOutput>({
         resolver: zodResolver(CreateTicketSchema),
+        mode: "onChange",
         defaultValues: {
             department,
         },
+
     });
 
 
     useEffect(() => {
         setValue("department", department as Department);
-        setValue("categoryId", categoryId as number);
+        setValue("categoryId", category?.id as number);
     }, [department, setValue]);
 
     const priorityOptions = (
@@ -111,6 +114,10 @@ export default function CreateTicket({ categoryId, department, onSubmit }: Ticke
 
     };
 
+    console.log("CATEGORY:", category);
+    console.log("SPECIFIC FIELD:", category?.specificField);
+
+
     return (
         <Box
             component="form"
@@ -158,6 +165,12 @@ export default function CreateTicket({ categoryId, department, onSubmit }: Ticke
                     options={categoryOptions}
                     disabled={!department}
                 /> */}
+
+                <SpecificFieldInput
+                    specificField={category?.specificField}
+                    control={control}
+                    error={errors.specificValue?.message}
+                />
 
                 {isSoleSpecialist && (
                     <Alert severity="info" sx={{ gridColumn: { md: "1 / -1" } }}>

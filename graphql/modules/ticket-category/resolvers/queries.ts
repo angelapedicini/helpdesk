@@ -3,8 +3,7 @@ import { getSession } from "@/lib/auth/session";
 import { Department } from "@/app/generated/prisma/enums";
 import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
 
-export const categoryResolvers = {
-  Query: {
+export const categoryQueries = {
     categories: async (
       _parent: unknown,
       args: { department?: Department }
@@ -47,8 +46,7 @@ export const categoryResolvers = {
 
       return prisma.ticketCategory.findUnique({
         where: { id: args.id },
-        select: { id: true, name: true, department: true },
+        select: { id: true, name: true, department: true, specificField: true },
       });
-    },
   },
 };

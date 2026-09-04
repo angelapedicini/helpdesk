@@ -1,4 +1,12 @@
-import { Department, PrismaClient } from "../app/generated/prisma/client";
+import {
+  Department,
+  PrismaClient,
+  TicketSpecificField,
+  HardwareType,
+  Software,
+  Customer,
+  BudgetType,
+} from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 import bcrypt from "bcryptjs";
@@ -15,6 +23,40 @@ const DEPARTMENT_CATEGORIES: Record<Department, string[]> = {
   FINANCE: ["Sconti per cliente", "Problemi contabili", "Budget"],
   SUPPORT: ["Dati cliente errati", "Comunicazione cliente"],
   LOGISTIC: ["Spedizione", "Problemi di consegna", "Reso"],
+};
+
+/*
+ * Specifica associata a ciascuna categoria.
+ *
+ * Una categoria = un campo specifico (o nessuno, se assente dalla mappa).
+ */
+const CATEGORY_SPECIFIC_FIELD: Record<
+  Department,
+  Record<string, TicketSpecificField>
+> = {
+  IT: {
+    "Hardware": TicketSpecificField.HARDWARE_TYPE,
+    "Bug": TicketSpecificField.SOFTWARE,
+    "Sistemi e accessi": TicketSpecificField.SOFTWARE,
+  },
+  HR: {
+    "Buste paga": TicketSpecificField.PAYROLL_REFERENCE,
+    "Dati del dipendente": TicketSpecificField.EMPLOYEE_REFERENCE,
+  },
+  FINANCE: {
+    "Sconti per cliente": TicketSpecificField.CUSTOMER,
+    "Problemi contabili": TicketSpecificField.INVOICE_REFERENCE,
+    "Budget": TicketSpecificField.BUDGET_TYPE,
+  },
+  SUPPORT: {
+    "Dati cliente errati": TicketSpecificField.CUSTOMER,
+    "Comunicazione cliente": TicketSpecificField.CUSTOMER,
+  },
+  LOGISTIC: {
+    "Spedizione": TicketSpecificField.CUSTOMER,
+    "Problemi di consegna": TicketSpecificField.SHIPMENT_REFERENCE,
+    "Reso": TicketSpecificField.SHIPMENT_REFERENCE,
+  },
 };
 
 const DEPARTMENTS = Object.keys(DEPARTMENT_CATEGORIES) as Department[];
@@ -72,6 +114,7 @@ function buildSnapshot(params: {
   ticketDepartment: Department;
   lastUpdatedBy: SnapshotPerson | null;
   closingMessage: string | null;
+  specificValue?: string | null;
 }) {
   const toPerson = (p: SnapshotPerson | null) =>
     p
@@ -111,7 +154,123 @@ function buildSnapshot(params: {
     lastUpdatedBy: toPerson(params.lastUpdatedBy),
 
     closingMessage: params.closingMessage,
+
+    specificValue: params.specificValue ?? null,
   };
+}
+
+/*
+ * Costruisce il nested-create Prisma per il "ticket specific" coerente
+ * con il campo specifico richiesto dalla categoria, più un'etichetta
+ * leggibile da salvare nello snapshot della history.
+ *
+ * `seedIndex` serve solo a variare i valori tra un ticket e l'altro
+ * (ciclando sugli enum o incrementando i reference testuali).
+ */
+function buildSpecificData(
+  department: Department,
+  specificField: TicketSpecificField | null,
+  seedIndex: number
+): { data: Record<string, unknown>; label: string | null } {
+  if (!specificField) {
+    return { data: {}, label: null };
+  }
+
+  switch (specificField) {
+    case TicketSpecificField.HARDWARE_TYPE: {
+      const values = Object.values(HardwareType);
+      const hardwareType = values[seedIndex % values.length];
+
+      return {
+        data: { itSpecific: { create: { hardwareType } } },
+        label: `Hardware: ${hardwareType}`,
+      };
+    }
+
+    case TicketSpecificField.SOFTWARE: {
+      const values = Object.values(Software);
+      const software = values[seedIndex % values.length];
+
+      return {
+        data: { itSpecific: { create: { software } } },
+        label: `Software: ${software}`,
+      };
+    }
+
+    case TicketSpecificField.PAYROLL_REFERENCE: {
+      const payrollReference = `PR-${String(seedIndex + 1).padStart(4, "0")}`;
+
+      return {
+        data: { hrSpecific: { create: { payrollReference } } },
+        label: `Busta paga: ${payrollReference}`,
+      };
+    }
+
+    case TicketSpecificField.EMPLOYEE_REFERENCE: {
+      const employeeReference = `EMP-${String(seedIndex + 1).padStart(4, "0")}`;
+
+      return {
+        data: { hrSpecific: { create: { employeeReference } } },
+        label: `Dipendente: ${employeeReference}`,
+      };
+    }
+
+    case TicketSpecificField.CUSTOMER: {
+      const values = Object.values(Customer);
+      const customer = values[seedIndex % values.length];
+
+      if (department === Department.FINANCE) {
+        return {
+          data: { financeSpecific: { create: { customer } } },
+          label: `Cliente: ${customer}`,
+        };
+      }
+
+      if (department === Department.SUPPORT) {
+        return {
+          data: { supportSpecific: { create: { customer } } },
+          label: `Cliente: ${customer}`,
+        };
+      }
+
+      // LOGISTIC
+      return {
+        data: { logisticSpecific: { create: { customer } } },
+        label: `Cliente: ${customer}`,
+      };
+    }
+
+    case TicketSpecificField.INVOICE_REFERENCE: {
+      const invoiceReference = `INV-${String(seedIndex + 1).padStart(5, "0")}`;
+
+      return {
+        data: { financeSpecific: { create: { invoiceReference } } },
+        label: `Fattura: ${invoiceReference}`,
+      };
+    }
+
+    case TicketSpecificField.BUDGET_TYPE: {
+      const values = Object.values(BudgetType);
+      const budgetType = values[seedIndex % values.length];
+
+      return {
+        data: { financeSpecific: { create: { budgetType } } },
+        label: `Budget: ${budgetType}`,
+      };
+    }
+
+    case TicketSpecificField.SHIPMENT_REFERENCE: {
+      const shipmentReference = `SHP-${String(seedIndex + 1).padStart(6, "0")}`;
+
+      return {
+        data: { logisticSpecific: { create: { shipmentReference } } },
+        label: `Spedizione: ${shipmentReference}`,
+      };
+    }
+
+    default:
+      return { data: {}, label: null };
+  }
 }
 
 export async function main() {
@@ -142,6 +301,7 @@ export async function main() {
       id: number;
       name: string;
       department: Department;
+      specificField: TicketSpecificField | null;
     }[]
   > = {
     IT: [],
@@ -161,6 +321,7 @@ export async function main() {
           data: {
             name,
             department: dept,
+            specificField: CATEGORY_SPECIFIC_FIELD[dept][name] ?? null,
           },
         })
       )
@@ -408,11 +569,97 @@ export async function main() {
   /*
    * CREAZIONE TICKET
    */
+  let specificSeed = 0;
+
   for (const dept of DEPARTMENTS) {
     const categories = categoriesByDept[dept];
     const employees = employeesByDept[dept];
     const technicians = techniciansByDept[dept];
 
+    /*
+     * 1) Ticket OPEN garantito per ogni employee del reparto.
+     *
+     * La categoria viene assegnata a rotazione tra quelle del reparto,
+     * così ogni employee ha comunque un ticket con categoria valida.
+     */
+    for (let e = 0; e < employees.length; e++) {
+      const author = employees[e];
+      const category = categories[e % categories.length];
+
+      const { data: specificData, label: specificLabel } = buildSpecificData(
+        category.department,
+        category.specificField,
+        specificSeed++
+      );
+
+      const dueDate = new Date(
+        Date.now() + (e + 2) * 24 * 60 * 60 * 1000
+      );
+
+      const ticket = await prisma.ticket.create({
+        data: {
+          title: `Richiesta ${category.name.toLowerCase()} - ${author.firstName} ${author.lastName}`,
+
+          description:
+            `Ticket di esempio per la categoria "${category.name}" ` +
+            `del reparto ${dept}.`,
+
+          status: "OPEN",
+
+          priority: PRIORITIES[e % PRIORITIES.length],
+
+          categoryId: category.id,
+
+          createdById: author.id,
+
+          assignedToId: null,
+
+          lastUpdatedById: author.id,
+
+          closingMessage: null,
+
+          sourceDepartmentForUser: dept,
+
+          ticketDepartment: category.department,
+
+          dueDate,
+
+          closedAt: null,
+
+          ...specificData,
+        },
+      });
+
+      await prisma.ticketHistory.create({
+        data: {
+          ticketId: ticket.id,
+          snapshot: buildSnapshot({
+            title: ticket.title,
+            description: ticket.description,
+            status: ticket.status,
+            priority: ticket.priority,
+            category,
+            createdBy: author,
+            assignedTo: null,
+            createdAt: ticket.createdAt,
+            updatedAt: ticket.updatedAt,
+            closedAt: ticket.closedAt,
+            dueDate: ticket.dueDate,
+            deletedAt: null,
+            sourceDepartmentForUser: ticket.sourceDepartmentForUser,
+            ticketDepartment: ticket.ticketDepartment,
+            lastUpdatedBy: author,
+            closingMessage: null,
+            specificValue: specificLabel,
+          }),
+        },
+      });
+    }
+
+    /*
+     * 2) Ticket aggiuntivi per varietà di stati (OPEN, ASSIGNED,
+     *    IN_PROGRESS, CLOSED, REFUSED) e conversazioni di esempio.
+     */
     for (let i = 0; i < categories.length; i++) {
       const category = categories[i];
 
@@ -461,6 +708,12 @@ export async function main() {
             ? "La richiesta non è di competenza della categoria selezionata. Creare un nuovo ticket con la categoria corretta."
             : null;
 
+      const { data: specificData, label: specificLabel } = buildSpecificData(
+        category.department,
+        category.specificField,
+        specificSeed++
+      );
+
       const ticket = await prisma.ticket.create({
         data: {
           title: `Richiesta ${category.name.toLowerCase()} #${i + 1}`,
@@ -490,6 +743,8 @@ export async function main() {
           dueDate: initialDueDate,
 
           closedAt: null,
+
+          ...specificData,
         },
       });
 
@@ -508,11 +763,12 @@ export async function main() {
             updatedAt: ticket.updatedAt,
             closedAt: ticket.closedAt,
             dueDate: ticket.dueDate,
-            deletedAt: ticket.deletedAt,
+            deletedAt: null,
             sourceDepartmentForUser: ticket.sourceDepartmentForUser,
             ticketDepartment: ticket.ticketDepartment,
             lastUpdatedBy: author,
             closingMessage: null,
+            specificValue: specificLabel,
           }),
         },
       });
@@ -559,11 +815,12 @@ export async function main() {
               updatedAt: updatedTicket.updatedAt,
               closedAt: updatedTicket.closedAt,
               dueDate: updatedTicket.dueDate,
-              deletedAt: updatedTicket.deletedAt,
+              deletedAt: null,
               sourceDepartmentForUser: updatedTicket.sourceDepartmentForUser,
               ticketDepartment: updatedTicket.ticketDepartment,
               lastUpdatedBy: technician,
               closingMessage: closingMessageContent,
+              specificValue: specificLabel,
             }),
           },
         });

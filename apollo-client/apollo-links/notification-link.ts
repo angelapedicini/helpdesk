@@ -29,6 +29,12 @@ const graphqlErrorMessages: Record<string, string> = {
   EMAIL_ALREADY_EXISTS: "Questa email è già registrata.",
   INTERNAL_SERVER_ERROR: "Si è verificato un errore interno. Riprova più tardi.",
   WRONG_CREDENTIALS: "Password o email errati",
+  SPECIFIC_VALUE_REQUIRED: "Inserire un valore per il campo specifica",
+  NO_SPECIFIC_VALUE: "Non è possibile specificare un valore per una categoria che non lo preveda",
+  ASSIGNED_TO_ERROR: "Non è possibile assegnare questo ticket a questo utente",
+  WRONG_SPECIFIC: "Il valore della specifica non è corretto per la categoria",
+  EMPTY_MESSAGE: "Il messaggio non può essere vuoto",
+
 };
 
 const httpErrorMessages: Record<number, string> = {
@@ -50,8 +56,8 @@ export const notificationLink = new ApolloLink((operation, forward) => {
         const code = result.errors[0]?.extensions?.code as string | undefined;
         notify(
           (code && graphqlErrorMessages[code]) ??
-            result.errors[0]?.message ??
-            "Si è verificato un errore.",
+          result.errors[0]?.message ??
+          "Si è verificato un errore.",
           "error"
         );
         return;
@@ -81,14 +87,14 @@ export const notificationLink = new ApolloLink((operation, forward) => {
         const code = error.errors[0]?.extensions?.code as string | undefined;
         notify(
           (code && graphqlErrorMessages[code]) ??
-            error.errors[0]?.message ??
-            "Si è verificato un errore.",
+          error.errors[0]?.message ??
+          "Si è verificato un errore.",
           "error"
         );
       } else if (ServerError.is(error)) {
         notify(
           httpErrorMessages[error.statusCode] ??
-            `Errore del server (${error.statusCode}).`,
+          `Errore del server (${error.statusCode}).`,
           "error"
         );
       } else if (error) {

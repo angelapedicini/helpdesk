@@ -14,7 +14,7 @@ export const ticketAdminNotificationMutations = {
             });
 
             if (!ticket) {
-                throw new GraphQLError("Ticket non trovato", { extensions: { code: "NOT_FOUND" } });
+                throw new GraphQLError("Ticket not found", { extensions: { code: "NOT_FOUND" } });
             }
 
             return prisma.ticketAdminNotificationSubscription.upsert({
@@ -48,7 +48,7 @@ export const ticketAdminNotificationMutations = {
             });
 
             if (!existing) {
-                throw new GraphQLError("Sottoscrizione a notifiche non trovata", { extensions: { code: "NOT_FOUND" } });
+                throw new GraphQLError("Subscription to ticket not found", { extensions: { code: "NOT_FOUND" } });
             }
 
             return prisma.ticketAdminNotificationSubscription.delete({

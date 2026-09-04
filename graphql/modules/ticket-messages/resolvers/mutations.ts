@@ -13,8 +13,8 @@ export const ticketMessageMutations = {
         const ability = defineAbilityForTicket(session);
 
         if (!args.input.content?.trim()) {
-            throw new GraphQLError("Il messaggio non può essere vuoto", {
-                extensions: { code: "BAD_USER_INPUT" },
+            throw new GraphQLError("The message cannot be empty", {
+                extensions: { code: "EMPTY_MESSAGE" },
             });
         }
 
@@ -31,7 +31,7 @@ export const ticketMessageMutations = {
         });
 
         if (!ticket) {
-            throw new GraphQLError("Ticket non trovato", { extensions: { code: "NOT_FOUND" } });
+            throw new GraphQLError("Ticket not found", { extensions: { code: "NOT_FOUND" } });
         }
 
         console.log({
@@ -84,7 +84,7 @@ export const ticketMessageMutations = {
         });
 
         if (!existing) {
-            throw new GraphQLError("Messaggio non trovato", { extensions: { code: "NOT_FOUND" } });
+            throw new GraphQLError("Message not found", { extensions: { code: "NOT_FOUND" } });
         }
 
         assertCanDeleteTicketMessage(ability, existing);

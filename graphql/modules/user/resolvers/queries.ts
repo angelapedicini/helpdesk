@@ -3,8 +3,7 @@ import { getSession, requireAdmin } from "@/lib/auth/session";
 import { Department, Role } from "@/app/generated/prisma/enums";
 import { Prisma } from "@/app/generated/prisma/client";
 
-export const userResolvers = {
-  Query: {
+export const userQueries = {
     me: async () => {
       const session = await getSession();
       if (!session) return null;
@@ -111,6 +110,5 @@ export const userResolvers = {
         ...u,
         specializations: u.specializations.map((s) => s.category),
       }));
-    },
   },
 };

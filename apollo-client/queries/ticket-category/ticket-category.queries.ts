@@ -6,6 +6,7 @@ export const GET_CATEGORIES = graphql(`
       id
       name
       department
+      specificField
     }
   }
 `);
@@ -16,6 +17,7 @@ export const GET_CATEGORY_BY_ID = graphql(`
       id
       name
       department
+      specificField
     }
   }
 `);
