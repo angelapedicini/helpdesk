@@ -1,4 +1,4 @@
-import { PrismaClient } from "../app/generated/prisma/client"; 
+import { PrismaClient } from "@/app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg"; 
 
 // ok quindi prisma client è un modulo. il modulo con hot reload si ricarica mentre global no. 
@@ -40,4 +40,5 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 // Esporta l'istanza per usarla in tutta l'app con:
 // import prisma from "@/lib/prisma"
-export default prisma;
+// export default prisma;
+export const staticPrismaClient = prisma;

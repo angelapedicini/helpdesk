@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { requireSession } from "@/lib/auth/session";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
 import { getReadableTicketHistoryWhere } from "@/lib/casl/abilities/ticket-history/guards";
@@ -12,6 +12,8 @@ export const ticketHistoryQueries = {
     args: { first?: number; after?: string; filter?: unknown }
   ) => {
     const session = await requireSession();
+    const prisma = await getPrisma();
+
 
     const where: Prisma.TicketHistoryWhereInput = {
       AND: [getReadableTicketHistoryWhere(session), buildTicketWhere(args.filter)],
@@ -41,6 +43,8 @@ export const ticketHistoryQueries = {
     args: { ticketId: number; first?: number; after?: string; filter?: unknown }
   ) => {
     const session = await requireSession();
+    const prisma = await getPrisma();
+
 
     const where: Prisma.TicketHistoryWhereInput = {
       AND: [
@@ -80,6 +84,8 @@ export const ticketHistoryQueries = {
   ) => {
     const session = await requireSession();
     const scope: TicketScope = args.scope ?? "MINE";
+    const prisma = await getPrisma();
+
 
     const where: Prisma.TicketHistoryWhereInput = {
       AND: [

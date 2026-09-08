@@ -1,52 +1,56 @@
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { getSession } from "@/lib/auth/session";
 import { Department } from "@/app/generated/prisma/enums";
 import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
 
 export const categoryQueries = {
-    categories: async (
-      _parent: unknown,
-      args: { department?: Department }
-    ) => {
-      const session = await getSession();
-      if (!session) return [];
+  categories: async (
+    _parent: unknown,
+    args: { department?: Department }
+  ) => {
+    const session = await getSession();
+    if (!session) return [];
+    const prisma = await getPrisma();
 
-      // const prisma = await getPrismaClient();
 
-      const categories = await getAllowedCategories(prisma, {
-        department: session.department,
-        role: session.role,
-      });
+    // const prisma = await getPrismaClient();
 
-      if (args.department) {
-        return categories.filter(
-          (category) => category.department === args.department
-        );
-      }
+    const categories = await getAllowedCategories(prisma, {
+      department: session.department,
+      role: session.role,
+    });
 
-      return categories;
-    },
+    if (args.department) {
+      return categories.filter(
+        (category) => category.department === args.department
+      );
+    }
 
-    categoryById: async (
-      _parent: unknown,
-      args: { id: number }
-    ) => {
-      const session = await getSession();
-      if (!session) return null;
+    return categories;
+  },
 
-      // const prisma = await getPrismaClient();
+  categoryById: async (
+    _parent: unknown,
+    args: { id: number }
+  ) => {
+    const session = await getSession();
+    if (!session) return null;
+    const prisma = await getPrisma();
 
-      const allowed = await getAllowedCategories(prisma, {
-        department: session.department,
-        role: session.role,
-      });
 
-      const isAllowed = allowed.some((c) => c.id === args.id);
-      if (!isAllowed) return null;
+    // const prisma = await getPrismaClient();
 
-      return prisma.ticketCategory.findUnique({
-        where: { id: args.id },
-        select: { id: true, name: true, department: true, specificField: true },
-      });
+    const allowed = await getAllowedCategories(prisma, {
+      department: session.department,
+      role: session.role,
+    });
+
+    const isAllowed = allowed.some((c) => c.id === args.id);
+    if (!isAllowed) return null;
+
+    return prisma.ticketCategory.findUnique({
+      where: { id: args.id },
+      select: { id: true, name: true, department: true, specificField: true },
+    });
   },
 };

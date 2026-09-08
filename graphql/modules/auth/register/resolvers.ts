@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { RegisterSchema } from "@/lib/validators/auth.schema";
 import { GraphQLError } from "graphql";
 import bcrypt from "bcryptjs";
@@ -21,6 +21,9 @@ export const registerResolvers = {
 
       const input = result.data;
 
+      const prisma = await getPrisma();
+
+
       const existing = await prisma.user.findUnique({
         where: { email: input.email },
       });
@@ -40,7 +43,7 @@ export const registerResolvers = {
           email: input.email,
           password: hashedPassword,
           role: "EMPLOYEE",
-          department: input.department, 
+          department: input.department,
         },
       });
     },

@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { Department } from "@/app/generated/prisma/enums";
 import { getSession } from "@/lib/auth/session";
 import { Prisma } from "@/app/generated/prisma/client";
@@ -11,6 +11,8 @@ export const userSpecQueries = {
     ) => {
         const session = await getSession();
         if (!session) return [];
+        const prisma = await getPrisma();
+
 
         const targetUserId = args.userId ?? session.userId;
 
@@ -57,6 +59,8 @@ export const userSpecQueries = {
     ) => {
         const session = await getSession();
         if (!session) return [];
+        const prisma = await getPrisma();
+
 
         const { categoryId, search } = args;
 

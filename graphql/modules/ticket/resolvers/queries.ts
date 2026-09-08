@@ -1,5 +1,5 @@
 // modules/ticket/resolvers/queries.ts
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { requireSession } from "@/lib/auth/session";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
 import type { Prisma } from "@/app/generated/prisma/client";
@@ -21,6 +21,8 @@ export const ticketQueries = {
   ) => {
     const session = await requireSession();
     const ability = defineAbilityForTicket(session);
+    const prisma = await getPrisma();
+
 
     const orderBy = toPrismaOrderBy<TicketSortField, Prisma.TicketOrderByWithRelationInput>(
       args.orderBy,
@@ -65,6 +67,8 @@ export const ticketQueries = {
   ticket: async (_parent: unknown, args: { id: number }) => {
     const session = await requireSession();
     const ability = defineAbilityForTicket(session);
+    const prisma = await getPrisma();
+
 
     return prisma.ticket.findFirst({
       where: {

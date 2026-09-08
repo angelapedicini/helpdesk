@@ -1,7 +1,5 @@
 // lib/ticket/autoAssign.ts
-
-import prisma from "@/lib/prisma";
-import type { TicketStatus } from "@/app/generated/prisma/client";
+import type { PrismaClient, TicketStatus } from "@/app/generated/prisma/client";
 
 /**
  * Stati che consideriamo come "ticket aperto".
@@ -39,6 +37,7 @@ const OPEN_TICKET_STATUSES: TicketStatus[] = [
  *    ritorna null.
  */
 export async function autoAssign(
+  prisma: PrismaClient,
   categoryId: number,
   createdById: number
 ): Promise<number | null> {

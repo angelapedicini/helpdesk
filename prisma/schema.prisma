@@ -375,3 +375,14 @@ enum BudgetType {
   SECURITY
   TRAVEL
 }
+
+
+model DemoSession {
+  id               String   @id @default(uuid())
+  neonBranchId     String
+  connectionString String
+  createdAt        DateTime @default(now())
+  expiresAt        DateTime
+
+  @@index([expiresAt])
+}

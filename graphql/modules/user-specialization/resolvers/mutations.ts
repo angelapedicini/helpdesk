@@ -1,4 +1,5 @@
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
+
 import { requireAdmin } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
 
@@ -13,6 +14,7 @@ export const userSpecMutations = {
         extensions: { code: "FORBIDDEN" },
       });
     }
+    const prisma = await getPrisma();
 
     const { userId, categoryId } = args.input;
 
@@ -41,6 +43,8 @@ export const userSpecMutations = {
         extensions: { code: "FORBIDDEN" },
       });
     }
+    const prisma = await getPrisma();
+
 
     const { userId, categoryId } = args.input;
 
@@ -52,7 +56,7 @@ export const userSpecMutations = {
         },
         include: {
           user: true,
-          category: true, // aggiungilo se anche "category" è un campo non-nullable richiesto nello schema
+          category: true,
         },
       });
 

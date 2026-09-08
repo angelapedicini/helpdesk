@@ -1,6 +1,6 @@
 // modules/auth/refresh/resolvers.ts
 import { GraphQLError } from "graphql";
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { verifyRefreshToken, signAccessToken, signRefreshToken, buildAccessTokenPayload } from "@/lib/auth/jwt";
 import { setAuthCookies, getRefreshToken, clearAuthCookies } from "@/lib/auth/cookies";
 
@@ -8,6 +8,7 @@ export const refreshResolvers = {
   Mutation: {
     refreshToken: async () => {
       const refreshToken = await getRefreshToken();
+      const prisma = await getPrisma();
 
       if (!refreshToken) {
         await clearAuthCookies();

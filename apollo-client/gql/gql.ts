@@ -17,6 +17,7 @@ type Documents = {
     "\n  mutation Login($input: LoginInput!) {\n    login(input: $input) {\n      user {\n        id\n        email\n        firstName\n        lastName\n      }\n    }\n  }\n": typeof types.LoginDocument,
     "\n  mutation Logout {\n    logout {\n      success\n    }\n  }\n": typeof types.LogoutDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n": typeof types.CreateUserDocument,
+    "\n  mutation StartDemo {\n    startDemo {\n      success\n      demoSessionId\n    }\n  }\n": typeof types.StartDemoDocument,
     "\n  mutation CreateTicketNotificationSubscription($ticketId: Int!) {\n    createTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.CreateTicketNotificationSubscriptionDocument,
     "\n  mutation DeleteTicketNotificationSubscription($ticketId: Int!) {\n    deleteTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.DeleteTicketNotificationSubscriptionDocument,
     "\n  query TicketNotificationSubscription($ticketId: Int!) {\n    ticketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.TicketNotificationSubscriptionDocument,
@@ -46,6 +47,7 @@ const documents: Documents = {
     "\n  mutation Login($input: LoginInput!) {\n    login(input: $input) {\n      user {\n        id\n        email\n        firstName\n        lastName\n      }\n    }\n  }\n": types.LoginDocument,
     "\n  mutation Logout {\n    logout {\n      success\n    }\n  }\n": types.LogoutDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n": types.CreateUserDocument,
+    "\n  mutation StartDemo {\n    startDemo {\n      success\n      demoSessionId\n    }\n  }\n": types.StartDemoDocument,
     "\n  mutation CreateTicketNotificationSubscription($ticketId: Int!) {\n    createTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.CreateTicketNotificationSubscriptionDocument,
     "\n  mutation DeleteTicketNotificationSubscription($ticketId: Int!) {\n    deleteTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.DeleteTicketNotificationSubscriptionDocument,
     "\n  query TicketNotificationSubscription($ticketId: Int!) {\n    ticketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.TicketNotificationSubscriptionDocument,
@@ -98,6 +100,10 @@ export function graphql(source: "\n  mutation Logout {\n    logout {\n      succ
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n"): (typeof documents)["\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation StartDemo {\n    startDemo {\n      success\n      demoSessionId\n    }\n  }\n"): (typeof documents)["\n  mutation StartDemo {\n    startDemo {\n      success\n      demoSessionId\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

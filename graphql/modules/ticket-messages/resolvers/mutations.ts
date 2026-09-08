@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { requireSession } from "@/lib/auth/session";
 import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
 import { GraphQLError } from "graphql/error";
@@ -11,6 +11,8 @@ export const ticketMessageMutations = {
     ) => {
         const session = await requireSession();
         const ability = defineAbilityForTicket(session);
+        const prisma = await getPrisma();
+
 
         if (!args.input.content?.trim()) {
             throw new GraphQLError("The message cannot be empty", {
@@ -19,7 +21,8 @@ export const ticketMessageMutations = {
         }
 
         const ticket = await prisma.ticket.findFirst({
-            where: { id: args.input.ticketId, 
+            where: {
+                id: args.input.ticketId,
                 // deletedAt: null 
             },
             select: {
@@ -80,6 +83,8 @@ export const ticketMessageMutations = {
     deleteTicketMessage: async (_parent: unknown, args: { id: number }) => {
         const session = await requireSession();
         const ability = defineAbilityForTicket(session);
+        const prisma = await getPrisma();
+
 
         const existing = await prisma.ticketMessage.findUnique({
             where: { id: args.id },

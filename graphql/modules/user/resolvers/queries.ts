@@ -1,114 +1,120 @@
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { getSession, requireAdmin } from "@/lib/auth/session";
 import { Department, Role } from "@/app/generated/prisma/enums";
 import { Prisma } from "@/app/generated/prisma/client";
 
 export const userQueries = {
-    me: async () => {
-      const session = await getSession();
-      if (!session) return null;
+  me: async () => {
+    const session = await getSession();
+    if (!session) return null;
+    const prisma = await getPrisma();
 
-      return prisma.user.findUnique({
-        where: { id: session.userId },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          role: true,
-          department: true,
-        },
-      });
-    },
 
-    searchUsers: async (
-      _parent: unknown,
-      args: { search?: string; role?: Role; department?: Department }
-    ) => {
-      const { search, role, department } = args;
+    return prisma.user.findUnique({
+      where: { id: session.userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        department: true,
+      },
+    });
+  },
 
-      const where: Prisma.UserWhereInput = {};
+  searchUsers: async (
+    _parent: unknown,
+    args: { search?: string; role?: Role; department?: Department }
+  ) => {
+    const prisma = await getPrisma();
 
-      if (search) {
-        where.OR = [
-          { firstName: { contains: search, mode: "insensitive" } },
-          { lastName: { contains: search, mode: "insensitive" } },
-        ];
-      }
+    const { search, role, department } = args;
 
-      if (role) {
-        where.role = role;
-      }
+    const where: Prisma.UserWhereInput = {};
 
-      if (department) {
-        where.department = department;
-      }
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: "insensitive" } },
+        { lastName: { contains: search, mode: "insensitive" } },
+      ];
+    }
 
-      return prisma.user.findMany({
-        where,
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          role: true,
-          department: true,
-        },
-      });
-    },
+    if (role) {
+      where.role = role;
+    }
 
-    usersByDepartment: async (
-      _parent: unknown,
-      args: { userId?: number; role?: Role; categoryId?: number }
-    ) => {
-      const session = await getSession();
-      if (!session) return [];
+    if (department) {
+      where.department = department;
+    }
 
-      if (session.role !== "ADMIN" && session.role !== "TECHNICIAN") {
-        return [];
-      }
+    return prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        department: true,
+      },
+    });
+  },
 
-      const { userId, role, categoryId } = args;
+  usersByDepartment: async (
+    _parent: unknown,
+    args: { userId?: number; role?: Role; categoryId?: number }
+  ) => {
+    const session = await getSession();
+    if (!session) return [];
+    const prisma = await getPrisma();
 
-      const isAdmin = session.role === "ADMIN";
 
-      const where: Prisma.UserWhereInput = {
-        department: session.department,
-        ...(categoryId
-          ? { specializations: { some: { categoryId } } }
-          : {}),
-      };
+    if (session.role !== "ADMIN" && session.role !== "TECHNICIAN") {
+      return [];
+    }
 
-      if (isAdmin) {
-        // ADMIN: vede tutti gli utenti del dipartimento, filtrabili
-        if (userId) where.id = userId;
-        if (role) where.role = role;
-      } else {
-        // TECHNICIAN: vede solo il proprio record
-        where.id = session.userId;
-      }
+    const { userId, role, categoryId } = args;
 
-      const users = await prisma.user.findMany({
-        where,
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          specializations: {
-            select: {
-              category: {
-                select: { id: true, name: true, department: true },
-              },
+    const isAdmin = session.role === "ADMIN";
+
+    const where: Prisma.UserWhereInput = {
+      department: session.department,
+      ...(categoryId
+        ? { specializations: { some: { categoryId } } }
+        : {}),
+    };
+
+    if (isAdmin) {
+      // ADMIN: vede tutti gli utenti del dipartimento, filtrabili
+      if (userId) where.id = userId;
+      if (role) where.role = role;
+    } else {
+      // TECHNICIAN: vede solo il proprio record
+      where.id = session.userId;
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        specializations: {
+          select: {
+            category: {
+              select: { id: true, name: true, department: true },
             },
           },
         },
-        orderBy: { role: "asc" },
-      });
+      },
+      orderBy: { role: "asc" },
+    });
 
-      return users.map((u) => ({
-        ...u,
-        specializations: u.specializations.map((s) => s.category),
-      }));
+    return users.map((u) => ({
+      ...u,
+      specializations: u.specializations.map((s) => s.category),
+    }));
   },
 };

@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { Prisma } from "@/app/generated/prisma/client";
 import { requireSession } from "@/lib/auth/session";
 import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
@@ -8,6 +8,8 @@ export const ticketReadStateQueries = {
     unreadTicketMessages: async () => {
         const session = await requireSession();
         const ability = defineAbilityForTicket(session);
+        const prisma = await getPrisma();
+
 
         // Ticket accessibili in lettura:
         // - employee: propri ticket creati
@@ -27,21 +29,21 @@ export const ticketReadStateQueries = {
 
                     ...(session.role === "ADMIN"
                         ? [
-                              {
-                                  OR: [
-                                      {
-                                          createdById: session.userId,
-                                      },
-                                      {
-                                          adminNotificationSubscriptions: {
-                                              some: {
-                                                  userId: session.userId,
-                                              },
-                                          },
-                                      },
-                                  ],
-                              },
-                          ]
+                            {
+                                OR: [
+                                    {
+                                        createdById: session.userId,
+                                    },
+                                    {
+                                        adminNotificationSubscriptions: {
+                                            some: {
+                                                userId: session.userId,
+                                            },
+                                        },
+                                    },
+                                ],
+                            },
+                        ]
                         : []),
                 ],
             },

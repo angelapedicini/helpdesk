@@ -1,5 +1,4 @@
 // modules/ticket/resolvers/mutations/create.ts
-import prisma from "@/lib/prisma";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
 import { autoAssign } from "@/lib/ticket/autoAssign";
@@ -9,10 +8,12 @@ import { assertCanCreateTicket } from "@/lib/casl/abilities/ticket/guards";
 import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
 import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
 import { getSpecificMapping } from "@/graphql/modules/ticket/resolvers/mutations/specific-field-config";
+import { getPrisma } from "@/lib/prisma/index";
 
 export async function createTicket(_parent: unknown, args: { input: unknown }) {
   const session = await requireSession();
   const ability = defineAbilityForTicket(session);
+  const prisma = await getPrisma();
 
   assertCanCreateTicket(ability);
 
@@ -79,7 +80,7 @@ export async function createTicket(_parent: unknown, args: { input: unknown }) {
 
   let assignedToId = null;
   if (input.categoryId != undefined) {
-    assignedToId = await autoAssign(input.categoryId, session.userId);
+    assignedToId = await autoAssign(prisma, input.categoryId, session.userId);
   }
 
   const dueDate = computeDueDate(input.priority);

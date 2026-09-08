@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { requireAdmin } from "@/lib/auth/session";
 
 export const ticketAdminNotificationQueries = {
@@ -7,6 +7,8 @@ export const ticketAdminNotificationQueries = {
         args: { ticketId: number }
     ) => {
         const session = await requireAdmin();
+        const prisma = await getPrisma();
+
 
         return prisma.ticketAdminNotificationSubscription.findUnique({
             where: {

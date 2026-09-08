@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { LoginSchema } from "@/lib/validators/auth.schema";
 import { GraphQLError } from "graphql";
 import bcrypt from "bcryptjs";
@@ -20,6 +20,8 @@ export const loginResolvers = {
       }
 
       const input = result.data;
+
+      const prisma = await getPrisma();
 
       const existing = await prisma.user.findUnique({
         where: { email: input.email },

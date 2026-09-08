@@ -26,6 +26,8 @@ import { userResolvers } from "./modules/user";
 import { categoryResolvers } from "./modules/ticket-category";
 import { ticketHistoryTypeDefs } from "./modules/ticket-history/typeDefs";
 import { ticketHistoryResolvers } from "./modules/ticket-history";
+import { demoResolvers } from "./modules/demo/resolvers";
+import { demoTypeDefs } from "./modules/demo/typeDefs";
 
 
 export const typeDefs = [
@@ -42,7 +44,8 @@ export const typeDefs = [
   ticketReadStateTypeDefs,
   ticketAdminNotificationSubTypeDefs,
   ticketSpecificationTypeDefs,
-  ticketHistoryTypeDefs
+  ticketHistoryTypeDefs,
+  demoTypeDefs,
 ];
 
 export const resolvers = {
@@ -66,6 +69,8 @@ export const resolvers = {
     ...ticketMessageResolvers.Mutation,
     ...ticketReadStateResolvers.Mutation,
     ...ticketAdminNotificationResolvers.Mutation,
+    ...demoResolvers.Mutation,
+
   },
   Ticket: ticketResolvers.Ticket,
   TicketSpecific: ticketResolvers.TicketSpecific,

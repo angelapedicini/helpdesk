@@ -1,5 +1,5 @@
 // modules/ticket/resolvers/mutations/delete.ts
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
 import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
@@ -9,6 +9,7 @@ import { getSpecificMapping } from "./specific-field-config";
 export async function deleteTicket(_parent: unknown, args: { id: number }) {
   const session = await requireSession();
   const ability = defineAbilityForTicket(session);
+  const prisma = await getPrisma();
 
   const existing = await prisma.ticket.findUnique({
     where: { id: args.id },

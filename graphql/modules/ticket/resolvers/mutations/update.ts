@@ -1,5 +1,5 @@
 // modules/ticket/resolvers/mutations/update.ts
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma/index";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
 import { UpdateTicketSchema } from "@/lib/validators/ticket-detail.schema";
@@ -13,6 +13,8 @@ import { getSpecificMapping, getFieldsForTable } from "./specific-field-config";
 export async function updateTicket(_parent: unknown, args: { id: number; input: unknown }) {
   const session = await requireSession();
   const ability = defineAbilityForTicket(session);
+  const prisma = await getPrisma();
+
 
   const result = UpdateTicketSchema.safeParse(args.input);
   if (!result.success) {
@@ -126,7 +128,7 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   let assignedToId = input.assignedToId;
 
   if (input.categoryId !== undefined && input.categoryId !== null && input.assignedToId === undefined) {
-    assignedToId = await autoAssign(input.categoryId, existing.createdById);
+    assignedToId = await autoAssign(prisma, input.categoryId, existing.createdById);
     status = "ASSIGNED";
   }
 
