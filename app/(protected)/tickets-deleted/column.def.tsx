@@ -1,28 +1,25 @@
-// lib/ticket/column.def.tsx (o dove si trova)
 "use client";
 
-import Box from "@mui/material/Box";
+import { useRouter } from "next/navigation";
+import IconButton from "@mui/material/IconButton";
+import HistoryIcon from "@mui/icons-material/History";
 
-import { TicketHistoryByTicketIdQuery } from "@/apollo-client/gql/graphql";
+import { DeletedTicketsQuery } from "@/apollo-client/gql/graphql";
 
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
 import { HeadCell } from "@/components/table";
+import { Box } from "@mui/material";
 
-export type TicketHistoryRow = NonNullable<
-    TicketHistoryByTicketIdQuery["ticketHistoryByTicketId"]
+export type DeletedTicketRow = NonNullable<
+    DeletedTicketsQuery["deletedTickets"]
 >["edges"][number]["node"];
 
-// Nessun ChangedFields/highlight qui: l'evidenziazione ora è delegata
-// interamente a getCellClassName sulla EnhancedTable (classe CSS
-// "highlighted-cell" già definita nel tema), non più a uno stile inline.
-export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
+export function createDeletedTicketHeadCells(): HeadCell<DeletedTicketRow>[] {
     return [
         { id: "originalTicketId", label: "Ticket originale", sortable: false },
 
         { id: "title", label: "Titolo", sortable: false },
-
-        { id: "description", label: "Descrizione", sortable: false },
 
         {
             id: "status",
@@ -62,13 +59,10 @@ export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
         },
 
         {
-            id: "ticketSpecific",
-            label: "Specifica",
+            id: "ticketDepartment",
+            label: "Dipartimento",
             sortable: false,
-            render: (row) => row.ticketSpecific ?? "Nessuna specifica",
         },
-
-        { id: "ticketDepartment", label: "Dipartimento ticket", sortable: false },
 
         {
             id: "createdBy",
@@ -89,55 +83,32 @@ export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
         },
 
         {
-            id: "lastUpdatedBy",
-            label: "Ultimo aggiornamento di",
+            id: "deletedBy",
+            label: "Eliminato da",
             sortable: false,
             render: (row) =>
-                row.lastUpdatedBy
-                    ? `${row.lastUpdatedBy.firstName} ${row.lastUpdatedBy.lastName}`
-                    : "-",
+                row.deletedBy ? `${row.deletedBy.firstName} ${row.deletedBy.lastName}` : "-",
         },
 
         {
-            id: "closingMessage",
-            label: "Messaggio di chiusura",
-            sortable: false,
-            render: (row) => row.closingMessage ?? "-",
-        },
-
-        {
-            id: "createdAt",
-            label: "Creazione",
-            sortable: false,
-            render: (row) => new Date(row.createdAt).toLocaleDateString("it-IT"),
-        },
-
-        {
-            id: "updatedAt",
-            label: "Snapshot",
-            sortable: false,
-            width: 10,
-            render: (row) => new Date(row.updatedAt).toLocaleDateString("it-IT"),
-        },
-
-        {
-            id: "dueDate",
-            label: "Entro",
-            sortable: false,
-            render: (row) => (row.dueDate ? new Date(row.dueDate).toLocaleDateString("it-IT") : "-"),
-        },
-
-        {
-            id: "closedAt",
-            label: "Chiuso il",
-            sortable: false,
-            render: (row) => (row.closedAt ? new Date(row.closedAt).toLocaleDateString("it-IT") : "-"),
-        },
-         {
             id: "deletedAt",
-            label: "Cancellato",
+            label: "Eliminato il",
             sortable: false,
-            render: (row) => (row.deletedAt ? new Date(row.deletedAt).toLocaleDateString("it-IT") : "-"),
+            render: (row) =>
+                row.deletedAt ? new Date(row.deletedAt).toLocaleDateString("it-IT") : "-",
         },
     ];
+}
+
+export function DeletedTicketHistoryAction({ ticketId }: { ticketId: number }) {
+    const router = useRouter();
+
+    return (
+        <IconButton
+            aria-label="Vedi storico"
+            onClick={() => router.push(`/tickets/${ticketId}/history`)}
+        >
+            <HistoryIcon />
+        </IconButton>
+    );
 }

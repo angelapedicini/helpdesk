@@ -51,6 +51,23 @@ const NAV_LINKS: NavLinkItem[] = [
     icon: <DataObjectIcon />,
     roles: ["ADMIN", "TECHNICIAN"],
   },
+  {
+    label: "I miei ticket cancellati",
+    href: "/tickets-deleted?scope=mine",
+    icon: <DataObjectIcon />,
+  },
+  {
+    label: "Ticket assegnati a me cancellati",
+    href: "/tickets-deleted?scope=assigned_to_me",
+    icon: <DataObjectIcon />,
+    roles: ["TECHNICIAN"],
+  },
+  {
+    label: "Ticket del dipartimento cancellati",
+    href: "/tickets-deleted?scope=department",
+    icon: <DataObjectIcon />,
+    roles: ["ADMIN"],
+  },
 ];
 
 export default function Navbar() {

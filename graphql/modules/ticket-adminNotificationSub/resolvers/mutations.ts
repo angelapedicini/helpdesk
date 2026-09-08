@@ -10,7 +10,9 @@ export const ticketAdminNotificationMutations = {
             const session = await requireAdmin();
 
             const ticket = await prisma.ticket.findUnique({
-                where: { id: args.ticketId, deletedAt: null },
+                where: { id: args.ticketId, 
+                    // deletedAt: null 
+                },
             });
 
             if (!ticket) {

@@ -11,6 +11,7 @@ import {
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
 import { TicketHistoryRow } from "../column.def";
+import type { ChangedFields } from "@/lib/ticket/diff";
 import { toDatetimeLocalValue } from "@/lib/helper/date-helper";
 
 
@@ -20,6 +21,10 @@ function statusLabel(status: TicketStatus) {
 
 function priorityLabel(priority: TicketPriority) {
     return TICKET_PRIORITY_CONFIG[priority].label;
+}
+
+function userLabel(user: { firstName: string; lastName: string } | null | undefined) {
+    return user ? `${user.firstName} ${user.lastName}` : "-";
 }
 
 // --------------------------------
@@ -47,17 +52,17 @@ const highlightedFieldSx: SxProps<Theme> = {
 
 interface TicketHistoryDetailModalProps {
     row: TicketHistoryRow | null;
+    changedFields?: ChangedFields;
 }
 
 export default function TicketHistoryDetailModal({
     row,
-    // isOpen,
-    // onClose,
+    changedFields,
 }: TicketHistoryDetailModalProps) {
     if (!row) return null;
 
     const fieldSx = (field: string): SxProps<Theme> =>
-        row.changedFields.includes(field) ? highlightedFieldSx : disabledFieldSx;
+        changedFields?.has(field) ? highlightedFieldSx : disabledFieldSx;
 
     return (
             <Box
@@ -80,8 +85,8 @@ export default function TicketHistoryDetailModal({
                 />
 
                 <TextField
-                    label="Ticket ID"
-                    value={row.ticketId}
+                    label="Ticket originale"
+                    value={row.originalTicketId}
                     fullWidth
                     disabled
                     sx={disabledFieldSx}
@@ -113,7 +118,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Categoria"
-                    value={row.category}
+                    value={row.category ? row.category.name : "Nessuna categoria"}
                     fullWidth
                     disabled
                     sx={fieldSx("category")}
@@ -121,15 +126,15 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Specifica"
-                    value={row.specificValue}
+                    value={row.ticketSpecific ?? "Nessuna specifica"}
                     fullWidth
                     disabled
-                    sx={fieldSx("specificValue")}
+                    sx={fieldSx("ticketSpecific")}
                 />
 
                 <TextField
                     label="Creato da"
-                    value={row.createdBy}
+                    value={userLabel(row.createdBy)}
                     fullWidth
                     disabled
                     sx={fieldSx("createdBy")}
@@ -137,7 +142,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Assegnato a"
-                    value={row.assignedTo}
+                    value={row.assignedTo ? userLabel(row.assignedTo) : "Non assegnato"}
                     fullWidth
                     disabled
                     sx={fieldSx("assignedTo")}
@@ -145,7 +150,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Modificato da"
-                    value={row.lastUpdatedBy}
+                    value={userLabel(row.lastUpdatedBy)}
                     fullWidth
                     disabled
                     sx={fieldSx("lastUpdatedBy")}
@@ -189,7 +194,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Chiuso il"
-                    value={toDatetimeLocalValue(row.closedAt)}
+                    value={row.closedAt ? toDatetimeLocalValue(row.closedAt) : ""}
                     type="datetime-local"
                     fullWidth
                     disabled

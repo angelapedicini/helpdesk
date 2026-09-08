@@ -56,7 +56,6 @@ export const ticketTypeDefs = `#graphql
     updatedAt: Date!
     closedAt: Date
     dueDate: Date
-    deletedAt: Date
     sourceDepartmentForUser: Department!
     ticketDepartment: Department!
     lastUpdatedBy: User

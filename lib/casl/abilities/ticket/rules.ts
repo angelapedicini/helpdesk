@@ -56,7 +56,7 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
       status: { in: ["OPEN", "ASSIGNED"] },
     });
 
-    cannot("update", "Ticket", ["createdById", ], {
+    cannot("update", "Ticket", ["createdById",], {
       assignedToId: user.userId,
     }).because("Il technician non può modificare creatore di un ticket assegnatogli");
   }
@@ -69,9 +69,6 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
 
     can("update", "Ticket", ["status", "closingMessage"], { ticketDepartment: user.department, status: "OPEN" });
 
-    // admin del reparto può modificare specificValue solo mentre ASSIGNED
-    can("update", "Ticket", ["specificValue"], { ticketDepartment: user.department, status: { in: ["OPEN", "ASSIGNED"] } });
-
     cannot("update", "Ticket", ["status"], {
       status: { in: ["IN_PROGRESS", "CLOSED"] },
     }).because("L'admin non può intervenire su un ticket già in lavorazione");
@@ -80,10 +77,9 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
       ticketDepartment: user.department,
     }).because("L'admin non può modificare creatore o categoria di un ticket che non ha creato lui stesso");
 
-    can("update", "Ticket", ["categoryId"], {
+    can("update", "Ticket", ["categoryId", "specificValue"], {
       ticketDepartment: user.department,
       status: { in: ["OPEN", "ASSIGNED"] },
-      // categoryId: null,
     });
 
     can("update", "Ticket", ["priority"], {

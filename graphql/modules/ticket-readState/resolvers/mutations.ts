@@ -22,7 +22,7 @@ export const ticketReadStateMutations = {
         const ticket = await prisma.ticket.findFirst({
             where: {
                 id: args.ticketId,
-                deletedAt: null,
+                // deletedAt: null,
                 AND: [accessibleBy(ability, "read").ofType("Ticket")],
             },
             select: { id: true },

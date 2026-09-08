@@ -20,7 +20,7 @@ export const ticketReadStateQueries = {
         // - oppure per i quali hanno attivato una subscription
         const accessibleTickets = await prisma.ticket.findMany({
             where: {
-                deletedAt: null,
+                // deletedAt: null,
 
                 AND: [
                     accessibleBy(ability, "read").ofType("Ticket"),

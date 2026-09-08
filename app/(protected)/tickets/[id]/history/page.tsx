@@ -2,54 +2,53 @@
 
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
-
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-
-import { useFragment } from "@/apollo-client/gql/fragment-masking";
-
-import {
-    TicketSnapshotFieldsFragmentDoc,
-} from "@/apollo-client/gql/graphql";
-
-import { GET_TICKET_HISTORY } from "@/apollo-client/queries/ticket-history/ticket-history.queries";
+import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
-import { useModalState } from "@/components/hooks/use-modal-state";
-
-import { diffTickets } from "@/lib/ticket/diff";
-import { createTicketHistoryHeadCells, TicketHistoryRow } from "./column.def";
-import TicketHistoryDetailModal from "./_components/ticket-history-detail-modal";
-import Modal from "@/components/modal";
+import { diffTicketHistory, type ChangedFields } from "@/lib/ticket/diff";
 import EnhancedTable from "@/components/table";
+import { GET_TICKET_HISTORY_BY_TICKET_ID } from "@/apollo-client/queries/ticket-history/ticket-history.queries";
+import { createTicketHistoryHeadCells, TicketHistoryRow } from "./column.def";
+import { useModalState } from "@/components/hooks/use-modal-state";
+import Modal from "@/components/modal";
+import TicketHistoryDetailModal from "./_components/ticket-history-detail-modal";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 const PAGE_SIZE = 20;
 
 export default function TicketHistoryPage() {
-    const { id } = useParams();
+    const params = useParams<{ id: string }>();
+    const ticketId = Number(params.id);
 
-    const ticketId = typeof id === "string" ? Number(id) : NaN;
+    const queryVariables = {
+        ticketId,
+        first: PAGE_SIZE,
+        after: null,
+    };
 
-    const { data, fetchMore } = useQuery(GET_TICKET_HISTORY, {
-        variables: {
-            ticketId,
-            first: PAGE_SIZE,
-        },
-        skip: !Number.isInteger(ticketId),
+    const { data, fetchMore } = useQuery(GET_TICKET_HISTORY_BY_TICKET_ID, {
+        variables: queryVariables,
         notifyOnNetworkStatusChange: true,
     });
 
+    const history: TicketHistoryRow[] =
+        data?.ticketHistoryByTicketId?.edges?.map((edge) => edge.node) ?? [];
+
     const { hasNextPage, loadMore } = useCursorPagination(
-        data?.ticketHistory.pageInfo,
+        data?.ticketHistoryByTicketId?.pageInfo,
         fetchMore
     );
 
-    // --------------------------------
-    // DETAIL MODAL
-    // --------------------------------
+    const changedFieldsByRowId = new Map<number, ChangedFields>();
+
+    history.forEach((row, index) => {
+        // history ordinata updatedAt DESC (più recente prima): la riga "precedente"
+        // nel tempo è quella subito DOPO nell'array, non prima.
+        // Se la riga successiva non è ancora caricata (ultima pagina scaricata),
+        // semplicemente non evidenziamo nulla finché non arriva con "carica altro".
+        const previous = history[index + 1];
+        changedFieldsByRowId.set(row.id, diffTicketHistory(row, previous));
+    });
 
     const detailModal = useModalState<TicketHistoryRow>();
 
@@ -57,65 +56,12 @@ export default function TicketHistoryPage() {
         detailModal.open(row);
     };
 
-    if (!Number.isInteger(ticketId)) {
-        return <Typography align="center">ID ticket non valido.</Typography>;
-    }
-
-    const rawHistory = data?.ticketHistory.edges.map((edge) => edge.node) ?? [];
-
-    const snapshots = useFragment(
-        TicketSnapshotFieldsFragmentDoc,
-        rawHistory.map((history) => history.snapshotBefore)
-    );
-
-    const history: TicketHistoryRow[] = rawHistory.map((historyItem, index) => {
-        const snapshot = snapshots[index];
-
-        return {
-            id: historyItem.id,
-            ticketId: historyItem.ticketId,
-            createdAt: historyItem.createdAt,
-
-            title: snapshot.title,
-            description: snapshot.description,
-            status: snapshot.status,
-            priority: snapshot.priority,
-
-            category: snapshot.category
-                ? snapshot.category.name
-                : "Nessuna categoria",
-
-            createdBy: snapshot.createdBy
-                ? `${snapshot.createdBy.firstName} ${snapshot.createdBy.lastName}`
-                : "-",
-
-            assignedTo: snapshot.assignedTo
-                ? `${snapshot.assignedTo.firstName} ${snapshot.assignedTo.lastName}`
-                : "Non assegnato",
-
-            updatedAt: snapshot.updatedAt,
-            closedAt: snapshot.closedAt ?? null,
-            dueDate: snapshot.dueDate ?? null,
-            sourceDepartmentForUser: snapshot.sourceDepartmentForUser,
-            ticketDepartment: snapshot.ticketDepartment,
-
-            lastUpdatedBy: snapshot.lastUpdatedBy
-                ? `${snapshot.lastUpdatedBy.firstName} ${snapshot.lastUpdatedBy.lastName}`
-                : "-",
-
-            closingMessage: snapshot.closingMessage ?? null,
-            specificValue: snapshot.specificValue ?? null,
-
-            changedFields: Array.from(diffTickets(snapshot, snapshots[index + 1])),
-        };
-    });
-
     const headCells = createTicketHistoryHeadCells();
 
     return (
         <Box sx={{ mt: 3, mx: 2 }}>
             <Typography variant="h5" sx={{ mb: 3 }}>
-                Ticket History
+                Storico ticket #{ticketId}
             </Typography>
 
             <Box sx={{ height: "78vh" }}>
@@ -125,7 +71,9 @@ export default function TicketHistoryPage() {
                     hasNextPage={hasNextPage}
                     onLoadMore={loadMore}
                     getCellClassName={(row, cellId) =>
-                        row.changedFields.includes(cellId as string) ? "highlighted-cell" : undefined
+                        changedFieldsByRowId.get(row.id)?.has(cellId as string)
+                            ? "highlighted-cell"
+                            : undefined
                     }
                     actions={(row) => (
                         <Tooltip title="Dettaglio modifica" arrow>

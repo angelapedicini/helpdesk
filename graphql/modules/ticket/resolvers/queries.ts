@@ -69,7 +69,6 @@ export const ticketQueries = {
     return prisma.ticket.findFirst({
       where: {
         id: args.id,
-        deletedAt: null,
         AND: [accessibleBy(ability, "read").ofType("Ticket")],
       },
       include: {

@@ -276,64 +276,31 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
       });
     }
 
-    const snapshotAfter = {
-      title: result.title,
-      description: result.description,
-      status: result.status,
-      priority: result.priority,
-
-      category: result.category
-        ? {
-          id: result.category.id,
-          name: result.category.name,
-          department: result.category.department,
-        }
-        : null,
-
-      createdBy: {
-        id: result.createdBy.id,
-        firstName: result.createdBy.firstName,
-        lastName: result.createdBy.lastName,
-      },
-
-      assignedTo: result.assignedTo
-        ? {
-          id: result.assignedTo.id,
-          firstName: result.assignedTo.firstName,
-          lastName: result.assignedTo.lastName,
-        }
-        : null,
-
-      createdAt: result.createdAt,
-      updatedAt: result.updatedAt,
-      closedAt: result.closedAt,
-      dueDate: result.dueDate,
-
-      sourceDepartmentForUser: result.sourceDepartmentForUser,
-      ticketDepartment: result.ticketDepartment,
-
-      lastUpdatedBy: result.lastUpdatedBy
-        ? {
-          id: result.lastUpdatedBy.id,
-          firstName: result.lastUpdatedBy.firstName,
-          lastName: result.lastUpdatedBy.lastName,
-        }
-        : null,
-
-      closingMessage: result.closingMessage,
-
-      // Se è arrivato un nuovo valore, usa quello. Altrimenti, siccome per
-      // la validazione sopra "categoria cambiata + richiede specifica" implica
-      // specificValue obbligatorio, un fallback a oldSpecificValue può scattare
-      // solo quando la categoria NON è cambiata (utente che ha toccato altri
-      // campi senza ritoccare la specifica).
-      specificValue: input.specificValue != null ? input.specificValue : oldSpecificValue,
-    };
-
     await tx.ticketHistory.create({
       data: {
-        ticketId: args.id,
-        snapshot: snapshotAfter,
+        originalTicketId: args.id,
+
+        title: result.title,
+        description: result.description,
+        status: result.status,
+        priority: result.priority,
+
+        categoryId: result.categoryId,
+        createdById: result.createdById,
+        assignedToId: result.assignedToId,
+        lastUpdatedById: result.lastUpdatedById,
+
+        closingMessage: result.closingMessage,
+
+        sourceDepartmentForUser: result.sourceDepartmentForUser,
+        ticketDepartment: result.ticketDepartment,
+
+        ticketSpecific: input.specificValue != null ? input.specificValue : oldSpecificValue,
+
+        createdAt: result.createdAt,
+        updatedAt: result.updatedAt,
+        dueDate: result.dueDate,
+        closedAt: result.closedAt,
       },
     });
 

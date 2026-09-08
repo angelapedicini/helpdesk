@@ -101,7 +101,6 @@ export default function AddUserSpecializationForm({
                     control={control}
                     options={categoryOptions}
                     disabled={!department}
-                    sx={{ gridColumn: { md: "1 / -1" } }}
                 />
 
                 {errors.userId && (

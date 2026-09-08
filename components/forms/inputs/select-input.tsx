@@ -1,17 +1,7 @@
-// components/forms/inputs/app-select.tsx
-
+// components/forms/inputs/select-input.tsx
 "use client";
 
-import {
-    Box,
-    FormControl,
-    FormHelperText,
-    InputLabel,
-    MenuItem,
-    Select,
-    type SelectProps,
-} from "@mui/material";
-
+import { Autocomplete, Box, TextField } from "@mui/material";
 import {
     Controller,
     type Control,
@@ -34,76 +24,83 @@ type AppSelectProps<
     label: string;
     control: Control<TFieldValues>;
     options: SelectOption<TValue>[];
-} & Omit<SelectProps, "name" | "value" | "defaultValue">;
+    disabled?: boolean;
+};
 
 export function AppSelect<
     TFieldValues extends FieldValues,
     TValue extends string | number = string | number,
->({
-    name,
-    label,
-    control,
-    options,
-    ...selectProps
-}: AppSelectProps<TFieldValues, TValue>) {
-    const labelId = `${String(name)}-label`;
-
+>({ name, label, control, options, disabled }: AppSelectProps<TFieldValues, TValue>) {
     return (
         <Controller
             name={name}
             control={control}
-            render={({ field, fieldState }) => (
-                <FormControl
-                    fullWidth
-                    error={!!fieldState.error}
-                    disabled={selectProps.disabled}
-                >
-                    <InputLabel id={labelId}>
-                        {label}
-                    </InputLabel>
+            render={({ field, fieldState }) => {
+                const selectedOption = options.find((o) => o.id === field.value) ?? null;
+                const SelectedIcon = selectedOption?.icon;
 
-                    <Select
-                        {...field}
-                        {...selectProps}
-                        labelId={labelId}
-                        label={label}
-                        value={field.value ?? ""}
-                    >
-                        {options.map((option) => {
+                return (
+                    <Autocomplete
+                        disabled={disabled}
+                        disableClearable
+                        options={options}
+                        getOptionLabel={(option) =>
+                            typeof option === "object" ? option.label : ""
+                        }
+                        isOptionEqualToValue={(option, value) => option.id === value?.id}
+                        value={selectedOption as SelectOption<TValue>}
+                        onChange={(_, selected) => field.onChange(selected?.id ?? null)}
+                        onBlur={field.onBlur}
+                        renderOption={(props, option) => {
+                            const { key, ...optionProps } = props;
                             const Icon = option.icon;
-
                             return (
-                                <MenuItem
+                                <Box
+                                    component="li"
                                     key={option.id}
-                                    value={option.id}
+                                    {...optionProps}
+                                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
                                 >
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 1,
-                                        }}
-                                    >
-                                        {Icon && (
-                                            <Icon
+                                    {Icon && <Icon sx={{ color: option.color, fontSize: 20 }} />}
+                                    {option.label}
+                                </Box>
+                            );
+                        }}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label={label}
+                                error={!!fieldState.error}
+                                helperText={fieldState.error?.message}
+                                slotProps={{
+                                    ...params.slotProps,
+                                    input: {
+                                        ...params.slotProps?.input,
+                                        startAdornment: SelectedIcon ? (
+                                            <SelectedIcon
                                                 sx={{
-                                                    color: option.color,
+                                                    color: selectedOption?.color,
+                                                    fontSize: 20,
+                                                    ml: 0.5,
                                                 }}
                                             />
-                                        )}
-
-                                        {option.label}
-                                    </Box>
-                                </MenuItem>
-                            );
-                        })}
-                    </Select>
-
-                    <FormHelperText>
-                        {fieldState.error?.message}
-                    </FormHelperText>
-                </FormControl>
-            )}
+                                        ) : undefined,
+                                    },
+                                    htmlInput: {
+                                        ...params.slotProps?.htmlInput,
+                                        readOnly: true,
+                                    },
+                                }}
+                                sx={{
+                                    "& .MuiInputBase-input": {
+                                        cursor: "pointer",
+                                    },
+                                }}
+                            />
+                        )}
+                    />
+                );
+            }}
         />
     );
 }

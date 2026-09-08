@@ -71,7 +71,7 @@ model TicketCategory {
   accessGrants    TicketCategoryAccess[]
   specializations UserSpecialization[]
   tickets         Ticket[]
-  ticketHistories TicketHistory2[]
+  ticketHistories TicketHistory[]
 }
 
 model TicketCategoryAccess {
@@ -109,15 +109,11 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // vecchia history (legacy, da rimuovere in seguito)
-  ticketDeletions TicketHistory[] @relation("TicketDeletions")
-
   // nuova history (TicketHistory2)
-  ticketHistoriesCreated     TicketHistory2[] @relation("CreatedTicketsHistory")
-  ticketHistoriesAssigned    TicketHistory2[] @relation("AssignedTicketsHistory")
-  ticketHistoriesLastUpdated TicketHistory2[] @relation("LastUpdatedTicketsHistory")
-  ticketHistoryDeletions     TicketHistory2[] @relation("TicketHistoryDeletedBy")
+  ticketHistoriesCreated     TicketHistory[] @relation("CreatedTicketsHistory")
+  ticketHistoriesAssigned    TicketHistory[] @relation("AssignedTicketsHistory")
+  ticketHistoriesLastUpdated TicketHistory[] @relation("LastUpdatedTicketsHistory")
+  ticketHistoryDeletions     TicketHistory[] @relation("TicketHistoryDeletedBy")
 }
 
 model UserSpecialization {
@@ -175,7 +171,6 @@ model Ticket {
   logisticSpecific TicketLogisticSpecific?
 
   messages TicketMessage[]
-  history  TicketHistory[]
 
   readStates                     TicketReadState[]
   adminNotificationSubscriptions TicketAdminNotificationSubscription[]
@@ -189,7 +184,7 @@ model Ticket {
 
 /// Nuova history: mirror 1:1 dei campi del Ticket al momento della cancellazione.
 /// Sostituisce la vecchia TicketHistory basata su snapshot Json.
-model TicketHistory2 {
+model TicketHistory {
   id Int @id @default(autoincrement())
 
   // riferimento "storico" al ticket originale: NON è una FK vincolante,
@@ -225,7 +220,7 @@ model TicketHistory2 {
   dueDate   DateTime?
   closedAt  DateTime?
 
-  deletedAt   DateTime @default(now())
+  deletedAt   DateTime?
   deletedById Int?
   deletedBy   User?    @relation("TicketHistoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
 
@@ -275,24 +270,6 @@ model TicketAdminNotificationSubscription {
   createdAt DateTime @default(now())
 
   @@id([userId, ticketId])
-}
-
-///////////////////////
-/// Legacy: history basata su snapshot Json. Da rimuovere quando TicketHistory2
-/// sarà completamente operativa (vedi nota in chat su come farlo senza rotture).
-model TicketHistory {
-  id Int @id @default(autoincrement())
-
-  ticketId Int
-  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
-  snapshot Json
-
-  deletedAt   DateTime?
-  deletedById Int?
-  deletedBy   User?     @relation("TicketDeletions", fields: [deletedById], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
 }
 
 model TicketITSpecific {

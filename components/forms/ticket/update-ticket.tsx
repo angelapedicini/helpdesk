@@ -434,6 +434,7 @@ export default function TicketDetailForm({
                     specificField={selectedCategory?.specificField}
                     control={control}
                     error={errors.specificValue?.message}
+                    disabled={!fieldPermissions.specificValue}
                 />
 
                 <AppSelect
@@ -488,6 +489,8 @@ export default function TicketDetailForm({
                         lui/lei al salvataggio.
                     </Alert>
                 )}
+
+
 
                 <Box
                     sx={{

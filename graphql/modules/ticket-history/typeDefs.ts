@@ -1,16 +1,21 @@
 // modules/ticket/typeDefs.ts
 import { DateTypeDefinition } from "graphql-scalars";
-export const ticketTypeDefs = `#graphql
+import { makeConnectionTypeDefs } from "@/graphql/pagination/typeDefs";
+
+export const ticketHistoryTypeDefs = `#graphql
   ${DateTypeDefinition}
+  ${makeConnectionTypeDefs("TicketHistory")}
+
 
   type TicketHistory {
     id: Int!
+    originalTicketId: Int!
     title: String!
     description: String!
     status: TicketStatus!
     priority: TicketPriority!
     category: TicketCategory
-    createdBy: User!
+    createdBy: User
     assignedTo: User
     createdAt: Date!
     updatedAt: Date!
@@ -23,7 +28,6 @@ export const ticketTypeDefs = `#graphql
     ticketSpecific: String
     deletedAt: Date
     deletedBy: User
-
   }
 
   input TicketHistoryFilter {
@@ -38,17 +42,27 @@ export const ticketTypeDefs = `#graphql
 
     dueDateFrom: Date
     dueDateTo: Date
-    
   }
 
-  type Query {
-  ticketHisotry(
+type Query {
+  ticketHistory(
     first: Int
     after: String
-    filter: TicketFilter
-  ): TicketConnection!
+    filter: TicketHistoryFilter
+  ): TicketHistoryConnection!
 
-  ticket(id: Int!): Ticket
+  ticketHistoryByTicketId(
+    ticketId: Int!
+    first: Int
+    after: String
+    filter: TicketHistoryFilter
+  ): TicketHistoryConnection!
+
+  deletedTickets(
+    first: Int
+    after: String
+    filter: TicketHistoryFilter
+    scope: TicketScope
+  ): TicketHistoryConnection!
 }
-
 `;

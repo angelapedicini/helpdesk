@@ -85,84 +85,10 @@ const lastNames = [
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 
-type SnapshotPerson = {
-  id: number;
-  firstName: string;
-  lastName: string;
-};
-
-type SnapshotCategory = {
-  id: number;
-  name: string;
-  department: Department;
-};
-
-function buildSnapshot(params: {
-  title: string;
-  description: string;
-  status: string;
-  priority: string;
-  category: SnapshotCategory | null;
-  createdBy: SnapshotPerson;
-  assignedTo: SnapshotPerson | null;
-  createdAt: Date;
-  updatedAt: Date;
-  closedAt: Date | null;
-  dueDate: Date | null;
-  deletedAt: Date | null;
-  sourceDepartmentForUser: Department;
-  ticketDepartment: Department;
-  lastUpdatedBy: SnapshotPerson | null;
-  closingMessage: string | null;
-  specificValue?: string | null;
-}) {
-  const toPerson = (p: SnapshotPerson | null) =>
-    p
-      ? {
-        id: p.id,
-        firstName: p.firstName,
-        lastName: p.lastName,
-      }
-      : null;
-
-  return {
-    title: params.title,
-    description: params.description,
-    status: params.status,
-    priority: params.priority,
-
-    category: params.category
-      ? {
-        id: params.category.id,
-        name: params.category.name,
-        department: params.category.department,
-      }
-      : null,
-
-    createdBy: toPerson(params.createdBy),
-    assignedTo: toPerson(params.assignedTo),
-
-    createdAt: params.createdAt,
-    updatedAt: params.updatedAt,
-    closedAt: params.closedAt,
-    dueDate: params.dueDate,
-    deletedAt: params.deletedAt,
-
-    sourceDepartmentForUser: params.sourceDepartmentForUser,
-    ticketDepartment: params.ticketDepartment,
-
-    lastUpdatedBy: toPerson(params.lastUpdatedBy),
-
-    closingMessage: params.closingMessage,
-
-    specificValue: params.specificValue ?? null,
-  };
-}
-
 /*
  * Costruisce il nested-create Prisma per il "ticket specific" coerente
  * con il campo specifico richiesto dalla categoria, più un'etichetta
- * leggibile da salvare nello snapshot della history.
+ * leggibile da salvare in TicketHistory.ticketSpecific.
  *
  * `seedIndex` serve solo a variare i valori tra un ticket e l'altro
  * (ciclando sugli enum o incrementando i reference testuali).
@@ -632,26 +558,29 @@ export async function main() {
 
       await prisma.ticketHistory.create({
         data: {
-          ticketId: ticket.id,
-          snapshot: buildSnapshot({
-            title: ticket.title,
-            description: ticket.description,
-            status: ticket.status,
-            priority: ticket.priority,
-            category,
-            createdBy: author,
-            assignedTo: null,
-            createdAt: ticket.createdAt,
-            updatedAt: ticket.updatedAt,
-            closedAt: ticket.closedAt,
-            dueDate: ticket.dueDate,
-            deletedAt: null,
-            sourceDepartmentForUser: ticket.sourceDepartmentForUser,
-            ticketDepartment: ticket.ticketDepartment,
-            lastUpdatedBy: author,
-            closingMessage: null,
-            specificValue: specificLabel,
-          }),
+          originalTicketId: ticket.id,
+
+          title: ticket.title,
+          description: ticket.description,
+          status: ticket.status,
+          priority: ticket.priority,
+
+          categoryId: category.id,
+          createdById: author.id,
+          assignedToId: null,
+          lastUpdatedById: author.id,
+
+          closingMessage: null,
+
+          sourceDepartmentForUser: ticket.sourceDepartmentForUser,
+          ticketDepartment: ticket.ticketDepartment,
+
+          ticketSpecific: specificLabel,
+
+          createdAt: ticket.createdAt,
+          updatedAt: ticket.updatedAt,
+          dueDate: ticket.dueDate,
+          closedAt: ticket.closedAt,
         },
       });
     }
@@ -750,26 +679,29 @@ export async function main() {
 
       await prisma.ticketHistory.create({
         data: {
-          ticketId: ticket.id,
-          snapshot: buildSnapshot({
-            title: ticket.title,
-            description: ticket.description,
-            status: ticket.status,
-            priority: ticket.priority,
-            category,
-            createdBy: author,
-            assignedTo: null,
-            createdAt: ticket.createdAt,
-            updatedAt: ticket.updatedAt,
-            closedAt: ticket.closedAt,
-            dueDate: ticket.dueDate,
-            deletedAt: null,
-            sourceDepartmentForUser: ticket.sourceDepartmentForUser,
-            ticketDepartment: ticket.ticketDepartment,
-            lastUpdatedBy: author,
-            closingMessage: null,
-            specificValue: specificLabel,
-          }),
+          originalTicketId: ticket.id,
+
+          title: ticket.title,
+          description: ticket.description,
+          status: ticket.status,
+          priority: ticket.priority,
+
+          categoryId: category.id,
+          createdById: author.id,
+          assignedToId: null,
+          lastUpdatedById: author.id,
+
+          closingMessage: null,
+
+          sourceDepartmentForUser: ticket.sourceDepartmentForUser,
+          ticketDepartment: ticket.ticketDepartment,
+
+          ticketSpecific: specificLabel,
+
+          createdAt: ticket.createdAt,
+          updatedAt: ticket.updatedAt,
+          dueDate: ticket.dueDate,
+          closedAt: ticket.closedAt,
         },
       });
 
@@ -802,26 +734,29 @@ export async function main() {
 
         await prisma.ticketHistory.create({
           data: {
-            ticketId: ticket.id,
-            snapshot: buildSnapshot({
-              title: updatedTicket.title,
-              description: updatedTicket.description,
-              status: updatedTicket.status,
-              priority: updatedTicket.priority,
-              category,
-              createdBy: author,
-              assignedTo: technician,
-              createdAt: updatedTicket.createdAt,
-              updatedAt: updatedTicket.updatedAt,
-              closedAt: updatedTicket.closedAt,
-              dueDate: updatedTicket.dueDate,
-              deletedAt: null,
-              sourceDepartmentForUser: updatedTicket.sourceDepartmentForUser,
-              ticketDepartment: updatedTicket.ticketDepartment,
-              lastUpdatedBy: technician,
-              closingMessage: closingMessageContent,
-              specificValue: specificLabel,
-            }),
+            originalTicketId: updatedTicket.id,
+
+            title: updatedTicket.title,
+            description: updatedTicket.description,
+            status: updatedTicket.status,
+            priority: updatedTicket.priority,
+
+            categoryId: category.id,
+            createdById: author.id,
+            assignedToId: technician.id,
+            lastUpdatedById: technician.id,
+
+            closingMessage: closingMessageContent,
+
+            sourceDepartmentForUser: updatedTicket.sourceDepartmentForUser,
+            ticketDepartment: updatedTicket.ticketDepartment,
+
+            ticketSpecific: specificLabel,
+
+            createdAt: updatedTicket.createdAt,
+            updatedAt: updatedTicket.updatedAt,
+            dueDate: updatedTicket.dueDate,
+            closedAt: updatedTicket.closedAt,
           },
         });
       }

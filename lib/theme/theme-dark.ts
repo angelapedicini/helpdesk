@@ -1,4 +1,5 @@
-// lib/theme/theme-dark.ts
+// app/providers/theme/theme-dark.ts
+
 import { createTheme, type Theme } from "@mui/material/styles";
 import { sharedComponents } from "./theme.components";
 
@@ -13,70 +14,81 @@ const shadows = [
 export const darkTheme = createTheme({
   palette: {
     mode: "dark",
+
     divider: "#4b5563",
+
     primary: {
       main: "#f1f5f9",
       light: "#f8fafc",
       dark: "#e2e8f0",
       contrastText: "#1f2937",
     },
+
     secondary: {
       main: "#94a3b8",
     },
+
     background: {
       default: "#111827",
       paper: "#1f2937",
       subtle: "#16202e",
     },
+
     text: {
       primary: "#f1f5f9",
       secondary: "#9ca3af",
     },
+
+    ui: {
+      // Standard inputs
+      inputBorder: "#c7c7c7",
+      inputBorderHover: "#e9ebee",
+      inputBorderDisabled: "#8b95a1",
+      inputTextDisabled: "rgba(241, 245, 249, 0.38)",
+
+      // Date pickers
+      pickerBorder: "#c7c7c7",
+      pickerBorderHover: "#f3f0f0",
+      pickerBorderDisabled: "#989999",
+      pickerTextDisabled: "#949494",
+
+      // Tabless
+      tableHeaderText: "#d1d5db",
+      tableCellBackground: "#18181b",
+      tableCellText: "#f9fafb",
+      tableRowHover: "rgba(255, 255, 255, 0.04)",
+      tableBorder: "#3f3f46",
+      highlightedRow: "#581414",
+      errorRow: "#581414",
+      errorRowHover: "#6b1a1a",
+      highlightedCell: "#44402d",
+
+      //list item
+      dashboardItemBorder: "#85858a",
+      dashboardItemText: "#f9fafb",
+      dashboardDepartmentBackground: "#232c3a",
+      dashboardDepartmentBackgroundHover: "#1a222e",
+      dashboardCategoryBackground: "#303f55",
+      dashboardCategoryBackgroundHover: "#4c5f7a",
+    },
   },
-  shape: { borderRadius: 4 },
+
+  shape: {
+    borderRadius: 4,
+  },
+
   typography: {
     fontFamily: "var(--font-geist-sans), Roboto, sans-serif",
-    button: { fontWeight: 500, textTransform: "none" },
+
+    button: {
+      fontWeight: 500,
+      textTransform: "none",
+    },
   },
+
   shadows,
+
   components: {
     ...sharedComponents,
-
-    MuiOutlinedInput: {
-      styleOverrides: {
-        root: {
-          "& .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#c7c7c7",
-          },
-        },
-
-        // input: {
-        //   "&.Mui-disabled": {
-        //     WebkitTextFillColor: "#63666d",
-        //   },
-        // },
-      },
-    },
-    MuiPickersOutlinedInput: {
-      styleOverrides: {
-        root: {
-          "& .MuiPickersOutlinedInput-notchedOutline": {
-            borderColor: "#c7c7c7",
-          },
-
-          // "&:hover .MuiPickersOutlinedInput-notchedOutline": {
-          //   borderColor: "#21130d",
-          // },
-
-          // "&.Mui-focused .MuiPickersOutlinedInput-notchedOutline": {
-          //   borderColor: "#21130d",
-          // },
-
-          // "&.Mui-disabled .MuiPickersOutlinedInput-notchedOutline": {
-          //   borderColor: "#21130d",
-          // },
-        },
-      },
-    },
   },
 });

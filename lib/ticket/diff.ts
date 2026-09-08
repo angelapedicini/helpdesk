@@ -1,7 +1,11 @@
 // lib/ticket/diff.ts
-import type { TicketSnapshotFieldsFragment } from "@/apollo-client/gql/graphql";
+import type { TicketHistoryByTicketIdQuery } from "@/apollo-client/gql/graphql";
 
 export type ChangedFields = Set<string>;
+
+type TicketHistoryRow = NonNullable<
+    TicketHistoryByTicketIdQuery["ticketHistoryByTicketId"]
+>["edges"][number]["node"];
 
 const COMPARABLE_SCALAR_FIELDS = [
     "title",
@@ -13,7 +17,8 @@ const COMPARABLE_SCALAR_FIELDS = [
     "dueDate",
     "closedAt",
     "closingMessage",
-    "specificValue",
+    "ticketSpecific",
+    "deletedAt"
 ] as const;
 
 function normalize(value: unknown) {
@@ -24,9 +29,9 @@ function normalize(value: unknown) {
     return value ?? null;
 }
 
-export function diffTickets(
-    current: TicketSnapshotFieldsFragment,
-    previous: TicketSnapshotFieldsFragment | undefined
+export function diffTicketHistory(
+    current: TicketHistoryRow,
+    previous: TicketHistoryRow | undefined
 ): ChangedFields {
     const changed: ChangedFields = new Set();
     if (!previous) return changed;
@@ -39,6 +44,7 @@ export function diffTickets(
 
     if (current.category?.id !== previous.category?.id) changed.add("category");
     if (current.assignedTo?.id !== previous.assignedTo?.id) changed.add("assignedTo");
+    if (current.lastUpdatedBy?.id !== previous.lastUpdatedBy?.id) changed.add("lastUpdatedBy");
 
     return changed;
 }

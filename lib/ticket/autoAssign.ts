@@ -239,7 +239,7 @@ export async function autoAssign(
        * I ticket eliminati non devono contribuire
        * al carico del technician.
        */
-      deletedAt: null,
+      // deletedAt: null,
     },
 
     /*

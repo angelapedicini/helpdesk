@@ -1,4 +1,4 @@
-// lib/apollo-client/queries/ticket/ticket.mutations.ts
+// lib/apollo-client/queries/ticket/ticket.mutation.ts
 
 import { graphql } from "@/apollo-client/gql";
 
@@ -21,8 +21,7 @@ export const UPDATE_TICKET = graphql(`
 export const DELETE_TICKET = graphql(`
   mutation DeleteTicket($id: Int!) {
     deleteTicket(id: $id) {
-      id
-      deletedAt
+      ...TicketFields
     }
   }
 `);

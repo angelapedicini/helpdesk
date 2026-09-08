@@ -1,4 +1,5 @@
-// lib/theme/theme-light.ts
+// app/providers/theme/theme-light.ts
+
 import { createTheme, type Theme } from "@mui/material/styles";
 import { sharedComponents } from "./theme.components";
 
@@ -13,52 +14,83 @@ const shadows = [
 export const lightTheme = createTheme({
     palette: {
         mode: "light",
+
         divider: "#e2e8f0",
+
         primary: {
             main: "#1f2937",
             light: "#374151",
             dark: "#111827",
             contrastText: "#f8fafc",
         },
+
         secondary: {
             main: "#64748b",
         },
+
         background: {
             default: "#f8fafc",
             paper: "#ffffff",
-            subtle: "#f1f5f9",
+            subtle: "#dde0e4",
         },
+
         text: {
             primary: "#111827",
-            secondary: "#6b7280",
+            secondary: "#262729",
+        },
+
+        ui: {
+            // Standard inputs
+            inputBorder: "#1d1d1d",
+            inputBorderHover: "#000000",
+            inputBorderDisabled: "#858585",
+            inputTextDisabled: "#646464",
+
+
+
+            // Date pickers
+            pickerBorder: "#8c8f96",
+            pickerBorderHover: "#0a0a0a",
+            pickerBorderDisabled: "#727272",
+            pickerTextDisabled: "#585858",
+
+            // Tables
+            tableHeaderText: "#374151",
+            tableCellBackground: "#ffffff",
+            tableCellText: "#111827",
+            tableRowHover: "rgba(12, 2, 2, 0.04)",
+            tableBorder: "#e2e8f0",
+            highlightedRow: "#fde8e8",
+            errorRow: "#fd7f7f",
+            errorRowHover: "#e96c6c",
+            highlightedCell: "#fde8a3",
+
+            //List item
+            dashboardItemBorder: "#262729",
+            dashboardItemText: "#111827",
+            dashboardDepartmentBackground: "#dde0e4",
+            dashboardDepartmentBackgroundHover: "rgba(7, 6, 6, 0.08)",
+            dashboardCategoryBackground: "#ffffff",
+            dashboardCategoryBackgroundHover: "rgba(196, 85, 85, 0.08)",
         },
     },
-    shape: { borderRadius: 4 },
+
+    shape: {
+        borderRadius: 4,
+    },
+
     typography: {
         fontFamily: "var(--font-geist-sans), Roboto, sans-serif",
-        button: { fontWeight: 500, textTransform: "none" },
+
+        button: {
+            fontWeight: 500,
+            textTransform: "none",
+        },
     },
+
     shadows,
+
     components: {
         ...sharedComponents,
-
-        MuiOutlinedInput: {
-            styleOverrides: {
-                root: {
-                    "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "#8c8f96",
-                    },
-                },
-            },
-        },
-        MuiPickersOutlinedInput: {
-            styleOverrides: {
-                root: {
-                    "& .MuiPickersOutlinedInput-notchedOutline": {
-                        borderColor: "#8c8f96",
-                    },
-                },
-            },
-        },
     },
 });

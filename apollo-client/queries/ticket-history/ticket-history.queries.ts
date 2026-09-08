@@ -1,57 +1,60 @@
 import { graphql } from "@/apollo-client/gql";
-import type { ResultOf } from "@graphql-typed-document-node/core";
 
-export const TICKET_SNAPSHOT_FIELDS = graphql(`
-  fragment TicketSnapshotFields on TicketSnapshot {
-    id
-    title
-    description
-    status
-    priority
-    category {
-      id
-      name
-      department
-    }
-    createdBy {
-      id
-      firstName
-      lastName
-    }
-    assignedTo {
-      id
-      firstName
-      lastName
-    }
-    createdAt
-    updatedAt
-    closedAt
-    dueDate
-    deletedAt
-    sourceDepartmentForUser
-    ticketDepartment
-    lastUpdatedBy {
-      id
-      firstName
-      lastName
-    }
-    closingMessage
-    specificValue
-  }
-`);
 
-export const GET_TICKET_HISTORY = graphql(`
-  query GetTicketHistory($ticketId: Int!, $first: Int, $after: String) {
-    ticketHistory(ticketId: $ticketId, first: $first, after: $after) {
+export const GET_TICKET_HISTORY_BY_TICKET_ID = graphql(`
+  query TicketHistoryByTicketId(
+    $ticketId: Int!
+    $first: Int
+    $after: String
+    $filter: TicketHistoryFilter
+  ) {
+    ticketHistoryByTicketId(
+      ticketId: $ticketId
+      first: $first
+      after: $after
+      filter: $filter
+    ) {
       edges {
         cursor
         node {
           id
-          ticketId
+          originalTicketId
+          title
+          description
+          status
+          priority
+          category {
+            id
+            name
+          }
+          createdBy {
+            id
+            firstName
+            lastName
+          }
+          assignedTo {
+            id
+            firstName
+            lastName
+          }
           createdAt
-
-          snapshotBefore {
-            ...TicketSnapshotFields
+          updatedAt
+          closedAt
+          dueDate
+          sourceDepartmentForUser
+          ticketDepartment
+          lastUpdatedBy {
+            id
+            firstName
+            lastName
+          }
+          closingMessage
+          ticketSpecific
+          deletedAt
+          deletedBy {
+            id
+            firstName
+            lastName
           }
         }
       }
@@ -63,6 +66,67 @@ export const GET_TICKET_HISTORY = graphql(`
   }
 `);
 
-export type TicketHistoryConnection = ResultOf<typeof GET_TICKET_HISTORY>["ticketHistory"];
-export type TicketHistoryEdge = TicketHistoryConnection["edges"][number];
-export type TicketHistoryNode = TicketHistoryEdge["node"];
+export const GET_DELETED_TICKETS = graphql(`
+  query DeletedTickets(
+    $first: Int
+    $after: String
+    $filter: TicketHistoryFilter
+    $scope: TicketScope
+  ) {
+    deletedTickets(
+      first: $first
+      after: $after
+      filter: $filter
+      scope: $scope
+    ) {
+      edges {
+        cursor
+        node {
+          id
+          originalTicketId
+          title
+          description
+          status
+          priority
+          category {
+            id
+            name
+          }
+          createdBy {
+            id
+            firstName
+            lastName
+          }
+          assignedTo {
+            id
+            firstName
+            lastName
+          }
+          createdAt
+          updatedAt
+          closedAt
+          dueDate
+          sourceDepartmentForUser
+          ticketDepartment
+          lastUpdatedBy {
+            id
+            firstName
+            lastName
+          }
+          closingMessage
+          ticketSpecific
+          deletedAt
+          deletedBy {
+            id
+            firstName
+            lastName
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`);

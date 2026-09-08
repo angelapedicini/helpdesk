@@ -4,10 +4,11 @@ import type { Prisma } from "@/app/generated/prisma/client";
 import { GraphQLError } from "graphql/error";
 import { AccessTokenPayload } from "@/lib/auth/jwt";
 import { FilterTicketSchema } from "@/lib/validators/ticket-detail.schema";
+import { TicketScope } from "../../ticket/resolvers/where";
 
 export function buildTicketWhere(
   rawFilter: unknown
-): Prisma.TicketHistory2WhereInput {
+): Prisma.TicketHistoryWhereInput {
   if (!rawFilter) return {};
 
   const result = FilterTicketSchema.safeParse(rawFilter);
@@ -23,7 +24,7 @@ export function buildTicketWhere(
 
   const filter = result.data;
 
-  const conditions: Prisma.TicketHistory2WhereInput[] = [];
+  const conditions: Prisma.TicketHistoryWhereInput[] = [];
 
   // Creatore
   if (filter.createdById !== undefined) {
@@ -104,4 +105,48 @@ export function buildTicketWhere(
   return {
     AND: conditions,
   };
+}
+
+export function buildHistoryScopeWhere(
+  scope: TicketScope,
+  session: AccessTokenPayload
+): Prisma.TicketHistoryWhereInput {
+  switch (scope) {
+    case "MINE":
+      return {
+        createdById: session.userId,
+      };
+
+    case "ASSIGNED_TO_ME":
+      if (session.role !== "TECHNICIAN") {
+        throw new GraphQLError(
+          "View not available to role",
+          { extensions: { code: "FORBIDDEN" } }
+        );
+      }
+
+      return {
+        assignedToId: session.userId,
+      };
+
+    case "DEPARTMENT":
+      if (session.role !== "ADMIN") {
+        throw new GraphQLError(
+          "View not available to role",
+          { extensions: { code: "FORBIDDEN" } }
+        );
+      }
+
+      return {
+        ticketDepartment: session.department,
+      };
+
+    default: {
+      const _exhaustive: never = scope;
+
+      throw new GraphQLError("Scope not valid", {
+        extensions: { code: "BAD_USER_INPUT" },
+      });
+    }
+  }
 }

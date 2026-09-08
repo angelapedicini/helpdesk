@@ -29,6 +29,7 @@ export interface HeadCell<T> {
     numeric?: boolean;
     disablePadding?: boolean;
     sortable?: boolean;
+
     /**
      * Larghezza opzionale della colonna.
      * - number  -> interpretato come percentuale (es. 15 => "15%")
@@ -38,12 +39,14 @@ export interface HeadCell<T> {
      * residuo, assieme alle altre colonne senza width esplicita.
      */
     width?: number | string;
+
     render?: (row: T) => React.ReactNode;
 }
 
 interface EnhancedTableProps<T extends RowBase> {
     rows: T[];
     headCells: readonly HeadCell<T>[];
+
     /**
      * Props di ordinamento opzionali.
      * Se `onRequestSort` non viene passato, la tabella non è ordinabile:
@@ -53,13 +56,21 @@ interface EnhancedTableProps<T extends RowBase> {
     order?: Order;
     orderBy?: keyof T;
     onRequestSort?: (property: keyof T) => void;
+
     actions?: (row: T) => React.ReactNode;
+
     /** Larghezza della colonna azioni (number = %, string = valore CSS). Default: 120. */
     actionsWidth?: number | string;
+
     hasNextPage?: boolean;
     onLoadMore?: () => void;
+
     getRowClassName?: (row: T) => string | undefined;
-    getCellClassName?: (row: T, headCellId: keyof T) => string | undefined;
+    getCellClassName?: (
+        row: T,
+        headCellId: keyof T
+    ) => string | undefined;
+
     /** Altezza massima oltre la quale la tabella scrolla internamente. Default: '70vh'. */
     maxHeight?: string | number;
 }
@@ -86,9 +97,19 @@ function resolveColumnWidths<T>(
         0
     );
 
-    const undefinedCount = declaredWidths.filter((w) => w === undefined).length;
-    const remainingPercent = Math.max(0, 100 - explicitPercentTotal);
-    const autoPercent = undefinedCount > 0 ? remainingPercent / undefinedCount : 0;
+    const undefinedCount = declaredWidths.filter(
+        (w) => w === undefined
+    ).length;
+
+    const remainingPercent = Math.max(
+        0,
+        100 - explicitPercentTotal
+    );
+
+    const autoPercent =
+        undefinedCount > 0
+            ? remainingPercent / undefinedCount
+            : 0;
 
     return declaredWidths.map((w) => {
         if (w === undefined) return `${autoPercent}%`;
@@ -98,10 +119,14 @@ function resolveColumnWidths<T>(
 }
 
 // --------------------------------
-// TRUNCATABLE LABEL (ellipsis sul testo, Tooltip sempre presente)
+// TRUNCATABLE LABEL
 // --------------------------------
 
-function TruncatableLabel({ label }: { label: React.ReactNode }) {
+function TruncatableLabel({
+    label,
+}: {
+    label: React.ReactNode;
+}) {
     return (
         <Tooltip title={label} arrow>
             <Box
@@ -134,7 +159,9 @@ interface EnhancedTableHeadProps<T> {
     actionsWidth: number | string;
 }
 
-function EnhancedTableHead<T>(props: EnhancedTableHeadProps<T>) {
+function EnhancedTableHead<T>(
+    props: EnhancedTableHeadProps<T>
+) {
     const {
         headCells,
         order,
@@ -153,16 +180,30 @@ function EnhancedTableHead<T>(props: EnhancedTableHeadProps<T>) {
         <TableHead>
             <TableRow>
                 {headCells.map((headCell, index) => {
-                    const isSortable = sortingEnabled && headCell.sortable !== false;
+                    const isSortable =
+                        sortingEnabled &&
+                        headCell.sortable !== false;
 
                     return (
                         <TableCell
                             key={String(headCell.id)}
-                            align={headCell.numeric ? 'right' : 'left'}
-                            padding={headCell.disablePadding ? 'none' : 'normal'}
-                            sortDirection={isSortable && orderBy === headCell.id ? order : false}
+                            align={
+                                headCell.numeric
+                                    ? 'right'
+                                    : 'left'
+                            }
+                            padding={
+                                headCell.disablePadding
+                                    ? 'none'
+                                    : 'normal'
+                            }
+                            sortDirection={
+                                isSortable &&
+                                    orderBy === headCell.id
+                                    ? order
+                                    : false
+                            }
                             sx={{
-                                backgroundColor: 'background.paper',
                                 zIndex: 2,
                                 width: columnWidths[index],
                                 maxWidth: columnWidths[index],
@@ -170,21 +211,43 @@ function EnhancedTableHead<T>(props: EnhancedTableHeadProps<T>) {
                             }}
                         >
                             {!isSortable ? (
-                                <TruncatableLabel label={headCell.label} />
+                                <TruncatableLabel
+                                    label={headCell.label}
+                                />
                             ) : (
                                 <TableSortLabel
-                                    active={orderBy === headCell.id}
-                                    direction={orderBy === headCell.id ? order : 'asc'}
-                                    onClick={() => onRequestSort!(headCell.id)}
+                                    active={
+                                        orderBy === headCell.id
+                                    }
+                                    direction={
+                                        orderBy === headCell.id
+                                            ? order
+                                            : 'asc'
+                                    }
+                                    onClick={() =>
+                                        onRequestSort!(
+                                            headCell.id
+                                        )
+                                    }
                                     sx={{
                                         width: '100%',
-                                        '& .MuiTableSortLabel-icon': { flexShrink: 0 },
+                                        '& .MuiTableSortLabel-icon': {
+                                            flexShrink: 0,
+                                        },
                                     }}
                                 >
-                                    <TruncatableLabel label={headCell.label} />
+                                    <TruncatableLabel
+                                        label={headCell.label}
+                                    />
+
                                     {orderBy === headCell.id ? (
-                                        <Box component="span" sx={visuallyHidden}>
-                                            {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                                        <Box
+                                            component="span"
+                                            sx={visuallyHidden}
+                                        >
+                                            {order === 'desc'
+                                                ? 'sorted descending'
+                                                : 'sorted ascending'}
                                         </Box>
                                     ) : null}
                                 </TableSortLabel>
@@ -192,11 +255,11 @@ function EnhancedTableHead<T>(props: EnhancedTableHeadProps<T>) {
                         </TableCell>
                     );
                 })}
+
                 {hasActions && (
                     <TableCell
                         align="left"
                         sx={{
-                            backgroundColor: 'background.paper',
                             zIndex: 2,
                             width: actionsWidth,
                         }}
@@ -217,7 +280,9 @@ const SCROLL_THRESHOLD_PX = 100;
 const DEFAULT_MAX_HEIGHT = '78vh';
 const DEFAULT_ACTIONS_WIDTH = 11;
 
-export default function EnhancedTable<T extends RowBase>({
+export default function EnhancedTable<
+    T extends RowBase
+>({
     rows,
     headCells,
     order,
@@ -231,11 +296,19 @@ export default function EnhancedTable<T extends RowBase>({
     getCellClassName,
     maxHeight = DEFAULT_MAX_HEIGHT,
 }: EnhancedTableProps<T>) {
-    const containerRef = React.useRef<HTMLDivElement>(null);
-    const loadingLockRef = React.useRef(false);
+    const containerRef =
+        React.useRef<HTMLDivElement>(null);
+
+    const loadingLockRef =
+        React.useRef(false);
 
     const columnWidths = React.useMemo(
-        () => resolveColumnWidths(headCells, !!actions, actionsWidth),
+        () =>
+            resolveColumnWidths(
+                headCells,
+                !!actions,
+                actionsWidth
+            ),
         [headCells, actions, actionsWidth]
     );
 
@@ -244,37 +317,56 @@ export default function EnhancedTable<T extends RowBase>({
     }, [rows.length, hasNextPage]);
 
     const requestLoadMore = React.useCallback(() => {
-        if (!hasNextPage || !onLoadMore || loadingLockRef.current) {
+        if (
+            !hasNextPage ||
+            !onLoadMore ||
+            loadingLockRef.current
+        ) {
             return;
         }
+
         loadingLockRef.current = true;
         onLoadMore();
     }, [hasNextPage, onLoadMore]);
 
     const handleScroll = () => {
         const container = containerRef.current;
+
         if (!container) {
             return;
         }
 
         const distanceFromBottom =
-            container.scrollHeight - container.scrollTop - container.clientHeight;
+            container.scrollHeight -
+            container.scrollTop -
+            container.clientHeight;
 
-        if (distanceFromBottom <= SCROLL_THRESHOLD_PX) {
+        if (
+            distanceFromBottom <=
+            SCROLL_THRESHOLD_PX
+        ) {
             requestLoadMore();
         }
     };
 
     React.useEffect(() => {
         const container = containerRef.current;
+
         if (!container) {
             return;
         }
 
-        if (container.scrollHeight <= container.clientHeight) {
+        if (
+            container.scrollHeight <=
+            container.clientHeight
+        ) {
             requestLoadMore();
         }
-    }, [rows, hasNextPage, requestLoadMore]);
+    }, [
+        rows,
+        hasNextPage,
+        requestLoadMore,
+    ]);
 
     return (
         <Box sx={{ width: '100%' }}>
@@ -282,46 +374,112 @@ export default function EnhancedTable<T extends RowBase>({
                 <TableContainer
                     ref={containerRef}
                     onScroll={handleScroll}
-                    sx={{ maxHeight, overflowX: 'hidden', overflowY: 'auto' }}
+                    sx={{
+                        maxHeight,
+                        overflowX: 'hidden',
+                        overflowY: 'auto',
+                    }}
                 >
                     <Table
                         stickyHeader
-                        sx={{ width: '100%', tableLayout: 'fixed' }}
+                        sx={{
+                            width: '100%',
+                            tableLayout: 'fixed',
+                        }}
                     >
                         <EnhancedTableHead<T>
                             headCells={headCells}
                             order={order}
                             orderBy={orderBy}
-                            onRequestSort={onRequestSort}
+                            onRequestSort={
+                                onRequestSort
+                            }
                             hasActions={!!actions}
-                            columnWidths={columnWidths}
-                            actionsWidth={actionsWidth}
+                            columnWidths={
+                                columnWidths
+                            }
+                            actionsWidth={
+                                actionsWidth
+                            }
                         />
+
                         <TableBody>
                             {rows.map((row) => (
-                                <TableRow hover key={row.id} className={getRowClassName?.(row)}>
-                                    {headCells.map((headCell, index) => (
+                                <TableRow
+                                    hover
+                                    key={row.id}
+                                    className={getRowClassName?.(
+                                        row
+                                    )}
+                                >
+                                    {headCells.map(
+                                        (
+                                            headCell,
+                                            index
+                                        ) => (
+                                            <TableCell
+                                                key={String(
+                                                    headCell.id
+                                                )}
+                                                component={
+                                                    index ===
+                                                        0
+                                                        ? 'th'
+                                                        : undefined
+                                                }
+                                                scope={
+                                                    index ===
+                                                        0
+                                                        ? 'row'
+                                                        : undefined
+                                                }
+                                                align={
+                                                    headCell.numeric
+                                                        ? 'right'
+                                                        : 'left'
+                                                }
+                                                padding={
+                                                    headCell.disablePadding
+                                                        ? 'none'
+                                                        : 'normal'
+                                                }
+                                                className={getCellClassName?.(
+                                                    row,
+                                                    headCell.id
+                                                )}
+                                                sx={{
+                                                    width: columnWidths[
+                                                        index
+                                                    ],
+                                                    overflow:
+                                                        'hidden',
+                                                    textOverflow:
+                                                        'ellipsis',
+                                                    whiteSpace:
+                                                        'nowrap',
+                                                }}
+                                            >
+                                                {headCell.render
+                                                    ? headCell.render(
+                                                        row
+                                                    )
+                                                    : String(
+                                                        row[
+                                                        headCell
+                                                            .id
+                                                        ]
+                                                    )}
+                                            </TableCell>
+                                        )
+                                    )}
+
+                                    {actions && (
                                         <TableCell
-                                            key={String(headCell.id)}
-                                            component={index === 0 ? 'th' : undefined}
-                                            scope={index === 0 ? 'row' : undefined}
-                                            align={headCell.numeric ? 'right' : 'left'}
-                                            padding={headCell.disablePadding ? 'none' : 'normal'}
-                                            className={getCellClassName?.(row, headCell.id)}
+                                            align="left"
                                             sx={{
-                                                width: columnWidths[index],
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
+                                                width: actionsWidth,
                                             }}
                                         >
-                                            {headCell.render
-                                                ? headCell.render(row)
-                                                : String(row[headCell.id])}
-                                        </TableCell>
-                                    ))}
-                                    {actions && (
-                                        <TableCell align="left" sx={{ width: actionsWidth }}>
                                             {actions(row)}
                                         </TableCell>
                                     )}

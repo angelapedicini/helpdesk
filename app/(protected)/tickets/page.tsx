@@ -101,6 +101,8 @@ export default function TicketsPage() {
         refetchQueries: [{ query: GET_TICKETS, variables: queryVariables }],
     });
 
+    // const handleConfirmDelete = async () => {}
+
     const handleConfirmDelete = async () => {
         if (!deleteModal.value) return;
 

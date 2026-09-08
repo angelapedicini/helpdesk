@@ -19,7 +19,9 @@ export const ticketMessageMutations = {
         }
 
         const ticket = await prisma.ticket.findFirst({
-            where: { id: args.input.ticketId, deletedAt: null },
+            where: { id: args.input.ticketId, 
+                // deletedAt: null 
+            },
             select: {
                 id: true,
                 createdById: true,

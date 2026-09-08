@@ -1,33 +1,25 @@
-// modules/ticket/resolvers/queries.ts
 import prisma from "@/lib/prisma";
 import { requireSession } from "@/lib/auth/session";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
-import { accessibleBy } from "@casl/prisma";
-import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+import { getReadableTicketHistoryWhere } from "@/lib/casl/abilities/ticket-history/guards";
 import { Prisma } from "@/app/generated/prisma/client";
-import { buildTicketWhere } from "./where";
+import { buildHistoryScopeWhere, buildTicketWhere } from "./where";
+import { TicketScope } from "../../ticket/resolvers/where";
 
-export const ticketHistory2Queries = {
-  ticketHisotry: async (
+export const ticketHistoryQueries = {
+  ticketHistory: async (
     _parent: unknown,
-    args: {
-      first?: number;
-      after?: string;
-      filter?: unknown;
-    }
+    args: { first?: number; after?: string; filter?: unknown }
   ) => {
     const session = await requireSession();
 
-
-    const where: Prisma.TicketHistory2WhereInput = {
-      AND: [
-        buildTicketWhere(args.filter),
-      ],
+    const where: Prisma.TicketHistoryWhereInput = {
+      AND: [getReadableTicketHistoryWhere(session), buildTicketWhere(args.filter)],
     };
 
     return paginateByCursor(args, {
       fetchPage: ({ take, skip, cursor }) =>
-        prisma.ticketHistory2.findMany({
+        prisma.ticketHistory.findMany({
           take,
           skip,
           cursor,
@@ -37,28 +29,83 @@ export const ticketHistory2Queries = {
             createdBy: true,
             assignedTo: true,
             lastUpdatedBy: true,
-
+            deletedBy: true,
           },
           orderBy: { updatedAt: "desc" },
         }),
     });
   },
 
-  ticket: async (_parent: unknown, args: { id: number }) => {
+  ticketHistoryByTicketId: async (
+    _parent: unknown,
+    args: { ticketId: number; first?: number; after?: string; filter?: unknown }
+  ) => {
     const session = await requireSession();
-    const ability = defineAbilityForTicket(session);
 
-    return prisma.ticketHistory2.findFirst({
-      where: {
-        id: args.id,
-        // AND: [accessibleBy(ability, "read").ofType("Ticket")],
-      },
-      include: {
-        category: true,
-        createdBy: true,
-        assignedTo: true,
-        lastUpdatedBy: true,
-      },
+    const where: Prisma.TicketHistoryWhereInput = {
+      AND: [
+        getReadableTicketHistoryWhere(session),
+        { originalTicketId: args.ticketId },
+        buildTicketWhere(args.filter),
+      ],
+    };
+
+    return paginateByCursor(args, {
+      fetchPage: ({ take, skip, cursor }) =>
+        prisma.ticketHistory.findMany({
+          take,
+          skip,
+          cursor,
+          where,
+          include: {
+            category: true,
+            createdBy: true,
+            assignedTo: true,
+            lastUpdatedBy: true,
+            deletedBy: true,
+          },
+          orderBy: { updatedAt: "desc" },
+        }),
+    });
+  },
+
+  deletedTickets: async (
+    _parent: unknown,
+    args: {
+      first?: number;
+      after?: string;
+      filter?: unknown;
+      scope?: TicketScope;
+    }
+  ) => {
+    const session = await requireSession();
+    const scope: TicketScope = args.scope ?? "MINE";
+
+    const where: Prisma.TicketHistoryWhereInput = {
+      AND: [
+        getReadableTicketHistoryWhere(session),
+        buildHistoryScopeWhere(scope, session),
+        { deletedAt: { not: null } },
+        buildTicketWhere(args.filter),
+      ],
+    };
+
+    return paginateByCursor(args, {
+      fetchPage: ({ take, skip, cursor }) =>
+        prisma.ticketHistory.findMany({
+          take,
+          skip,
+          cursor,
+          where,
+          include: {
+            category: true,
+            createdBy: true,
+            assignedTo: true,
+            lastUpdatedBy: true,
+            deletedBy: true,
+          },
+          orderBy: { updatedAt: "desc" },
+        }),
     });
   },
 };
