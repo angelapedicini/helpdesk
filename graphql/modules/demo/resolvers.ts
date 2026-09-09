@@ -1,6 +1,5 @@
 import { createDemoBranch } from "@/lib/neon/neon";
-// import { staticPrismaClient } from "./static-client";
-import { setDemoSessionCookie } from "@/lib/auth/cookies";
+import { setDemoSessionCookie, getDemoSessionId, clearDemoSessionCookie } from "@/lib/auth/cookies";
 import { GraphQLError } from "graphql";
 import { staticPrismaClient } from "@/lib/prisma/static-client";
 
@@ -9,6 +8,29 @@ const DEMO_TTL_MS = 60 * 60 * 1000; // 1 ora
 export const demoResolvers = {
   Mutation: {
     startDemo: async () => {
+      // --- GUARD: c'è già una demo session attiva? ---
+      const existingSessionId = await getDemoSessionId();
+
+      if (existingSessionId) {
+        const existingSession = await staticPrismaClient.demoSession.findUnique({
+          where: { id: existingSessionId },
+        });
+
+        if (existingSession && existingSession.expiresAt > new Date()) {
+          // Sessione ancora valida: non creiamo un nuovo branch,
+          // semplicemente confermiamo quella esistente.
+          return {
+            success: true,
+            demoSessionId: existingSession.id,
+          };
+        }
+
+        // Cookie presente ma sessione scaduta/inesistente in DB:
+        // puliamo il cookie stantio e procediamo a crearne una nuova.
+        await clearDemoSessionCookie();
+      }
+
+      // --- Creazione normale della demo ---
       let branch;
       try {
         branch = await createDemoBranch(DEMO_TTL_MS);

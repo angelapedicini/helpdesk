@@ -106,7 +106,7 @@ export const sharedComponents: Components<Theme> = {
         styleOverrides: {
             root: ({ theme }) => ({
                 "&:hover": {
-                    "& .MuiTableCell-root": {
+                    "& .MuiTableCell-root:not(.highlighted-cell)": {
                         backgroundColor: theme.palette.ui.tableRowHover,
                     },
                 },

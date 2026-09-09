@@ -261,11 +261,19 @@ export default function TicketDetailForm({
             successMessage:
                 "Il ticket #{id} è stato modificato con successo.",
         },
-        update(cache) {
-            cache.evict({
-                fieldName: "tickets",
-            });
+        // update(cache, _, { variables }) {
+        //     cache.evict({ fieldName: "tickets" });
 
+        //     cache.evict({
+        //         fieldName: "ticketHistoryByTicketId",
+        //         args: { ticketId: variables?.id },
+        //     });
+
+        //     cache.gc();
+        // },
+        update(cache) {
+            cache.evict({ fieldName: "tickets" });
+            cache.evict({ fieldName: "ticketHistoryByTicketId" });
             cache.gc();
         },
     });

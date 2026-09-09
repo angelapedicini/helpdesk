@@ -90,13 +90,17 @@ export default function TicketHistoryPage() {
             </Box>
 
             <Modal
-                title={`Dettaglio modifica #${detailModal.value?.id}`}
+                title={`Dettaglio history ticket #${detailModal.value?.originalTicketId}`}
                 isOpen={detailModal.isOpen}
                 onClose={detailModal.close}
             >
-                {/* DETAIL MODAL */}
                 <TicketHistoryDetailModal
                     row={detailModal.value}
+                    changedFields={
+                        detailModal.value
+                            ? changedFieldsByRowId.get(detailModal.value.id)
+                            : undefined
+                    }
                 />
             </Modal>
         </Box>

@@ -41,16 +41,16 @@ export const darkTheme = createTheme({
 
     ui: {
       // Standard inputs
-      inputBorder: "#c7c7c7",
+      inputBorder: "#ffffff",
       inputBorderHover: "#e9ebee",
-      inputBorderDisabled: "#8b95a1",
-      inputTextDisabled: "rgba(241, 245, 249, 0.38)",
+      inputBorderDisabled: "#3e4144",
+      inputTextDisabled: "#bebebe",
 
       // Date pickers
       pickerBorder: "#c7c7c7",
       pickerBorderHover: "#f3f0f0",
-      pickerBorderDisabled: "#989999",
-      pickerTextDisabled: "#949494",
+      pickerBorderDisabled: "#3e4144",
+      pickerTextDisabled: "#bebebe",
 
       // Tabless
       tableHeaderText: "#d1d5db",

@@ -27,26 +27,34 @@ function userLabel(user: { firstName: string; lastName: string } | null | undefi
     return user ? `${user.firstName} ${user.lastName}` : "-";
 }
 
+function displayValue(value: string | number | null | undefined): string {
+    return value === null || value === undefined || value === "" ? "-" : String(value);
+}
+
 // --------------------------------
-// STILI CAMPI DISABLED
+// STILI CAMPI DISABLED (bordo invisibile, tema-agnostico)
 // --------------------------------
 
 const disabledFieldSx: SxProps<Theme> = {
+    "& .MuiOutlinedInput-notchedOutline": {
+        borderColor: "transparent !important",
+    },
     "& .MuiInputBase-input.Mui-disabled": {
         WebkitTextFillColor: "currentColor",
         color: "primary.main",
+        opacity: "1 !important",
     },
     "& .MuiInputLabel-root.Mui-disabled": {
         color: "text.secondary",
-    },
-    "& .MuiOutlinedInput-notchedOutline": {
-        borderColor: "action.disabled",
+        opacity: "1 !important",
     },
 };
 
 const highlightedFieldSx: SxProps<Theme> = {
     ...disabledFieldSx,
-    bgcolor: "action.selected",
+    "& .MuiOutlinedInput-root": (theme) => ({
+        backgroundColor: `${theme.palette.action.selected} !important`,
+    }),
     borderRadius: 1,
 };
 
@@ -76,25 +84,10 @@ export default function TicketHistoryDetailModal({
                     mt: 1,
                 }}
             >
-                <TextField
-                    label="ID"
-                    value={row.id}
-                    fullWidth
-                    disabled
-                    sx={disabledFieldSx}
-                />
-
-                <TextField
-                    label="Ticket originale"
-                    value={row.originalTicketId}
-                    fullWidth
-                    disabled
-                    sx={disabledFieldSx}
-                />
 
                 <TextField
                     label="Titolo"
-                    value={row.title}
+                    value={displayValue(row.title)}
                     fullWidth
                     disabled
                     sx={fieldSx("title")}
@@ -118,7 +111,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Categoria"
-                    value={row.category ? row.category.name : "Nessuna categoria"}
+                    value={row.category ? row.category.name : "-"}
                     fullWidth
                     disabled
                     sx={fieldSx("category")}
@@ -126,7 +119,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Specifica"
-                    value={row.ticketSpecific ?? "Nessuna specifica"}
+                    value={displayValue(row.ticketSpecific)}
                     fullWidth
                     disabled
                     sx={fieldSx("ticketSpecific")}
@@ -142,7 +135,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Assegnato a"
-                    value={row.assignedTo ? userLabel(row.assignedTo) : "Non assegnato"}
+                    value={row.assignedTo ? userLabel(row.assignedTo) : "-"}
                     fullWidth
                     disabled
                     sx={fieldSx("assignedTo")}
@@ -158,7 +151,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Dipartimento origine"
-                    value={row.sourceDepartmentForUser}
+                    value={displayValue(row.sourceDepartmentForUser)}
                     fullWidth
                     disabled
                     sx={fieldSx("sourceDepartmentForUser")}
@@ -166,7 +159,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Dipartimento"
-                    value={row.ticketDepartment}
+                    value={displayValue(row.ticketDepartment)}
                     fullWidth
                     disabled
                     sx={fieldSx("ticketDepartment")}
@@ -174,7 +167,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Data modifica"
-                    value={toDatetimeLocalValue(row.createdAt)}
+                    value={displayValue(toDatetimeLocalValue(row.createdAt))}
                     type="datetime-local"
                     fullWidth
                     disabled
@@ -184,7 +177,17 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Ultimo aggiornamento"
-                    value={toDatetimeLocalValue(row.updatedAt)}
+                    value={row.lastUpdatedBy ? userLabel(row.lastUpdatedBy) : "-"}
+                    type="datetime-local"
+                    fullWidth
+                    disabled
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    sx={fieldSx("lastUpdatedBy")}
+                />
+
+                <TextField
+                    label="Ultimo aggiornamento di"
+                    value={displayValue(toDatetimeLocalValue(row.updatedAt))}
                     type="datetime-local"
                     fullWidth
                     disabled
@@ -194,8 +197,8 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Chiuso il"
-                    value={row.closedAt ? toDatetimeLocalValue(row.closedAt) : ""}
-                    type="datetime-local"
+                    value={row.closedAt ? toDatetimeLocalValue(row.closedAt) : "-"}
+                    type={row.closedAt ? "datetime-local" : "text"}
                     fullWidth
                     disabled
                     slotProps={{ inputLabel: { shrink: true } }}
@@ -204,8 +207,8 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Entro"
-                    value={row.dueDate ? toDatetimeLocalValue(row.dueDate) : ""}
-                    type="datetime-local"
+                    value={row.dueDate ? toDatetimeLocalValue(row.dueDate) : "-"}
+                    type={row.dueDate ? "datetime-local" : "text"}
                     fullWidth
                     disabled
                     slotProps={{ inputLabel: { shrink: true } }}
@@ -214,7 +217,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Descrizione"
-                    value={row.description}
+                    value={displayValue(row.description)}
                     fullWidth
                     multiline
                     minRows={3}
@@ -227,7 +230,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Messaggio di chiusura"
-                    value={row.closingMessage ?? ""}
+                    value={displayValue(row.closingMessage)}
                     fullWidth
                     multiline
                     minRows={2}
