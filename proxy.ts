@@ -234,15 +234,9 @@ function checkRateLimit(ip: string): NextResponse | null {
 // 1. Pubblici — accessibili senza token
 const PUBLIC_PATHS = [
   "/",
-  "/login",
-  "/register",
   "/api/graphql", // <-- il vecchio endpoint /api/auth/login, /refresh, /register erano pubblici
                   //     ora tutto passa da qui: login/register/refresh sono mutation pubbliche,
                   //     le query/mutation protette restano protette a livello di resolver
-  "/docs",
-  "/api/openapi",
-  "/tracking",
-  "/api/tracking",
 ];
 
 // 3. Protetti per ruolo — richiedono token + ruolo specifico
@@ -254,10 +248,7 @@ const ROLE_PROTECTED_PATHS: { path: string; roles: string[] }[] = [
 
 // path su cui la navbar non deve apparire
 export const NAVBAR_HIDDEN_PATHS = [
-  "/login",
-  "/register",
   "/",
-  "/tracking",
 ];
 
 // ---------------------------------------------------------------------------
@@ -280,9 +271,9 @@ function handleUnauthenticated(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith("/api")) {
     return NextResponse.json({ error: "Non autorizzato" }, { status: 401 });
   }
-  const loginUrl = new URL("/login", req.url);
-  loginUrl.searchParams.set("from", req.nextUrl.pathname);
-  return NextResponse.redirect(loginUrl);
+  const homeUrl = new URL("/", req.url);
+  homeUrl.searchParams.set("from", req.nextUrl.pathname);
+  return NextResponse.redirect(homeUrl);
 }
 
 function handleForbidden(req: NextRequest) {

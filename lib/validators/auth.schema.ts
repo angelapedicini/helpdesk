@@ -14,6 +14,9 @@ export const RegisterSchema = z.object({
   department: DepartmentEnum
 });
 
+export type RegisterInput = z.infer<typeof RegisterSchema>;
+
+
 export const LoginSchema = z.object({
   email: z.email("Inserisci una email valida"),
   password: z.string()
@@ -23,5 +26,16 @@ export const LoginSchema = z.object({
     .regex(/[^a-zA-Z0-9]/, "Deve contenere almeno un carattere speciale")
 });
 
-export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
+
+export const EasyLoginDepSchema = z.object({
+    department: DepartmentEnum
+});
+
+export type EasyLoginDep = z.infer<typeof EasyLoginDepSchema>;
+
+export const EasyLoginSchema = z.object({
+  email: z.email("Inserisci una email valida"),
+});
+
+export type EasyLogin = z.infer<typeof EasyLoginSchema>;

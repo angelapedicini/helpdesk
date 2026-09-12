@@ -117,4 +117,27 @@ export const userQueries = {
       specializations: u.specializations.map((s) => s.category),
     }));
   },
+
+   usersByDepForLogin: async (
+    _parent: unknown,
+    args: { department: Department; }
+  ) => {
+    const session = await getSession();
+    if (!session) return [];
+    const prisma = await getPrisma();
+
+    const users = await prisma.user.findMany({
+      where: { department: args.department },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+      },
+      orderBy: { role: "asc" },
+    });
+
+    return users;
+  },
 };

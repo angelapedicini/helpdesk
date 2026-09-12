@@ -18,6 +18,8 @@ type Documents = {
     "\n  mutation Logout {\n    logout {\n      success\n    }\n  }\n": typeof types.LogoutDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n": typeof types.CreateUserDocument,
     "\n  mutation StartDemo {\n    startDemo {\n      success\n      demoSessionId\n    }\n  }\n": typeof types.StartDemoDocument,
+    "\n  query TicketStatsByDepartment($dateRange: DateRangeInput) {\n    ticketStatsByDepartment(dateRange: $dateRange) {\n      department\n      totalTickets\n      openCount\n      pendingReviewCount\n      inProgressCount\n      closedCount\n      refusedCount\n      overdueCount\n      sumResolutionHours\n      closedWithResolutionCount\n    }\n  }\n": typeof types.TicketStatsByDepartmentDocument,
+    "\n  query TechnicianWorkloads($department: Department, $dateRange: DateRangeInput) {\n    technicianWorkloads(department: $department, dateRange: $dateRange) {\n      technicianId\n      firstName\n      lastName\n      role\n      department\n      pendingReviewCount\n      activeCount\n      overdueCount\n      closedThisPeriod\n      sumResolutionHours\n      closedWithResolutionCount\n    }\n  }\n": typeof types.TechnicianWorkloadsDocument,
     "\n  mutation CreateTicketNotificationSubscription($ticketId: Int!) {\n    createTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.CreateTicketNotificationSubscriptionDocument,
     "\n  mutation DeleteTicketNotificationSubscription($ticketId: Int!) {\n    deleteTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.DeleteTicketNotificationSubscriptionDocument,
     "\n  query TicketNotificationSubscription($ticketId: Int!) {\n    ticketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.TicketNotificationSubscriptionDocument,
@@ -42,12 +44,15 @@ type Documents = {
     "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      role\n      department\n    }\n  }\n": typeof types.MeDocument,
     "\n  query SearchUsers($search: String, $role: Role, $department: Department) {\n    searchUsers(search: $search, role: $role, department: $department) {\n      id\n      firstName\n      lastName\n    }\n  }\n": typeof types.SearchUsersDocument,
     "\n query UsersByDepartment($userId: Int, $role: Role, $categoryId: Int) {\n    usersByDepartment(userId: $userId, role: $role, categoryId: $categoryId) {\n      id\n      firstName\n      lastName\n      role\n      specializations {\n        id\n        name\n        department\n      }\n    }\n  }\n": typeof types.UsersByDepartmentDocument,
+    "\n  query UsersByDepForLogin($department: Department!) {\n    usersByDepForLogin(department: $department) {\n      id\n      firstName\n      lastName\n      email\n      role\n    }\n  }\n": typeof types.UsersByDepForLoginDocument,
 };
 const documents: Documents = {
     "\n  mutation Login($input: LoginInput!) {\n    login(input: $input) {\n      user {\n        id\n        email\n        firstName\n        lastName\n      }\n    }\n  }\n": types.LoginDocument,
     "\n  mutation Logout {\n    logout {\n      success\n    }\n  }\n": types.LogoutDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n": types.CreateUserDocument,
     "\n  mutation StartDemo {\n    startDemo {\n      success\n      demoSessionId\n    }\n  }\n": types.StartDemoDocument,
+    "\n  query TicketStatsByDepartment($dateRange: DateRangeInput) {\n    ticketStatsByDepartment(dateRange: $dateRange) {\n      department\n      totalTickets\n      openCount\n      pendingReviewCount\n      inProgressCount\n      closedCount\n      refusedCount\n      overdueCount\n      sumResolutionHours\n      closedWithResolutionCount\n    }\n  }\n": types.TicketStatsByDepartmentDocument,
+    "\n  query TechnicianWorkloads($department: Department, $dateRange: DateRangeInput) {\n    technicianWorkloads(department: $department, dateRange: $dateRange) {\n      technicianId\n      firstName\n      lastName\n      role\n      department\n      pendingReviewCount\n      activeCount\n      overdueCount\n      closedThisPeriod\n      sumResolutionHours\n      closedWithResolutionCount\n    }\n  }\n": types.TechnicianWorkloadsDocument,
     "\n  mutation CreateTicketNotificationSubscription($ticketId: Int!) {\n    createTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.CreateTicketNotificationSubscriptionDocument,
     "\n  mutation DeleteTicketNotificationSubscription($ticketId: Int!) {\n    deleteTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.DeleteTicketNotificationSubscriptionDocument,
     "\n  query TicketNotificationSubscription($ticketId: Int!) {\n    ticketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.TicketNotificationSubscriptionDocument,
@@ -72,6 +77,7 @@ const documents: Documents = {
     "\n  query Me {\n    me {\n      id\n      firstName\n      lastName\n      email\n      role\n      department\n    }\n  }\n": types.MeDocument,
     "\n  query SearchUsers($search: String, $role: Role, $department: Department) {\n    searchUsers(search: $search, role: $role, department: $department) {\n      id\n      firstName\n      lastName\n    }\n  }\n": types.SearchUsersDocument,
     "\n query UsersByDepartment($userId: Int, $role: Role, $categoryId: Int) {\n    usersByDepartment(userId: $userId, role: $role, categoryId: $categoryId) {\n      id\n      firstName\n      lastName\n      role\n      specializations {\n        id\n        name\n        department\n      }\n    }\n  }\n": types.UsersByDepartmentDocument,
+    "\n  query UsersByDepForLogin($department: Department!) {\n    usersByDepForLogin(department: $department) {\n      id\n      firstName\n      lastName\n      email\n      role\n    }\n  }\n": types.UsersByDepForLoginDocument,
 };
 
 /**
@@ -104,6 +110,14 @@ export function graphql(source: "\n  mutation CreateUser($input: CreateUserInput
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation StartDemo {\n    startDemo {\n      success\n      demoSessionId\n    }\n  }\n"): (typeof documents)["\n  mutation StartDemo {\n    startDemo {\n      success\n      demoSessionId\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query TicketStatsByDepartment($dateRange: DateRangeInput) {\n    ticketStatsByDepartment(dateRange: $dateRange) {\n      department\n      totalTickets\n      openCount\n      pendingReviewCount\n      inProgressCount\n      closedCount\n      refusedCount\n      overdueCount\n      sumResolutionHours\n      closedWithResolutionCount\n    }\n  }\n"): (typeof documents)["\n  query TicketStatsByDepartment($dateRange: DateRangeInput) {\n    ticketStatsByDepartment(dateRange: $dateRange) {\n      department\n      totalTickets\n      openCount\n      pendingReviewCount\n      inProgressCount\n      closedCount\n      refusedCount\n      overdueCount\n      sumResolutionHours\n      closedWithResolutionCount\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query TechnicianWorkloads($department: Department, $dateRange: DateRangeInput) {\n    technicianWorkloads(department: $department, dateRange: $dateRange) {\n      technicianId\n      firstName\n      lastName\n      role\n      department\n      pendingReviewCount\n      activeCount\n      overdueCount\n      closedThisPeriod\n      sumResolutionHours\n      closedWithResolutionCount\n    }\n  }\n"): (typeof documents)["\n  query TechnicianWorkloads($department: Department, $dateRange: DateRangeInput) {\n    technicianWorkloads(department: $department, dateRange: $dateRange) {\n      technicianId\n      firstName\n      lastName\n      role\n      department\n      pendingReviewCount\n      activeCount\n      overdueCount\n      closedThisPeriod\n      sumResolutionHours\n      closedWithResolutionCount\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -200,6 +214,10 @@ export function graphql(source: "\n  query SearchUsers($search: String, $role: R
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n query UsersByDepartment($userId: Int, $role: Role, $categoryId: Int) {\n    usersByDepartment(userId: $userId, role: $role, categoryId: $categoryId) {\n      id\n      firstName\n      lastName\n      role\n      specializations {\n        id\n        name\n        department\n      }\n    }\n  }\n"): (typeof documents)["\n query UsersByDepartment($userId: Int, $role: Role, $categoryId: Int) {\n    usersByDepartment(userId: $userId, role: $role, categoryId: $categoryId) {\n      id\n      firstName\n      lastName\n      role\n      specializations {\n        id\n        name\n        department\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query UsersByDepForLogin($department: Department!) {\n    usersByDepForLogin(department: $department) {\n      id\n      firstName\n      lastName\n      email\n      role\n    }\n  }\n"): (typeof documents)["\n  query UsersByDepForLogin($department: Department!) {\n    usersByDepForLogin(department: $department) {\n      id\n      firstName\n      lastName\n      email\n      role\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

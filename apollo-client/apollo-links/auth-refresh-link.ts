@@ -33,7 +33,7 @@ function doRefresh(): Promise<boolean> {
 // forza il redirect al login quando il refresh fallisce davvero
 function redirectToLogin() {
   if (typeof window !== "undefined") {
-    window.location.href = "/login";
+    window.location.href = "/";
   }
 }
 

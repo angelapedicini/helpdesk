@@ -28,6 +28,8 @@ import { ticketHistoryTypeDefs } from "./modules/ticket-history/typeDefs";
 import { ticketHistoryResolvers } from "./modules/ticket-history";
 import { demoResolvers } from "./modules/demo/resolvers";
 import { demoTypeDefs } from "./modules/demo/typeDefs";
+import { statTypeDefs } from "./modules/stats/typeDef";
+import { statResolvers } from "./modules/stats";
 
 
 export const typeDefs = [
@@ -46,6 +48,7 @@ export const typeDefs = [
   ticketSpecificationTypeDefs,
   ticketHistoryTypeDefs,
   demoTypeDefs,
+  statTypeDefs,
 ];
 
 export const resolvers = {
@@ -57,7 +60,8 @@ export const resolvers = {
     ...ticketMessageResolvers.Query,
     ...ticketReadStateResolvers.Query,
     ...ticketAdminNotificationResolvers.Query,
-    ...ticketHistoryResolvers.Query
+    ...ticketHistoryResolvers.Query,
+    ...statResolvers.Query,
   },
   Mutation: {
     ...registerResolvers.Mutation,

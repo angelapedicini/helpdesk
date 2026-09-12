@@ -8,7 +8,7 @@ import { AbilityProvider } from "@/lib/casl/abilityContext";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
     const session = await getSession();
-    if (!session) redirect("/login");
+    if (!session) redirect("/");
 
     const prisma = await getPrisma();
 
@@ -16,7 +16,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         where: { id: session.userId },
         select: { id: true },
     });
-    if (!user) redirect("/login");
+    if (!user) redirect("/");
 
     const ability = defineAbilityForTicket(session);
 

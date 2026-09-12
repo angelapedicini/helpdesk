@@ -24,7 +24,6 @@ import {
 
 import { useResetRegistry } from "../hooks/use-reset-registry";
 
-import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
 import { FilterUserSpecInput, FilterUserSpecOutput, FilterUserSpecSchema } from "@/lib/validators/userSpec.schema";
 import { ROLE_CONFIG } from "@/components/enums/role.config";
 import { Role } from "@/lib/validators/enums.schema";
@@ -41,7 +40,7 @@ export default function FilterUserSpecForm({
     onReset,
 }: FilterUserSpecFormProps) {
     const { registerReset, resetAll } = useResetRegistry();
-      const { data: meData, loading } = useQuery(ME_QUERY);
+      const { data: meData } = useQuery(ME_QUERY);
 
     const {
         control,
@@ -123,7 +122,6 @@ export default function FilterUserSpecForm({
                     label="Categoria"
                     control={control}
                     options={categoryOptions}
-                    error={!!errors.categoryId}
                 />
 
                 <SearchInput
@@ -140,7 +138,6 @@ export default function FilterUserSpecForm({
                     label="Ruolo"
                     control={control}
                     options={roleOptions}
-                    error={!!errors.role}
                 />
 
                 <Box

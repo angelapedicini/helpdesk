@@ -30,7 +30,7 @@ export default function NavUser() {
 
     if (result.data?.logout.success) {
       await client.clearStore(); // pulisce "me" e tutto il resto dalla cache Apollo
-      router.replace("/login");
+      router.replace("/");
     }
   };
 

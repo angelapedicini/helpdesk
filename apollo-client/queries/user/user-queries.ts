@@ -16,3 +16,16 @@ export const GET_USERS_BY_DEPARTMENT = graphql(`
     }
   }
 `);
+
+
+export const GET_USERS_BY_DEP_FOR_LOGIN = graphql(`
+  query UsersByDepForLogin($department: Department!) {
+    usersByDepForLogin(department: $department) {
+      id
+      firstName
+      lastName
+      email
+      role
+    }
+  }
+`);

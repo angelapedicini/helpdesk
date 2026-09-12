@@ -41,9 +41,18 @@ export const userTypeDefs = `#graphql
   lastName: String!
   }
 
+    type UserLoginInfo {
+    id: Int!
+    firstName: String!
+    lastName: String!
+    email: String!
+    role: Role!
+  }
+
   extend type Query {
     me: User
     searchUsers(search: String, role: Role, department: Department): [User!]!
     usersByDepartment(userId: Int, role: Role, categoryId: Int): [UserDepartmentInfo!]!
+    usersByDepForLogin(department: Department!): [UserLoginInfo!]!
   }
 `;

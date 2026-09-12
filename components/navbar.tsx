@@ -20,6 +20,7 @@ import NavUser from "./navuser";
 import { NavLinkItem } from "./types/navlink";
 import NavSidebar from "./sidebar";
 import { useQuery } from "@apollo/client/react";
+import EasyLoginForm from "./forms/user/easyLogin";
 
 
 const NAV_LINKS: NavLinkItem[] = [
@@ -65,6 +66,12 @@ const NAV_LINKS: NavLinkItem[] = [
   {
     label: "Ticket del dipartimento cancellati",
     href: "/tickets-deleted?scope=department",
+    icon: <DataObjectIcon />,
+    roles: ["ADMIN"],
+  },
+  {
+    label: "Statistiche",
+    href: "/stats",
     icon: <DataObjectIcon />,
     roles: ["ADMIN"],
   },
@@ -122,7 +129,10 @@ export default function Navbar() {
             </Link>
           </Box>
 
+
+
           <Box sx={{ display: "flex", alignItems: "center" }}>
+
             <IconButton color="inherit" onClick={handleNotifOpen} sx={{ mr: 1 }}>
               <Badge badgeContent={totalUnread} color="error">
                 <NotificationsIcon />
@@ -136,8 +146,11 @@ export default function Navbar() {
                 </MenuItem>
               ))}
             </Menu>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <EasyLoginForm defaultDepartment={user.department} defaultEmail={user.email} />
+            </Box>
 
-            <NavUser />
+            {/* <NavUser /> */}
           </Box>
         </Toolbar>
       </AppBar>

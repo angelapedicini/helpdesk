@@ -5,11 +5,13 @@ import { Box, Button, CircularProgress, Alert } from "@mui/material";
 import { useMutation } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import { START_DEMO_MUTATION } from "@/apollo-client/queries/demo/demo.mutations";
+import { LOGIN } from "@/apollo-client/queries/auth/login/login.mutation";
 
 
 export default function Page() {
   const router = useRouter();
   const [startDemo, { loading, error }] = useMutation(START_DEMO_MUTATION);
+  const [login] = useMutation(LOGIN);
   const [result, setResult] = useState<string | null>(null);
 
   const handleStartDemo = async () => {
@@ -18,6 +20,15 @@ export default function Page() {
       if (data?.startDemo.success) {
         setResult(`Branch creato! demoSessionId: ${data.startDemo.demoSessionId}`);
       }
+
+      const { data: loginData } = await login({
+        variables: {
+          input: {
+            email: "rossi@example.com",
+          },
+        },
+      });
+
       router.replace("/dashboard");
     } catch (err) {
       console.error("Errore startDemo:", err);
