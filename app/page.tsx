@@ -55,8 +55,8 @@ export default function Page() {
           Start Demo
         </Button>
 
-        {result && <Alert severity="success">{result}</Alert>}
-        {error && <Alert severity="error">{error.message}</Alert>}
+        {/* {result && <Alert severity="success">{result}</Alert>} */}
+        {/* {error && <Alert severity="error">{error.message}</Alert>} */}
       </Box>
     </Box>
   );

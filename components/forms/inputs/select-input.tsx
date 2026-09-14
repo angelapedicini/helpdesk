@@ -14,6 +14,7 @@ export type SelectOption<TValue extends string | number = string | number> = {
     label: string;
     icon?: React.ComponentType<any>;
     color?: string;
+    disabled?: boolean; // opzione mostrata ma non selezionabile (es. stato attuale)
 };
 
 type AppSelectProps<
@@ -44,6 +45,7 @@ export function AppSelect<
                         disabled={disabled}
                         disableClearable
                         options={options}
+                        getOptionDisabled={(option) => option.disabled === true}
                         getOptionLabel={(option) =>
                             typeof option === "object" ? option.label : ""
                         }
@@ -59,7 +61,12 @@ export function AppSelect<
                                     component="li"
                                     key={option.id}
                                     {...optionProps}
-                                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 1,
+                                        opacity: option.disabled ? 0.5 : 1,
+                                    }}
                                 >
                                     {Icon && <Icon sx={{ color: option.color, fontSize: 20 }} />}
                                     {option.label}

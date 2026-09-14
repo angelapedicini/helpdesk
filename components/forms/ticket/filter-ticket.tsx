@@ -12,7 +12,7 @@ import {
 
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
-import { useLazyQuery, useQuery } from "@apollo/client/react";
+import { skipToken, useLazyQuery, useQuery } from "@apollo/client/react";
 
 import { SEARCH_USERS } from "@/apollo-client/queries/user/search";
 import { GET_CATEGORIES } from "@/apollo-client/queries/ticket-category/ticket-category.queries";
@@ -45,12 +45,14 @@ type FilterTicketFormProps = {
     onApply: (filter: FilterTicketOutput) => void;
     onReset?: () => void;
     scope?: string;
+    enabled?: boolean;
 };
 
 export default function FilterTicketForm({
     onApply,
     onReset,
     scope,
+    enabled = true,
 }: FilterTicketFormProps) {
     const { registerReset, resetAll } = useResetRegistry();
 
@@ -97,11 +99,14 @@ export default function FilterTicketForm({
         }));
     }
 
-    const { data } = useQuery(GET_CATEGORIES);
+
+    const { data } = useQuery(GET_CATEGORIES, {
+        skip: !enabled,
+    });
 
     const categoryOptions = (data?.categories ?? []).map((c) => ({
-        id: c.id,
-        label: c.name,
+        id: c.id as number,
+        label: c.name as string,
     }));
 
     const statusOptions = (
@@ -154,7 +159,6 @@ export default function FilterTicketForm({
                     label="Priorità"
                     control={control}
                     options={priorityOptions}
-                    error={!!errors.priority}
                 />
 
                 <AppSelect
@@ -162,7 +166,6 @@ export default function FilterTicketForm({
                     label="Categoria"
                     control={control}
                     options={categoryOptions}
-                    error={!!errors.categoryId}
                 />
 
                 <AppSelect
@@ -170,7 +173,6 @@ export default function FilterTicketForm({
                     label="Stato"
                     control={control}
                     options={statusOptions}
-                    error={!!errors.status}
                 />
 
                 {scope !== "MINE" && (

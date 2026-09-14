@@ -179,7 +179,6 @@ model Ticket {
   updatedAt DateTime  @updatedAt
   dueDate   DateTime?
   closedAt  DateTime?
-  // deletedAt DateTime?
 }
 
 /// Nuova history: mirror 1:1 dei campi del Ticket al momento della cancellazione.

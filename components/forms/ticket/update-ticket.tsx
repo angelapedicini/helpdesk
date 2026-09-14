@@ -39,7 +39,7 @@ import { SearchInput, SearchResult } from "../inputs/search-input";
 import { SpecificFieldInput } from "../inputs/specific-field-input";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
-import { useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/presentation";
+import { useTicketAllowedStatuses, useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/presentation";
 import { SOLE_SPECIALIST_CATEGORY_IDS, USERS_SPEC_BY_CATID } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
 
 
@@ -238,14 +238,20 @@ export default function TicketDetailForm({
         }
     }, [selectedCategoryId, defaultValues, setValue]);
 
+    // in TicketDetailForm
+    const allowedStatuses = useTicketAllowedStatuses(ticket);
+
     const statusOptions = (
         Object.keys(TICKET_STATUS_CONFIG) as TicketStatus[]
-    ).map((id) => ({
-        id,
-        label: TICKET_STATUS_CONFIG[id].label,
-        icon: TICKET_STATUS_CONFIG[id].icon,
-        color: TICKET_STATUS_CONFIG[id].color,
-    }));
+    )
+        .filter((id) => id === ticket.status || allowedStatuses.includes(id))
+        .map((id) => ({
+            id,
+            label: TICKET_STATUS_CONFIG[id].label,
+            icon: TICKET_STATUS_CONFIG[id].icon,
+            color: TICKET_STATUS_CONFIG[id].color,
+            disabled: id === ticket.status,
+        }));
 
     const priorityOptions = (
         Object.keys(TICKET_PRIORITY_CONFIG) as TicketPriority[]

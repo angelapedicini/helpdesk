@@ -14,7 +14,7 @@ import {
     MenuItem,
     Select,
 } from "@mui/material";
-import { skipToken, useQuery, useMutation } from "@apollo/client/react";
+import { skipToken, useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import { Department } from "@/apollo-client/gql/graphql";
 import { EasyLogin, EasyLoginDep, EasyLoginDepSchema, EasyLoginSchema } from "@/lib/validators/auth.schema";
 import { GET_USERS_BY_DEP_FOR_LOGIN } from "@/apollo-client/queries/user/user-queries";
@@ -86,11 +86,17 @@ export default function EasyLoginForm({ defaultDepartment, defaultEmail }: EasyL
         }
     }, [userOptions, setLoginValue, defaultEmail]);
 
-    const [login,] = useMutation(LOGIN, {
-        refetchQueries: [{ query: ME_QUERY }],
-        awaitRefetchQueries: true,
-        onCompleted: () => {
-            router.replace("/dashboard");
+    const client = useApolloClient();
+
+    const [login] = useMutation(LOGIN, {
+        onCompleted: async () => {
+            await client.clearStore();
+
+            await client.refetchQueries({
+                include: "active", // solo le query montate sulla pagina corrente
+            });
+
+            router.refresh();
         },
     });
 

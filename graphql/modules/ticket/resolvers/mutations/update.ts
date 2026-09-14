@@ -267,38 +267,21 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
       },
     });
 
-    if (isClosingTransition) {
-      await tx.ticketMessage.create({
-        data: {
-          ticketId: args.id,
-          authorId: session.userId,
-          content: closingMessage!,
-          isClosingMessage: true,
-        },
-      });
-    }
-
     await tx.ticketHistory.create({
       data: {
         originalTicketId: args.id,
-
         title: result.title,
         description: result.description,
         status: result.status,
         priority: result.priority,
-
         categoryId: result.categoryId,
         createdById: result.createdById,
         assignedToId: result.assignedToId,
         lastUpdatedById: result.lastUpdatedById,
-
         closingMessage: result.closingMessage,
-
         sourceDepartmentForUser: result.sourceDepartmentForUser,
         ticketDepartment: result.ticketDepartment,
-
         ticketSpecific: input.specificValue != null ? input.specificValue : oldSpecificValue,
-
         createdAt: result.createdAt,
         updatedAt: result.updatedAt,
         dueDate: result.dueDate,

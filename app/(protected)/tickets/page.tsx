@@ -191,7 +191,7 @@ export default function TicketsPage() {
                         Filtri ticket
                     </Typography>
 
-                    <FilterTicketForm onApply={ticketFilters.apply} onReset={ticketFilters.reset} scope={scope}/>
+                    <FilterTicketForm onApply={ticketFilters.apply} onReset={ticketFilters.reset} scope={scope} enabled={ticketFilters.isOpen}/>
                 </Box>
             </FiltersSidebar>
 

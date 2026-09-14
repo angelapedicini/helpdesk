@@ -1,24 +1,31 @@
-// app/(protected)/stats/page.tsx
 "use client";
 
 import { useState } from "react";
-import { Box, Stack, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import {
+    Box,
+    Stack,
+    ToggleButton,
+    ToggleButtonGroup,
+    Typography,
+} from "@mui/material";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import { useQuery } from "@apollo/client/react";
+
 import EnhancedTable from "@/components/table";
+import DynamicChart from "@/components/dynamic-charts";
+
 import {
     TICKET_STATS_BY_DEPARTMENT_QUERY,
-    TECHNICIAN_WORKLOADS_QUERY,
 } from "@/apollo-client/queries/stats/stats.queries";
+
+import { NewSchema } from "@/lib/validators/stat.schema";
+
 import {
     departmentStatsHeadCells,
-    TicketDepartmentStatRow,
+    DepartmentStatsRow,
 } from "./_components/department-stats-columns";
-import {
-    technicianWorkloadHeadCells,
-    TechnicianWorkloadStatRow,
-} from "./_components/technician-workload-columns";
+import { ME_QUERY } from "@/apollo-client/queries/user/me";
 
 type ViewMode = "table" | "chart";
 
@@ -27,18 +34,23 @@ function ViewToggle({
     onChange,
 }: {
     value: ViewMode;
-    onChange: (v: ViewMode) => void;
+    onChange: (value: ViewMode) => void;
 }) {
     return (
         <ToggleButtonGroup
             size="small"
             exclusive
             value={value}
-            onChange={(_, v: ViewMode | null) => v && onChange(v)}
+            onChange={(_, value: ViewMode | null) => {
+                if (value) {
+                    onChange(value);
+                }
+            }}
         >
             <ToggleButton value="table" aria-label="Tabella">
                 <TableChartIcon fontSize="small" />
             </ToggleButton>
+
             <ToggleButton value="chart" aria-label="Grafico">
                 <BarChartIcon fontSize="small" />
             </ToggleButton>
@@ -47,44 +59,44 @@ function ViewToggle({
 }
 
 export default function TicketStatsPage() {
-    const [deptView, setDeptView] = useState<ViewMode>("table");
-    const [techView, setTechView] = useState<ViewMode>("table");
+    const [view, setView] = useState<ViewMode>("table");
+    const { data: meData } = useQuery(ME_QUERY);
+    const isAdmin = meData?.me?.role === "ADMIN";
+
+    const viewLabels: Record<string, string> = isAdmin
+        ? { stati: "Stati per dipartimento" }
+        : {
+            totali: "Totali per dipartimento",
+            media: "Media per dipartimento",
+            stati: "Stati per dipartimento",
+        };
 
     const {
-        data: byDeptData,
-        loading: byDeptLoading,
-        error: byDeptError,
+        data,
+        loading,
+        error,
     } = useQuery(TICKET_STATS_BY_DEPARTMENT_QUERY);
 
-    const {
-        data: techData,
-        loading: techLoading,
-        error: techError,
-    } = useQuery(TECHNICIAN_WORKLOADS_QUERY);
+    const stats = data?.ticketStatsByDepartment ?? [];
 
-    const byDepartment = byDeptData?.ticketStatsByDepartment ?? [];
-    const byTechnician = techData?.technicianWorkloads ?? [];
-
-    // Righe con `id` sintetico richiesto da EnhancedTable (RowBase)
-    const byDepartmentRows: TicketDepartmentStatRow[] = byDepartment.map((d) => ({
-        ...d,
-        id: d.department,
+    const rows: DepartmentStatsRow[] = stats.map((item) => ({
+        ...item,
+        id: item.department,
     }));
 
-    const technicianRows: TechnicianWorkloadStatRow[] = byTechnician.map((t) => ({
-        ...t,
-        id: t.technicianId,
-    }));
-
-    const grandTotal = byDepartment.reduce((sum, d) => sum + d.totalTickets, 0);
+    const grandTotal = stats.reduce(
+        (sum, department) => sum + department.total,
+        0,
+    );
 
     return (
         <Box sx={{ mt: 3, mx: 2 }}>
-            <Box
+            {/* Header */}
+            <Stack
+                direction={{ xs: "column", md: "row" }}
                 sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "end",
+                    alignItems: { xs: "flex-start", md: "flex-end" },
+                    justifyContent: "space-between",
                     gap: 2,
                     mb: 3,
                 }}
@@ -114,89 +126,80 @@ export default function TicketStatsPage() {
                         Totale ticket
                     </Typography>
 
-                    <Typography
-                        variant="h6"
-                    >
+                    <Typography variant="h6">
                         {grandTotal}
                     </Typography>
                 </Box>
-            </Box>
-
-
-
-
-            {/* --- Per dipartimento --- */}
-            <Stack
-                direction="row"
-                sx={{ alignItems: "center", justifyContent: "space-between", mb: 1 }}
-            >
-                <Typography variant="h6">Per dipartimento</Typography>
-                <ViewToggle value={deptView} onChange={setDeptView} />
             </Stack>
 
-            {byDeptLoading && <p>Caricamento...</p>}
-            {byDeptError && <p>Errore: {byDeptError.message}</p>}
+            {/* Titolo + pulsante */}
+            <Stack
+                direction="row"
+                sx={{
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mb: 1,
+                }}
+            >
+                <Typography variant="h6">
+                    Statistiche per dipartimento
+                </Typography>
 
-            {!byDeptLoading && !byDeptError && (
-                <>
+                <ViewToggle
+                    value={view}
+                    onChange={setView}
+                />
+            </Stack>
 
-                    {deptView === "table" ? (
-                        byDepartmentRows.length === 0 ? (
-                            <p>Nessun dato per dipartimento.</p>
-                        ) : (
-                            <Box sx={{ maxHeight: 400, mb: 5 }}>
-                                <EnhancedTable
-                                    rows={byDepartmentRows}
-                                    headCells={departmentStatsHeadCells}
-                                    order="asc"
-                                    orderBy="department"
-                                    onRequestSort={() => { }}
-                                />
-                            </Box>
-                        )
-                    ) : (
-                        <Box
-                            sx={{ mb: 5, p: 4, border: "1px dashed", borderColor: "divider" }}
-                        >
-                            <Typography color="text.secondary">Grafico in arrivo</Typography>
-                        </Box>
-                    )}
-                </>
+            {/* Loading */}
+            {loading && (
+                <Typography color="text.secondary">
+                    Caricamento...
+                </Typography>
             )}
 
-            {/* --- Per tecnico --- */}
-            <Stack
-                direction="row"
-                sx={{ alignItems: "center", justifyContent: "space-between", mb: 1 }}
-            >
-                <Typography variant="h6">Per tecnico</Typography>
-                <ViewToggle value={techView} onChange={setTechView} />
-            </Stack>
+            {/* Error */}
+            {error && (
+                <Typography color="error">
+                    Errore: {error.message}
+                </Typography>
+            )}
 
-            {techLoading && <p>Caricamento...</p>}
-            {techError && <p>Errore: {techError.message}</p>}
-
-            {!techLoading &&
-                !techError &&
-                (techView === "table" ? (
-                    technicianRows.length === 0 ? (
-                        <p>Nessun tecnico con ticket assegnati.</p>
-                    ) : (
-                        <Box sx={{ maxHeight: 400 }}>
-                            <EnhancedTable
-                                rows={technicianRows}
-                                headCells={technicianWorkloadHeadCells}
-                                order="asc"
-                                orderBy="department"
-                                onRequestSort={() => { }}
-                            />
-                        </Box>
-                    )
-                ) : (
-                    <Box sx={{ p: 4, border: "1px dashed", borderColor: "divider" }}>
-                        <Typography color="text.secondary">Grafico in arrivo</Typography>
+            {/* Contenuto */}
+            {!loading && !error && (
+                stats.length === 0 ? (
+                    <Box
+                        sx={{
+                            p: 4,
+                            border: "1px dashed",
+                            borderColor: "divider",
+                        }}
+                    >
+                        <Typography color="text.secondary">
+                            Nessun dato disponibile.
+                        </Typography>
                     </Box>
-                ))}
+                ) : view === "table" ? (
+                    <Box sx={{ maxHeight: 500 }}>
+                        <EnhancedTable
+                            rows={rows}
+                            headCells={departmentStatsHeadCells}
+                            order="asc"
+                            orderBy="department"
+                            onRequestSort={() => { }}
+                        />
+                    </Box>
+                ) : (
+                    <Box sx={{ width: "100%" }}>
+                        <DynamicChart
+                            data={stats}
+                            schema={NewSchema}
+                            viewLabels={viewLabels}
+                        />
+
+                    </Box>
+                )
+            )}
         </Box>
     );
 }
