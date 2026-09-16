@@ -1,7 +1,7 @@
 // components/forms/ticket/ticket.tsx
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -39,8 +39,10 @@ import { SearchInput, SearchResult } from "../inputs/search-input";
 import { SpecificFieldInput } from "../inputs/specific-field-input";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
-import { useTicketAllowedStatuses, useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/presentation";
+import { useTicketAllowedStatuses, useTicketAssigneeBrowseMode, useTicketCanReopen, useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/presentation";
 import { SOLE_SPECIALIST_CATEGORY_IDS, USERS_SPEC_BY_CATID } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
+import { GET_USERS_BY_DEPARTMENT } from "@/apollo-client/queries/user/user-queries";
+import { computeDueDate, computeDueWorkDate } from "@/lib/ticket/dueDate";
 
 
 type TicketDetailFormProps = {
@@ -144,6 +146,27 @@ export default function TicketDetailForm({
     const showClosingMessage =
         selectedStatus === "CLOSED" || selectedStatus === "REFUSED";
 
+    const assigneeBrowseMode = useTicketAssigneeBrowseMode(ticket);
+
+    const { data: deptUsersData, loading: loadingDeptUsers } = useQuery(
+        GET_USERS_BY_DEPARTMENT,
+        assigneeBrowseMode === "list"
+            ? { variables: { role: "TECHNICIAN", categoryId: ticket.category?.id } }
+            : skipToken
+    );
+
+    const deptUserOptions = useMemo(
+        () =>
+            (deptUsersData?.usersByDepartment ?? [])
+                .filter((u): u is typeof u & { id: number } => u?.id != null)
+                .map((u) => ({
+                    id: u.id,
+                    label: `${u.firstName} ${u.lastName}`,
+                })),
+        [deptUsersData]
+    );
+
+
     const [searchUsers, { loading: loadingUsers }] = useLazyQuery(USERS_SPEC_BY_CATID);
 
     async function handleSearchUsers(search: string): Promise<SearchResult[]> {
@@ -205,9 +228,14 @@ export default function TicketDetailForm({
         [categoriesWithSpecificField, categoryIdForQuery]
     );
 
+    // Ref: traccia se l'utente ha scelto MANUALMENTE una dueDate, per non
+    // farla sovrascrivere dal suggerimento automatico (vedi effect sotto).
+    const dueDateManuallyEditedRef = useRef(false);
+
     useEffect(() => {
         reset(defaultValues);
         resetAll();
+        dueDateManuallyEditedRef.current = false;
     }, [defaultValues, reset, resetAll]);
 
     // Reset/ripristino di specificValue quando cambia la categoria selezionata,
@@ -262,6 +290,70 @@ export default function TicketDetailForm({
         color: TICKET_PRIORITY_CONFIG[id].color,
     }));
 
+    // ============================================================
+    // PREVIEW: dueFirstResponse / dueDate
+    // ============================================================
+    // Mirror delle regole di business calcolate lato server in
+    // modules/ticket/resolvers/mutations/update.ts (sezioni 4, 8, 8b).
+    // Usiamo le stesse funzioni pure di lib/ticket/dueDate.ts, quindi
+    // nessun rischio di drift nella formula: qui replichiamo solo le
+    // CONDIZIONI sotto cui il resolver decide di (ri)calcolare.
+
+    const selectedPriority = watch("priority");
+
+    // sezione 4 update.ts: la dueDate è editabile solo se il ticket è
+    // già IN_PROGRESS, o se questo update lo fa entrare in IN_PROGRESS.
+    const isAlreadyInProgress = ticket.status === "IN_PROGRESS";
+    const isTransitioningToInProgress =
+        ticket.status === "ASSIGNED" && selectedStatus === "IN_PROGRESS";
+
+    // sezione 8b update.ts: dueFirstResponse non è mai editabile da FE,
+    // si ricalcola SOLO se la priority selezionata differisce da quella
+    // attuale del ticket (altrimenti il BE non la tocca e resta quella esistente).
+    const previewDueFirstResponse = useMemo(() => {
+        if (selectedPriority && selectedPriority !== ticket.priority) {
+            return computeDueDate(selectedPriority);
+        }
+        return ticket.dueFirstResponse ? new Date(ticket.dueFirstResponse) : undefined;
+    }, [selectedPriority, ticket.priority, ticket.dueFirstResponse]);
+
+    // sezione 8 update.ts: il default per dueDate viene calcolato SOLO
+    // nella transizione ASSIGNED -> IN_PROGRESS, usando la priority
+    // "effettiva" (quella scelta nel form, o quella esistente come fallback)
+    // e come ancora dueFirstResponse (o createdAt se manca).
+    const effectivePriorityForDueDate = selectedPriority ?? ticket.priority ?? undefined;
+
+    const suggestedDueDate = useMemo(() => {
+        if (!isTransitioningToInProgress || !effectivePriorityForDueDate) return undefined;
+
+        const anchor = ticket.dueFirstResponse
+            ? new Date(ticket.dueFirstResponse)
+            : new Date(ticket.createdAt);
+
+        return computeDueWorkDate(effectivePriorityForDueDate, anchor);
+    }, [
+        isTransitioningToInProgress,
+        effectivePriorityForDueDate,
+        ticket.dueFirstResponse,
+        ticket.createdAt,
+    ]);
+
+    // Applica/ritira il suggerimento nel campo dueDate, ma solo se
+    // l'utente non l'ha già editato manualmente (altrimenti rispettiamo
+    // la sua scelta, coerente con la regola "un valore esplicito prevale
+    // sempre sul default" del resolver).
+    useEffect(() => {
+        if (dueDateManuallyEditedRef.current) return;
+
+        if (suggestedDueDate) {
+            setValue("dueDate", suggestedDueDate, { shouldDirty: false });
+        } else if (!isAlreadyInProgress) {
+            // fuori dalla transizione e non già IN_PROGRESS: il BE non
+            // accetterebbe comunque una dueDate, quindi torniamo al valore originale
+            setValue("dueDate", defaultValues.dueDate, { shouldDirty: false });
+        }
+    }, [suggestedDueDate, isAlreadyInProgress, defaultValues.dueDate, setValue]);
+
     const [updateTicket] = useMutation(UPDATE_TICKET, {
         context: {
             successMessage:
@@ -285,9 +377,10 @@ export default function TicketDetailForm({
     });
 
     const defaultValuesOutput = useMemo(
-        () => UpdateTicketSchema.parse(defaultValues),
+        () => defaultValues,
         [defaultValues]
     );
+
 
     const handleFormSubmit = async (
         values: UpdateTicketOutput
@@ -367,7 +460,10 @@ export default function TicketDetailForm({
     const handleReset = () => {
         reset(defaultValues); // valori RHF (id, status, priority, ecc.)
         resetAll();           // testo visualizzato nei campi search → torna a initialLabel
+        dueDateManuallyEditedRef.current = false;
     };
+
+    const canReopen = useTicketCanReopen(ticket);
 
     return (
         <Box
@@ -389,14 +485,28 @@ export default function TicketDetailForm({
                     gap: 3,
                 }}
             >
+
                 <TextField
-                    {...register("title")}
-                    label="Titolo"
+                    label="Prima risposta entro"
+                    value={
+                        previewDueFirstResponse
+                            ? previewDueFirstResponse.toLocaleDateString("it-IT")
+                            : "—"
+                    }
                     fullWidth
-                    disabled={!fieldPermissions.title}
-                    error={!!errors.title}
-                    helperText={errors.title?.message}
+                    disabled
+                    slotProps={{
+                        input: {
+                            readOnly: true,
+                        },
+                    }}
+                    helperText={
+                        selectedPriority && selectedPriority !== ticket.priority
+                            ? "Ricalcolata in base alla nuova priorità selezionata"
+                            : undefined
+                    }
                 />
+
 
                 <Controller
                     name="dueDate"
@@ -407,6 +517,7 @@ export default function TicketDetailForm({
                             label="Scadenza"
                             value={toPickerValue(field.value)}
                             onChange={(date) => {
+                                dueDateManuallyEditedRef.current = true;
                                 field.onChange(toCalendarUTCDate(date));
                             }}
                             disabled={!fieldPermissions.dueDate}
@@ -418,6 +529,17 @@ export default function TicketDetailForm({
                             }}
                         />
                     )}
+                />
+
+
+
+                <TextField
+                    {...register("title")}
+                    label="Titolo"
+                    fullWidth
+                    disabled={!fieldPermissions.title}
+                    error={!!errors.title}
+                    helperText={errors.title?.message}
                 />
 
                 <TextField
@@ -459,17 +581,26 @@ export default function TicketDetailForm({
                     disabled={!fieldPermissions.priority}
                 />
 
-                <SearchInput
-                    name="assignedToId"
-                    label="Tecnico assegnato"
-                    control={control}
-                    onSearch={handleSearchUsers}
-                    loading={loadingUsers}
-                    initialLabel={assignedToInitialLabel} // reset → "Mario Rossi"
-                    disabled={!fieldPermissions.assignedToId}
-                    registerReset={registerReset}
-                />
-
+                {assigneeBrowseMode === "list" ? (
+                    <AppSelect
+                        name="assignedToId"
+                        label="Tecnico assegnato"
+                        control={control}
+                        options={deptUserOptions}
+                        disabled={!fieldPermissions.assignedToId || loadingDeptUsers}
+                    />
+                ) : (
+                    <SearchInput
+                        name="assignedToId"
+                        label="Tecnico assegnato"
+                        control={control}
+                        onSearch={handleSearchUsers}
+                        loading={loadingUsers}
+                        initialLabel={assignedToInitialLabel}
+                        disabled={!fieldPermissions.assignedToId}
+                        registerReset={registerReset}
+                    />
+                )}
                 <AppSelect
                     name="status"
                     label="Status"
@@ -493,6 +624,19 @@ export default function TicketDetailForm({
                                 md: "1 / -1",
                             },
                         }}
+                    />
+                )}
+
+                {canReopen && (
+                    <TextField
+                        {...register("reopenReason")}
+                        label="Motivo della riapertura"
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        error={!!errors.reopenReason}
+                        helperText={errors.reopenReason?.message}
+                        sx={{ gridColumn: { md: "1 / -1" } }}
                     />
                 )}
 

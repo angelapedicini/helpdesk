@@ -1,7 +1,7 @@
 import { graphql } from "@/apollo-client/gql";
 
 export const TICKET_FIELDS = graphql(`
-  fragment TicketFields on Ticket {
+ fragment TicketFields on Ticket {
     id
     title
     description
@@ -55,6 +55,9 @@ export const TICKET_FIELDS = graphql(`
     updatedAt
     closedAt
     dueDate
+    dueFirstResponse
+    reopenCount
+    reopenReason
     sourceDepartmentForUser
     ticketDepartment
     lastUpdatedBy {
@@ -63,5 +66,5 @@ export const TICKET_FIELDS = graphql(`
       lastName
     }
     closingMessage
-  }
+}
 `);

@@ -12,7 +12,7 @@ import {
 
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
-import { skipToken, useLazyQuery, useQuery } from "@apollo/client/react";
+import { useLazyQuery, useQuery } from "@apollo/client/react";
 
 import { SEARCH_USERS } from "@/apollo-client/queries/user/search";
 import { GET_CATEGORIES } from "@/apollo-client/queries/ticket-category/ticket-category.queries";
@@ -245,7 +245,53 @@ export default function FilterTicketForm({
                             />
                         )}
                     />
+
+                    <Controller
+                        name="reopened"
+                        control={control}
+                        render={({ field }) => (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={field.value ?? false}
+                                        onChange={(e) =>
+                                            field.onChange(
+                                                e.target.checked
+                                                    ? true
+                                                    : undefined
+                                            )
+                                        }
+                                    />
+                                }
+                                label="Solo riaperti"
+                            />
+                        )}
+                    />
+
+                     <Controller
+                        name="firstResponseOverdue"
+                        control={control}
+                        render={({ field }) => (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={field.value ?? false}
+                                        onChange={(e) =>
+                                            field.onChange(
+                                                e.target.checked
+                                                    ? true
+                                                    : undefined
+                                            )
+                                        }
+                                    />
+                                }
+                                label="Solo prima revisione scaduta"
+                            />
+                        )}
+                    />
                 </Box>
+
+                
 
                 {/* INTERVALLO DATA SCADENZA */}
                 <Controller

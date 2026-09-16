@@ -43,7 +43,8 @@ export type TicketSortField =
   | "ASSIGNED_TO"
   | "CREATED_AT"
   | "UPDATED_AT"
-  | "CLOSED_AT";
+  | "CLOSED_AT"
+  | "DUE_FIRST_RESPONSE";
 
 export type TicketScope = "MINE" | "ASSIGNED_TO_ME" | "DEPARTMENT";
 

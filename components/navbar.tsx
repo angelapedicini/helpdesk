@@ -21,6 +21,7 @@ import { NavLinkItem } from "./types/navlink";
 import NavSidebar from "./sidebar";
 import { useQuery } from "@apollo/client/react";
 import EasyLoginForm from "./forms/user/easyLogin";
+import { setNavigate } from "@/apollo-client/apollo-links/navigation";
 
 
 const NAV_LINKS: NavLinkItem[] = [
@@ -87,6 +88,12 @@ export default function Navbar() {
   // rifetcha e conferma (lato server) che non ci sono più messaggi non letti
   const [dismissedTicketIds, setDismissedTicketIds] = React.useState<Set<number>>(new Set());
   const toggleDrawer = (newOpen: boolean) => () => setOpen(newOpen);
+
+  // AGGIUNTO: registra il router di Next nel modulo di navigazione, così
+  // il link Apollo (che non può usare hook) può fare redirect client-side
+  React.useEffect(() => {
+    setNavigate((path) => router.replace(path));
+  }, [router]);
 
   if (loading) return null;
   const user = data?.me;

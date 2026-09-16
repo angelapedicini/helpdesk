@@ -79,12 +79,12 @@ export default function Page() {
                     disabled
                 />
 
-                <TextField
+                {/* <TextField
                     label="Reparto (ticket)"
                     value={ticket.ticketDepartment ?? ""}
                     fullWidth
                     disabled
-                />
+                /> */}
 
                 <TextField
                     label="Reparto (creatore)"
@@ -131,17 +131,25 @@ export default function Page() {
                         },
                     }}
                 />
+
+                <TextField
+                    label="Numero riaperture"
+                    value={ticket.reopenCount ?? 0}
+                    fullWidth
+                    disabled
+                />
             </Box>
 
+
             {/* Form modificabile */}
-            
+
             <TicketDetailForm
                 ticket={ticket}
                 onSubmit={async (values) => {
                     // update ticket
                 }}
             />
-           
+
         </Box>
     );
 }

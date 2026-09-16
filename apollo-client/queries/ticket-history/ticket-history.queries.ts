@@ -23,6 +23,11 @@ export const GET_TICKET_HISTORY_BY_TICKET_ID = graphql(`
           description
           status
           priority
+          dueDate
+          dueFirstResponse
+          reopenCount
+          reopenReason
+          sourceDepartmentForUser
           category {
             id
             name
@@ -88,6 +93,11 @@ export const GET_DELETED_TICKETS = graphql(`
           description
           status
           priority
+          dueDate
+          dueFirstResponse
+          reopenCount
+          reopenReason
+          sourceDepartmentForUser
           category {
             id
             name

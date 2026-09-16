@@ -36,21 +36,24 @@ export const darkTheme = createTheme({
 
     text: {
       primary: "#f1f5f9",
-      secondary: "#9ca3af",
+      secondary: "#ffffff",
     },
 
     ui: {
       // Standard inputs
       inputBorder: "#ffffff",
-      inputBorderHover: "#e9ebee",
+      inputBorderHover: "#ffffff",
       inputBorderDisabled: "#3e4144",
-      inputTextDisabled: "#bebebe",
+      // inputTextDisabled: "#bebebe",
+      inputTextDisabled: "#ffffff",
 
       // Date pickers
       pickerBorder: "#c7c7c7",
       pickerBorderHover: "#f3f0f0",
       pickerBorderDisabled: "#3e4144",
-      pickerTextDisabled: "#bebebe",
+      // pickerTextDisabled: "#bebebe",
+      pickerTextDisabled: "#ffffff",
+
 
       // Tabless
       tableHeaderText: "#d1d5db",

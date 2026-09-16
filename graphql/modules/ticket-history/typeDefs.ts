@@ -21,6 +21,9 @@ export const ticketHistoryTypeDefs = `#graphql
     updatedAt: Date!
     closedAt: Date
     dueDate: Date
+    dueFirstResponse: Date      
+    reopenCount: Int!          
+    reopenReason: String        
     sourceDepartmentForUser: Department!
     ticketDepartment: Department!
     lastUpdatedBy: User
@@ -28,7 +31,7 @@ export const ticketHistoryTypeDefs = `#graphql
     ticketSpecific: String
     deletedAt: Date
     deletedBy: User
-  }
+}
 
   input TicketHistoryFilter {
     createdById: Int

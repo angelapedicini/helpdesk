@@ -35,6 +35,18 @@ export default function Page() {
     }
   };
 
+  const loginStatic = async () => {
+    const { data: loginData } = await login({
+      variables: {
+        input: {
+          email: "rossi@example.com",
+        },
+      },
+    });
+    router.replace("/dashboard");
+
+  };
+
   return (
     <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", minHeight: "100vh" }}>
       <Box
@@ -53,6 +65,16 @@ export default function Page() {
           disabled={loading}
         >
           Start Demo
+        </Button>
+
+        <Button
+          variant="outlined"
+          size="large"
+          sx={{ color: "inherit", py: 1.5, fontSize: "1.1rem" }}
+          onClick={loginStatic}
+          disabled={loading}
+        >
+          Login Static
         </Button>
 
         {/* {result && <Alert severity="success">{result}</Alert>} */}

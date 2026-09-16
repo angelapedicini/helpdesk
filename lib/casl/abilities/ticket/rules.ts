@@ -6,100 +6,225 @@ import type { AccessTokenPayload } from "@/lib/auth/jwt";
 export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility {
   const { can, cannot, build } = new AbilityBuilder<TicketAbility>(createPrismaAbility);
 
-  const BASE_CREATE_FIELDS = ["title", "description", "categoryId", "priority", "department"] as const;
+  // ============================================================
+  // Ticket
+  // ============================================================
 
+  const BASE_CREATE_FIELDS = [
+    "title",
+    "description",
+    "categoryId",
+    "priority",
+    "department",
+  ] as const;
+
+  // ------------------------------------------------------------
+  // CREATE
+  // ------------------------------------------------------------
+
+  // Tutti gli utenti possono creare un ticket specificando
+  // solamente i campi base.
   can("create", "Ticket", [...BASE_CREATE_FIELDS]);
 
-  // Il technician può impostare l'assegnatario in creazione,
-  // ma solo per ticket nel proprio dipartimento
+  // Il technician può impostare l'assegnatario direttamente
+  // durante la creazione, ma solo per ticket appartenenti
+  // al proprio dipartimento.
   if (user.role === "TECHNICIAN") {
-    can("create", "Ticket", "assignedToId", { ticketDepartment: user.department });
+    can("create", "Ticket", "assignedToId", {
+      ticketDepartment: user.department,
+    });
   }
 
-  // --- READ ---
-  // Employee: solo i ticket creati da lui
-  can("read", "Ticket", { createdById: user.userId });
+  // ------------------------------------------------------------
+  // READ
+  // ------------------------------------------------------------
 
-  // Technician: solo i ticket assegnati a lui (in aggiunta ai propri creati come employee)
+  // Ogni utente può leggere solamente i ticket che ha creato.
+  can("read", "Ticket", {
+    createdById: user.userId,
+  });
+
+  // Il technician può leggere anche i ticket che gli sono stati
+  // assegnati, oltre a quelli creati personalmente.
   if (user.role === "TECHNICIAN") {
-    can("read", "Ticket", { assignedToId: user.userId });
+    can("read", "Ticket", {
+      assignedToId: user.userId,
+    });
   }
 
-  // Admin: tutti i ticket del proprio reparto
+  // L'admin può leggere tutti i ticket appartenenti
+  // al proprio dipartimento.
   if (user.role === "ADMIN") {
-    can("read", "Ticket", { ticketDepartment: user.department });
+    can("read", "Ticket", {
+      ticketDepartment: user.department,
+    });
   }
-  // --- UPDATE ---
+
+  // ------------------------------------------------------------
+  // UPDATE - Regole comuni al creatore
+  // ------------------------------------------------------------
+
+  // Il creatore può modificare titolo, descrizione e priorità
+  // finché il ticket è OPEN o ASSIGNED.
   can("update", "Ticket", ["title", "description", "priority"], {
     createdById: user.userId,
     status: { in: ["OPEN", "ASSIGNED"] },
   });
 
-  // employee (creatore) può modificare categoria e specificValue
-  // finché il ticket è OPEN o ASSIGNED
+  // Il creatore può modificare categoria e valore specifico
+  // finché il ticket è OPEN o ASSIGNED.
   can("update", "Ticket", ["categoryId", "specificValue"], {
     createdById: user.userId,
     status: { in: ["OPEN", "ASSIGNED"] },
   });
 
-  if (user.role === "TECHNICIAN") {
-    can("update", "Ticket", ["status", "closingMessage"], { assignedToId: user.userId, status: "ASSIGNED" });
-    can("update", "Ticket", ["priority"], { assignedToId: user.userId, status: "ASSIGNED" });
-    can("update", "Ticket", ["status", "closedAt", "closingMessage"], { assignedToId: user.userId, status: "IN_PROGRESS" });
-    can("update", "Ticket", ["dueDate"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
-    can("update", "Ticket", ["assignedToId"], { assignedToId: user.userId, status: { in: ["ASSIGNED", "IN_PROGRESS"] } });
+  // Il creatore può specificare il motivo della riapertura
+  // quando il ticket è CLOSED o REFUSED.
+  can("update", "Ticket", ["reopenReason"], {
+    createdById: user.userId,
+    status: { in: ["CLOSED", "REFUSED"] },
+  });
 
-    // technician assegnatario può modificare categoria e specificValue
-    // finché il ticket è OPEN o ASSIGNED
+  // ------------------------------------------------------------
+  // UPDATE - Technician
+  // ------------------------------------------------------------
+
+  if (user.role === "TECHNICIAN") {
+    // Il technician assegnatario può prendere in carico il ticket
+    // passando da ASSIGNED a IN_PROGRESS oppure REFUSED.
+    can(
+      "update",
+      "Ticket",
+      ["status", "closingMessage"],
+      {
+        assignedToId: user.userId,
+        status: "ASSIGNED",
+      },
+    );
+
+    // Il technician assegnatario può chiudere il ticket
+    // quando questo è IN_PROGRESS.
+    can(
+      "update",
+      "Ticket",
+      ["status", "closedAt", "closingMessage"],
+      {
+        assignedToId: user.userId,
+        status: "IN_PROGRESS",
+      },
+    );
+
+    // Il technician assegnatario può modificare la scadenza
+    // quando il ticket è ASSIGNED o IN_PROGRESS.
+    can("update", "Ticket", ["dueDate"], {
+      assignedToId: user.userId,
+      status: { in: ["ASSIGNED", "IN_PROGRESS"] },
+    });
+
+    // Il technician può modificare l'assegnatario solamente
+    // sui ticket che sono già assegnati a lui e ancora
+    // in stato ASSIGNED o IN_PROGRESS.
+    can("update", "Ticket", ["assignedToId"], {
+      assignedToId: user.userId,
+      status: { in: ["ASSIGNED", "IN_PROGRESS"] },
+    });
+
+    // Il technician assegnatario può modificare categoria
+    // e valore specifico finché il ticket è OPEN o ASSIGNED.
     can("update", "Ticket", ["categoryId", "specificValue"], {
       assignedToId: user.userId,
       status: { in: ["OPEN", "ASSIGNED"] },
     });
 
-    cannot("update", "Ticket", ["createdById",], {
+    // Il technician non può modificare il creatore
+    // di un ticket che gli è stato assegnato.
+    cannot("update", "Ticket", ["createdById"], {
       assignedToId: user.userId,
-    }).because("Il technician non può modificare creatore di un ticket assegnatogli");
+    }).because(
+      "Il technician non può modificare creatore di un ticket assegnatogli",
+    );
   }
 
+  // ------------------------------------------------------------
+  // UPDATE - Admin
+  // ------------------------------------------------------------
+
   if (user.role === "ADMIN") {
+    // L'admin può modificare l'assegnatario dei ticket
+    // appartenenti al proprio dipartimento, finché sono
+    // OPEN o ASSIGNED.
     can("update", "Ticket", ["assignedToId"], {
       ticketDepartment: user.department,
       status: { in: ["OPEN", "ASSIGNED"] },
     });
 
-    can("update", "Ticket", ["status", "closingMessage"], { ticketDepartment: user.department, status: "OPEN" });
+    // L'admin può modificare lo stato e il messaggio di chiusura
+    // dei ticket OPEN del proprio dipartimento.
+    can("update", "Ticket", ["status", "closingMessage"], {
+      ticketDepartment: user.department,
+      status: "OPEN",
+    });
 
+    // L'admin non può intervenire sullo stato di un ticket
+    // che è già IN_PROGRESS o CLOSED.
     cannot("update", "Ticket", ["status"], {
       status: { in: ["IN_PROGRESS", "CLOSED"] },
-    }).because("L'admin non può intervenire su un ticket già in lavorazione");
+    }).because(
+      "L'admin non può intervenire su un ticket già in lavorazione",
+    );
 
+    // L'admin non può modificare il creatore di un ticket
+    // appartenente al proprio dipartimento.
     cannot("update", "Ticket", ["createdById"], {
       ticketDepartment: user.department,
-    }).because("L'admin non può modificare creatore o categoria di un ticket che non ha creato lui stesso");
+    }).because(
+      "L'admin non può modificare creatore o categoria di un ticket che non ha creato lui stesso",
+    );
 
+    // L'admin può modificare categoria e valore specifico
+    // dei ticket del proprio dipartimento, finché sono
+    // OPEN o ASSIGNED.
     can("update", "Ticket", ["categoryId", "specificValue"], {
       ticketDepartment: user.department,
       status: { in: ["OPEN", "ASSIGNED"] },
     });
 
+    // L'admin può modificare la priorità dei ticket
+    // del proprio dipartimento, finché sono OPEN o ASSIGNED.
     can("update", "Ticket", ["priority"], {
       ticketDepartment: user.department,
       status: { in: ["OPEN", "ASSIGNED"] },
     });
   }
 
-  // --- DELETE ---
-  can("delete", "Ticket", { createdById: user.userId, status: { in: ["OPEN", "ASSIGNED"] } });
+  // ------------------------------------------------------------
+  // DELETE
+  // ------------------------------------------------------------
 
-  // ================= TicketMessage =================
+  // Il creatore può eliminare il proprio ticket solamente
+  // finché questo è OPEN o ASSIGNED.
+  can("delete", "Ticket", {
+    createdById: user.userId,
+    status: { in: ["OPEN", "ASSIGNED"] },
+  });
 
-  // --- CREATE ---
-  // Employee: può scrivere solo sui ticket che ha creato, finché non sono chiusi/rifiutati
+  // ============================================================
+  // TicketMessage
+  // ============================================================
+
+  // ------------------------------------------------------------
+  // CREATE
+  // ------------------------------------------------------------
+
+  // Il creatore del ticket può aggiungere messaggi solamente
+  // finché il ticket non è CLOSED o REFUSED.
   can("create", "TicketMessage", {
     "ticket.createdById": user.userId,
     "ticket.status": { notIn: ["CLOSED", "REFUSED"] },
   });
 
+  // Il technician può aggiungere messaggi solamente ai ticket
+  // a lui assegnati e che sono ASSIGNED o IN_PROGRESS.
   if (user.role === "TECHNICIAN") {
     can("create", "TicketMessage", {
       "ticket.assignedToId": user.userId,
@@ -107,6 +232,8 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     });
   }
 
+  // L'admin può aggiungere messaggi ai ticket del proprio
+  // dipartimento finché non sono CLOSED o REFUSED.
   if (user.role === "ADMIN") {
     can("create", "TicketMessage", {
       "ticket.ticketDepartment": user.department,
@@ -114,15 +241,39 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     });
   }
 
-  // --- DELETE ---
-  can("delete", "TicketMessage", { authorId: user.userId });
+  // ------------------------------------------------------------
+  // DELETE
+  // ------------------------------------------------------------
+
+  // Ogni utente può eliminare solamente i messaggi
+  // di cui è autore.
+  can("delete", "TicketMessage", {
+    authorId: user.userId,
+  });
 
   return build();
 }
 
+// ============================================================
+// Ticket status transitions
+// ============================================================
+
 export const ALLOWED_STATUS_TRANSITIONS: Partial<
-  Record<AccessTokenPayload["role"], Partial<Record<string, string[]>>>
+  Record<
+    AccessTokenPayload["role"],
+    Partial<Record<string, string[]>>
+  >
 > = {
-  TECHNICIAN: { ASSIGNED: ["IN_PROGRESS", "REFUSED"], IN_PROGRESS: ["CLOSED"] },
-  ADMIN: { OPEN: ["ASSIGNED", "REFUSED"] },
+  // Il technician può prendere in carico o rifiutare
+  // un ticket ASSIGNED.
+  // Un ticket IN_PROGRESS può invece essere chiuso.
+  TECHNICIAN: {
+    ASSIGNED: ["IN_PROGRESS", "REFUSED"],
+    IN_PROGRESS: ["CLOSED"],
+  },
+
+  // L'admin può assegnare o rifiutare un ticket OPEN.
+  ADMIN: {
+    OPEN: ["ASSIGNED", "REFUSED"],
+  },
 };

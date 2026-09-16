@@ -107,9 +107,8 @@ model User {
   ticketReadStates               TicketReadState[]
   adminNotificationSubscriptions TicketAdminNotificationSubscription[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  // nuova history (TicketHistory2)
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
   ticketHistoriesCreated     TicketHistory[] @relation("CreatedTicketsHistory")
   ticketHistoriesAssigned    TicketHistory[] @relation("AssignedTicketsHistory")
   ticketHistoriesLastUpdated TicketHistory[] @relation("LastUpdatedTicketsHistory")
@@ -175,19 +174,20 @@ model Ticket {
   readStates                     TicketReadState[]
   adminNotificationSubscriptions TicketAdminNotificationSubscription[]
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  dueDate   DateTime?
-  closedAt  DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  dueFirstResponse DateTime?
+  dueDate          DateTime?
+  closedAt         DateTime?
+
+  reopenCount  Int     @default(0)
+  reopenReason String?
 }
 
-/// Nuova history: mirror 1:1 dei campi del Ticket al momento della cancellazione.
-/// Sostituisce la vecchia TicketHistory basata su snapshot Json.
+
 model TicketHistory {
   id Int @id @default(autoincrement())
 
-  // riferimento "storico" al ticket originale: NON è una FK vincolante,
-  // il ticket puo' non esistere piu' (hard delete)
   originalTicketId Int
 
   title       String
@@ -214,14 +214,18 @@ model TicketHistory {
 
   ticketSpecific String?
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  dueDate   DateTime?
-  closedAt  DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  dueFirstResponse DateTime?
+  dueDate          DateTime?
+  closedAt         DateTime?
 
   deletedAt   DateTime?
   deletedById Int?
-  deletedBy   User?    @relation("TicketHistoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedBy   User?     @relation("TicketHistoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+
+  reopenCount  Int
+  reopenReason String?
 
   @@index([originalTicketId])
   @@index([status, deletedAt])
@@ -374,7 +378,6 @@ enum BudgetType {
   SECURITY
   TRAVEL
 }
-
 
 model DemoSession {
   id               String   @id @default(uuid())

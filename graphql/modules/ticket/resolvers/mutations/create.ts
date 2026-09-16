@@ -83,7 +83,7 @@ export async function createTicket(_parent: unknown, args: { input: unknown }) {
     assignedToId = await autoAssign(prisma, input.categoryId, session.userId);
   }
 
-  const dueDate = computeDueDate(input.priority);
+  const dueFirstResponse = computeDueDate(input.priority);
 
   const ticket = await prisma.$transaction(async (tx) => {
     const created = await tx.ticket.create({
@@ -97,7 +97,7 @@ export async function createTicket(_parent: unknown, args: { input: unknown }) {
         assignedToId,
         ticketDepartment: input.department,
         sourceDepartmentForUser: session.department,
-        dueDate,
+        dueFirstResponse,
         ...specificCreate,
       },
       include: { category: true, createdBy: true, assignedTo: true },
@@ -126,8 +126,10 @@ export async function createTicket(_parent: unknown, args: { input: unknown }) {
 
         createdAt: created.createdAt,
         updatedAt: created.updatedAt,
-        dueDate: created.dueDate,
+        dueFirstResponse: created.dueFirstResponse,
         closedAt: created.closedAt,
+        reopenCount: created.reopenCount,
+        reopenReason: created.reopenReason,
       },
     });
 

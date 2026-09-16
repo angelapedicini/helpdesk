@@ -36,8 +36,6 @@ export function createTicketHeadCells({
     const headCells: HeadCell<TicketFieldsFragment>[] = [
         { id: "id", label: "ID", width: "75px" },
         { id: "title", label: "Titolo" },
-        { id: "description", label: "Descrizione", sortable: false },
-
         {
             id: "status",
             label: "Stato",
@@ -92,16 +90,16 @@ export function createTicketHeadCells({
                 return Object.values(fields).filter(Boolean).join(" / ") || "-";
             },
         },
-
         { id: "ticketDepartment", label: "Dipartimento" },
-
         {
-            id: "createdAt",
-            label: "Creazione",
+            id: "dueFirstResponse",
+            label: "Revisione iniziale entro",
+            sortable: false,
             render: (ticket) =>
-                new Date(ticket.createdAt).toLocaleDateString("it-IT"),
+                ticket.dueFirstResponse
+                    ? new Date(ticket.dueFirstResponse).toLocaleDateString("it-IT")
+                    : "-",
         },
-
         {
             id: "dueDate",
             label: "Entro",

@@ -1,19 +1,29 @@
 import { Ticket } from "@/apollo-client/queries/ticket/ticket.queries";
 
-export function isTicketOverdue(ticket: Pick<Ticket, "dueDate" | "closedAt">): boolean {
-    // closedAt può essere null (ticket ancora aperto) oppure valorizzato
-    // (ticket chiuso, quindi mai "scaduto" indipendentemente dalla dueDate)
-    if (ticket.closedAt != null) return false;
-    if (!ticket.dueDate) return false;
+type OverdueKind = "firstResponse" | "work" | null;
 
-    const overdue = new Date(ticket.dueDate).getTime() <= Date.now();
+type OverdueTicket = Pick<
+    Ticket,
+    "status" | "dueFirstResponse" | "dueDate" | "closedAt"
+>;
 
-    // TODO: rimuovere questo log una volta confermato il funzionamento
-    console.log("isTicketOverdue", {
-        dueDate: ticket.dueDate,
-        closedAt: ticket.closedAt,
-        overdue,
-    });
+export function getTicketOverdueKind(ticket: OverdueTicket): OverdueKind {
+    // closedAt valorizzato = ticket risolto (CLOSED o REFUSED), mai scaduto
+    if (ticket.closedAt != null) return null;
 
-    return overdue;
+    const now = Date.now();
+
+    if (ticket.status === "IN_PROGRESS") {
+        if (!ticket.dueDate) return null;
+        return new Date(ticket.dueDate).getTime() <= now ? "work" : null;
+    }
+
+    // OPEN o ASSIGNED: qui conta solo il primo riscontro
+    if (!ticket.dueFirstResponse) return null;
+    return new Date(ticket.dueFirstResponse).getTime() <= now ? "firstResponse" : null;
+}
+
+// Comodo per chi vuole solo il booleano/colore, senza distinguere il motivo
+export function isTicketOverdue(ticket: OverdueTicket): boolean {
+    return getTicketOverdueKind(ticket) !== null;
 }

@@ -20,6 +20,7 @@ export const ticketTypeDefs = `#graphql
   "CREATED_AT",
   "UPDATED_AT",
   "CLOSED_AT",
+  "DUE_FIRST_RESPONSE",
 ])}
 
   enum TicketStatus { 
@@ -56,6 +57,9 @@ export const ticketTypeDefs = `#graphql
     updatedAt: Date!
     closedAt: Date
     dueDate: Date
+    dueFirstResponse: Date  
+    reopenCount: Int!       
+    reopenReason: String 
     sourceDepartmentForUser: Department!
     ticketDepartment: Department!
     lastUpdatedBy: User
@@ -72,19 +76,23 @@ export const ticketTypeDefs = `#graphql
     specificValue: String
   }
 
-  input TicketFilter {
+input TicketFilter {
     createdById: Int
     assignedToId: Int
     status: TicketStatus
     categoryId: Int
     priority: TicketPriority
 
+    firstResponseOverdue: Boolean  
+    reopened: Boolean              
+
     overdue: Boolean
     unassigned: Boolean
 
     dueDateFrom: Date
     dueDateTo: Date
-  }
+}
+
 
   type Query {
   tickets(
@@ -108,6 +116,7 @@ input TicketUpdateInput {
     closingMessage: String
     dueDate: Date
     specificValue: String
+    reopenReason: String
 }
 
 

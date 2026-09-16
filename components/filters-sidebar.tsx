@@ -11,7 +11,7 @@ type FiltersSidebarProps = {
 
 export default function FiltersSidebar({ open, onClose, children }: FiltersSidebarProps) {
   return (
-    <SidebarDrawer open={open} onClose={onClose} anchor="left"  width={320} heightVh={90}>
+    <SidebarDrawer open={open} onClose={onClose} anchor="left"  width={320} heightVh={99}>
       {children}
     </SidebarDrawer>
   );

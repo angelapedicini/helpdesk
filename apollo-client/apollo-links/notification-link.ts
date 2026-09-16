@@ -2,6 +2,7 @@
 import { ApolloLink, CombinedGraphQLErrors, ServerError } from "@apollo/client";
 import { tap, catchError, throwError } from "rxjs";
 import { notify } from "./notification";
+import { redirectToDashboard } from "./navigation";
 
 function isMutation(operation: import("@apollo/client").Operation) {
   return operation.query.definitions.some(
@@ -34,7 +35,7 @@ const graphqlErrorMessages: Record<string, string> = {
   ASSIGNED_TO_ERROR: "Non è possibile assegnare questo ticket a questo utente",
   WRONG_SPECIFIC: "Il valore della specifica non è corretto per la categoria",
   EMPTY_MESSAGE: "Il messaggio non può essere vuoto",
-
+  DUE_DATE_NOT_ALLOWED: "Impossibile cambiare la data di scadenza senza lo stato in lavorazione",
 };
 
 const httpErrorMessages: Record<number, string> = {
@@ -46,6 +47,11 @@ const httpErrorMessages: Record<number, string> = {
   503: "Servizio momentaneamente non disponibile.",
 };
 
+function handleForbidden(code: string | undefined) {
+  if (code !== "FORBIDDEN") return;
+  redirectToDashboard();
+}
+
 export const notificationLink = new ApolloLink((operation, forward) => {
   return forward(operation).pipe(
     tap((result) => {
@@ -54,12 +60,15 @@ export const notificationLink = new ApolloLink((operation, forward) => {
       // Errori GraphQL restituiti nel payload (non come eccezione)
       if (result.errors && result.errors.length > 0) {
         const code = result.errors[0]?.extensions?.code as string | undefined;
+
         notify(
           (code && graphqlErrorMessages[code]) ??
           result.errors[0]?.message ??
           "Si è verificato un errore.",
           "error"
         );
+
+        handleForbidden(code);
         return;
       }
 
@@ -85,18 +94,25 @@ export const notificationLink = new ApolloLink((operation, forward) => {
       // Qui arrivano solo errori di rete/server, non i GraphQLError dei resolver
       if (CombinedGraphQLErrors.is(error)) {
         const code = error.errors[0]?.extensions?.code as string | undefined;
+
         notify(
           (code && graphqlErrorMessages[code]) ??
           error.errors[0]?.message ??
           "Si è verificato un errore.",
           "error"
         );
+
+        handleForbidden(code);
       } else if (ServerError.is(error)) {
         notify(
           httpErrorMessages[error.statusCode] ??
           `Errore del server (${error.statusCode}).`,
           "error"
         );
+
+        if (error.statusCode === 403) {
+          redirectToDashboard();
+        }
       } else if (error) {
         notify(error.message ?? "Errore di rete. Controlla la connessione.", "error");
       }

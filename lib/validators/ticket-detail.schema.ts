@@ -13,6 +13,7 @@ export const UpdateTicketSchema = z
     closingMessage: z.string().min(1, "Questo campo deve contenere almeno un carattere").optional(),
     dueDate: z.coerce.date().optional(),
     specificValue: z.string().min(1).optional(),
+    reopenReason: z.string().min(1, "Questo campo deve contenere almeno un carattere").optional(),
   })
   .superRefine((data, ctx) => {
     if (
@@ -39,11 +40,6 @@ export const UpdateTicketSchema = z
       }
     }
 
-    // Un ticket portato esplicitamente a "nessuna categoria" non può avere
-    // uno specificValue: a prescindere da quale fosse la categoria prima,
-    // non esiste un campo dinamico da valorizzare senza categoria.
-    // (La regola opposta — "categoria X richiede specificValue" — non è
-    // verificabile qui perché dipende dal DB: resta responsabilità del resolver.)
     if (data.categoryId === null && data.specificValue !== undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -51,11 +47,15 @@ export const UpdateTicketSchema = z
         path: ["specificValue"],
       });
     }
+
+    // Nota: NON possiamo validare qui "reopenReason obbligatorio se si sta
+    // riaprendo" perché servirebbe sapere lo status ATTUALE del ticket nel DB
+    // (existing.status), che questo schema non conosce - vede solo l'input.
+    // Quella validazione resta nel resolver.
   });
 
 export type UpdateTicketInput = z.input<typeof UpdateTicketSchema>;
 export type UpdateTicketOutput = z.output<typeof UpdateTicketSchema>;
-
 
 export const CreateTicketSchema = z.object({
   title: z.string().min(1, "Questo campo è obbligatorio").max(200),
@@ -83,6 +83,9 @@ export const FilterTicketSchema = z.object({
 
   overdue: z.boolean().optional(),
   unassigned: z.boolean().optional(),
+
+  firstResponseOverdue: z.boolean().optional(),
+  reopened: z.boolean().optional(),
 
   dueDateFrom: z.coerce.date().optional().transform((d) => d?.toISOString()),
   dueDateTo: z.coerce.date().optional().transform((d) => d?.toISOString()),

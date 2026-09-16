@@ -6,10 +6,14 @@ import {
   Software,
   Customer,
   BudgetType,
+  TicketPriority,
 } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { addBusinessDays } from "date-fns";
 import "dotenv/config";
 import bcrypt from "bcryptjs";
+import { autoAssign } from "../lib/ticket/autoAssign";
+import { computeDueDate } from "../lib/ticket/dueDate";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
@@ -35,8 +39,8 @@ const CATEGORY_SPECIFIC_FIELD: Record<
   Record<string, TicketSpecificField>
 > = {
   IT: {
-    "Hardware": TicketSpecificField.HARDWARE_TYPE,
-    "Bug": TicketSpecificField.SOFTWARE,
+    Hardware: TicketSpecificField.HARDWARE_TYPE,
+    Bug: TicketSpecificField.SOFTWARE,
     "Sistemi e accessi": TicketSpecificField.SOFTWARE,
   },
   HR: {
@@ -46,16 +50,16 @@ const CATEGORY_SPECIFIC_FIELD: Record<
   FINANCE: {
     "Sconti per cliente": TicketSpecificField.CUSTOMER,
     "Problemi contabili": TicketSpecificField.INVOICE_REFERENCE,
-    "Budget": TicketSpecificField.BUDGET_TYPE,
+    Budget: TicketSpecificField.BUDGET_TYPE,
   },
   SUPPORT: {
     "Dati cliente errati": TicketSpecificField.CUSTOMER,
     "Comunicazione cliente": TicketSpecificField.CUSTOMER,
   },
   LOGISTIC: {
-    "Spedizione": TicketSpecificField.CUSTOMER,
+    Spedizione: TicketSpecificField.CUSTOMER,
     "Problemi di consegna": TicketSpecificField.SHIPMENT_REFERENCE,
-    "Reso": TicketSpecificField.SHIPMENT_REFERENCE,
+    Reso: TicketSpecificField.SHIPMENT_REFERENCE,
   },
 };
 
@@ -85,10 +89,56 @@ const lastNames = [
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 
+const STATUS_WEIGHTS: {
+  status: "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "CLOSED" | "REFUSED";
+  weight: number;
+}[] = [
+  { status: "OPEN", weight: 0.15 },
+  { status: "ASSIGNED", weight: 0.25 },
+  { status: "IN_PROGRESS", weight: 0.2 },
+  { status: "CLOSED", weight: 0.3 },
+  { status: "REFUSED", weight: 0.1 },
+];
+
+const CLOSED_DAYS_BACK = 60;
+const REFUSED_DAYS_BACK = 45;
+
+const CLOSED_MESSAGES = [
+  "Problema risolto. Puoi effettuare una verifica.",
+  "Richiesta completata con successo.",
+  "Intervento concluso, ticket chiuso.",
+];
+
+const REFUSED_REASONS = [
+  "La richiesta non è di competenza della categoria selezionata. Creare un nuovo ticket con la categoria corretta.",
+  "Impossibile procedere: mancano informazioni sufficienti per gestire la richiesta.",
+  "La richiesta risulta duplicata rispetto a un ticket già aperto.",
+];
+
+type CategoryRecord = {
+  id: number;
+  name: string;
+  department: Department;
+  specificField: TicketSpecificField | null;
+};
+
+type AuthorRecord = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  department: Department;
+};
+
+type TechnicianRecord = {
+  id: number;
+  firstName: string;
+  lastName: string;
+};
+
 /*
  * Costruisce il nested-create Prisma per il "ticket specific" coerente
  * con il campo specifico richiesto dalla categoria, più un'etichetta
- * leggibile da salvare in TicketHistory.ticketSpecific.
+ * leggibile (utile per la history).
  *
  * `seedIndex` serve solo a variare i valori tra un ticket e l'altro
  * (ciclando sugli enum o incrementando i reference testuali).
@@ -199,6 +249,571 @@ function buildSpecificData(
   }
 }
 
+// --- HELPER GENERICI ---
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function pickRandom<T>(arr: readonly T[]): T {
+  return arr[randomInt(0, arr.length - 1)];
+}
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = randomInt(0, i);
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function randomDateBetween(start: Date, end: Date): Date {
+  const s = start.getTime();
+  const e = end.getTime();
+
+  if (e <= s) {
+    return new Date(s);
+  }
+
+  return new Date(s + Math.random() * (e - s));
+}
+
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+}
+
+function computeDueWorkDate(dueFirstResponse: Date): Date {
+  return addBusinessDays(dueFirstResponse, randomInt(3, 7));
+}
+
+// --- SPLIT UTENTI PER STATO ---
+
+function splitUsersByStatusWeights(
+  users: AuthorRecord[]
+): Record<(typeof STATUS_WEIGHTS)[number]["status"], AuthorRecord[]> {
+  const shuffled = shuffleArray(users);
+  const total = shuffled.length;
+
+  const buckets = {
+    OPEN: [] as AuthorRecord[],
+    ASSIGNED: [] as AuthorRecord[],
+    IN_PROGRESS: [] as AuthorRecord[],
+    CLOSED: [] as AuthorRecord[],
+    REFUSED: [] as AuthorRecord[],
+  };
+
+  let cursor = 0;
+
+  STATUS_WEIGHTS.forEach(({ status, weight }, idx) => {
+    const isLast = idx === STATUS_WEIGHTS.length - 1;
+    const count = isLast ? total - cursor : Math.round(total * weight);
+
+    buckets[status] = shuffled.slice(cursor, cursor + count);
+    cursor += count;
+  });
+
+  return buckets;
+}
+
+// --- ASSEGNAZIONE TECNICO CON FALLBACK DI SICUREZZA ---
+
+async function assignTechnician(
+  categoryId: number,
+  authorId: number,
+  dept: Department,
+  techniciansByDept: Record<Department, TechnicianRecord[]>
+): Promise<number> {
+  const assignedId = await autoAssign(prisma, categoryId, authorId);
+
+  if (assignedId) {
+    return assignedId;
+  }
+
+  const fallback = techniciansByDept[dept][0];
+
+  if (!fallback) {
+    throw new Error(`Nessun tecnico disponibile per il reparto ${dept}`);
+  }
+
+  console.warn(
+    `autoAssign non ha trovato uno specialista per la categoria ${categoryId}, uso fallback tecnico ${fallback.id}`
+  );
+
+  return fallback.id;
+}
+
+// --- SCELTA CATEGORIA + SPECIFICA (helper condiviso) ---
+
+function pickCategoryWithSpecific(
+  dept: Department,
+  categoriesByDept: Record<Department, CategoryRecord[]>,
+  specificSeedRef: { value: number }
+) {
+  const category = pickRandom(categoriesByDept[dept]);
+  const { data: specificData, label: specificLabel } = buildSpecificData(
+    category.department,
+    category.specificField,
+    specificSeedRef.value++
+  );
+
+  return { category, specificData, specificLabel };
+}
+
+// --- GENERAZIONE TICKET HISTORY (catena a ritroso in base allo stato finale) ---
+
+type TicketRecord = Awaited<ReturnType<typeof prisma.ticket.create>>;
+
+/*
+ * Per ogni ticket, genera a ritroso la catena di stati che deve averlo
+ * preceduto (in base allo stato finale salvato su Ticket) e crea un
+ * record TicketHistory per ogni stato della catena, con lo snapshot dei
+ * campi coerente con quello stato (non con lo stato finale).
+ *
+ * Le transizioni ammesse (nessun ritorno indietro):
+ *   OPEN -> ASSIGNED -> IN_PROGRESS -> CLOSED
+ *   ASSIGNED -> REFUSED
+ *
+ * Catene generate:
+ *   OPEN        -> [OPEN]
+ *   ASSIGNED    -> [ASSIGNED]
+ *   REFUSED     -> [ASSIGNED, REFUSED]
+ *   IN_PROGRESS -> [ASSIGNED, IN_PROGRESS]
+ *   CLOSED      -> [ASSIGNED, IN_PROGRESS, CLOSED]
+ */
+async function createTicketHistoryChain(
+  ticket: TicketRecord,
+  ticketSpecific: string | null
+) {
+  const common = {
+    originalTicketId: ticket.id,
+    title: ticket.title,
+    description: ticket.description,
+    priority: ticket.priority,
+    createdById: ticket.createdById,
+    sourceDepartmentForUser: ticket.sourceDepartmentForUser,
+    ticketDepartment: ticket.ticketDepartment,
+    ticketSpecific,
+    reopenCount: 0,
+    reopenReason: null as string | null,
+    deletedAt: null as Date | null,
+    deletedById: null as number | null,
+  };
+
+  type Step = {
+    status: TicketRecord["status"];
+    createdAt: Date;
+    lastUpdatedById: number | null;
+    categoryId: number | null;
+    assignedToId: number | null;
+    closingMessage: string | null;
+    dueFirstResponse: Date | null;
+    dueDate: Date | null;
+    closedAt: Date | null;
+  };
+
+  // Step "ASSIGNED": nasce alla creazione del ticket, senza dueDate/closingMessage.
+  const assignedStep: Step = {
+    status: "ASSIGNED",
+    createdAt: ticket.createdAt,
+    lastUpdatedById: ticket.createdById,
+    categoryId: ticket.categoryId,
+    assignedToId: ticket.assignedToId,
+    closingMessage: null,
+    dueFirstResponse: ticket.dueFirstResponse,
+    dueDate: null,
+    closedAt: null,
+  };
+
+  let steps: Step[];
+
+  switch (ticket.status) {
+    case "OPEN": {
+      steps = [
+        {
+          status: "OPEN",
+          createdAt: ticket.createdAt,
+          lastUpdatedById: ticket.createdById,
+          categoryId: null,
+          assignedToId: null,
+          closingMessage: null,
+          dueFirstResponse: ticket.dueFirstResponse,
+          dueDate: null,
+          closedAt: null,
+        },
+      ];
+      break;
+    }
+
+    case "ASSIGNED": {
+      steps = [assignedStep];
+      break;
+    }
+
+    case "REFUSED": {
+      steps = [
+        assignedStep,
+        {
+          status: "REFUSED",
+          createdAt: ticket.closedAt ?? ticket.createdAt,
+          lastUpdatedById: ticket.assignedToId,
+          categoryId: ticket.categoryId,
+          assignedToId: ticket.assignedToId,
+          closingMessage: ticket.closingMessage,
+          dueFirstResponse: ticket.dueFirstResponse,
+          dueDate: null,
+          closedAt: ticket.closedAt,
+        },
+      ];
+      break;
+    }
+
+    case "IN_PROGRESS": {
+      const inProgressAt = randomDateBetween(
+        ticket.createdAt,
+        ticket.dueFirstResponse ?? ticket.createdAt
+      );
+
+      steps = [
+        assignedStep,
+        {
+          status: "IN_PROGRESS",
+          createdAt: inProgressAt,
+          lastUpdatedById: ticket.assignedToId,
+          categoryId: ticket.categoryId,
+          assignedToId: ticket.assignedToId,
+          closingMessage: null,
+          dueFirstResponse: ticket.dueFirstResponse,
+          dueDate: ticket.dueDate,
+          closedAt: null,
+        },
+      ];
+      break;
+    }
+
+    case "CLOSED": {
+      const inProgressAt = randomDateBetween(
+        ticket.createdAt,
+        ticket.dueFirstResponse ?? ticket.createdAt
+      );
+
+      steps = [
+        assignedStep,
+        {
+          status: "IN_PROGRESS",
+          createdAt: inProgressAt,
+          lastUpdatedById: ticket.assignedToId,
+          categoryId: ticket.categoryId,
+          assignedToId: ticket.assignedToId,
+          closingMessage: null,
+          dueFirstResponse: ticket.dueFirstResponse,
+          dueDate: ticket.dueDate,
+          closedAt: null,
+        },
+        {
+          status: "CLOSED",
+          createdAt: ticket.closedAt ?? ticket.createdAt,
+          lastUpdatedById: ticket.assignedToId,
+          categoryId: ticket.categoryId,
+          assignedToId: ticket.assignedToId,
+          closingMessage: ticket.closingMessage,
+          dueFirstResponse: ticket.dueFirstResponse,
+          dueDate: ticket.dueDate,
+          closedAt: ticket.closedAt,
+        },
+      ];
+      break;
+    }
+
+    default: {
+      steps = [];
+    }
+  }
+
+  for (const step of steps) {
+    await prisma.ticketHistory.create({
+      data: {
+        ...common,
+        status: step.status,
+        createdAt: step.createdAt,
+        updatedAt: step.createdAt,
+        lastUpdatedById: step.lastUpdatedById,
+        categoryId: step.categoryId,
+        assignedToId: step.assignedToId,
+        closingMessage: step.closingMessage,
+        dueFirstResponse: step.dueFirstResponse,
+        dueDate: step.dueDate,
+        closedAt: step.closedAt,
+      },
+    });
+  }
+}
+
+// --- FUNZIONI DI CREAZIONE TICKET, UNA PER STATO ---
+
+async function createOpenTicket(author: AuthorRecord) {
+  const priority = pickRandom(PRIORITIES) as TicketPriority;
+  const createdAt = new Date();
+  const dueFirstResponse = computeDueDate(priority, createdAt);
+
+  const ticket = await prisma.ticket.create({
+    data: {
+      title: `Richiesta generica - ${author.firstName} ${author.lastName}`,
+      description: `Ticket creato da ${author.firstName} ${author.lastName}, in attesa di valutazione da parte di un ADMIN.`,
+      status: "OPEN",
+      priority,
+      categoryId: null,
+      createdById: author.id,
+      assignedToId: null,
+      lastUpdatedById: author.id,
+      closingMessage: null,
+      sourceDepartmentForUser: author.department,
+      ticketDepartment: author.department,
+      dueFirstResponse,
+      dueDate: null,
+      closedAt: null,
+      createdAt,
+    },
+  });
+
+  await createTicketHistoryChain(ticket, null);
+
+  return ticket;
+}
+
+async function createAssignedTicket(
+  author: AuthorRecord,
+  categoriesByDept: Record<Department, CategoryRecord[]>,
+  techniciansByDept: Record<Department, TechnicianRecord[]>,
+  specificSeedRef: { value: number }
+) {
+  const priority = pickRandom(PRIORITIES) as TicketPriority;
+  const createdAt = new Date();
+  const dueFirstResponse = computeDueDate(priority, createdAt);
+
+  const { category, specificData, specificLabel } = pickCategoryWithSpecific(
+    author.department,
+    categoriesByDept,
+    specificSeedRef
+  );
+
+  const assignedToId = await assignTechnician(
+    category.id,
+    author.id,
+    author.department,
+    techniciansByDept
+  );
+
+  const ticket = await prisma.ticket.create({
+    data: {
+      title: `Richiesta ${category.name.toLowerCase()} - ${author.firstName} ${author.lastName}`,
+      description: `Ticket per la categoria "${category.name}" del reparto ${author.department}.`,
+      status: "ASSIGNED",
+      priority,
+      categoryId: category.id,
+      createdById: author.id,
+      assignedToId,
+      lastUpdatedById: author.id,
+      closingMessage: null,
+      sourceDepartmentForUser: author.department,
+      ticketDepartment: category.department,
+      dueFirstResponse,
+      dueDate: null,
+      closedAt: null,
+      createdAt,
+      ...specificData,
+    },
+  });
+
+  await createTicketHistoryChain(ticket, specificLabel);
+
+  return ticket;
+}
+
+async function createInProgressTicket(
+  author: AuthorRecord,
+  categoriesByDept: Record<Department, CategoryRecord[]>,
+  techniciansByDept: Record<Department, TechnicianRecord[]>,
+  specificSeedRef: { value: number }
+) {
+  const priority = pickRandom(PRIORITIES) as TicketPriority;
+  const createdAt = new Date();
+  const dueFirstResponse = computeDueDate(priority, createdAt);
+  const dueWorkDate = computeDueWorkDate(dueFirstResponse);
+
+  const { category, specificData, specificLabel } = pickCategoryWithSpecific(
+    author.department,
+    categoriesByDept,
+    specificSeedRef
+  );
+
+  const assignedToId = await assignTechnician(
+    category.id,
+    author.id,
+    author.department,
+    techniciansByDept
+  );
+
+  const ticket = await prisma.ticket.create({
+    data: {
+      title: `Richiesta ${category.name.toLowerCase()} - ${author.firstName} ${author.lastName}`,
+      description: `Ticket per la categoria "${category.name}" del reparto ${author.department}, attualmente in lavorazione.`,
+      status: "IN_PROGRESS",
+      priority,
+      categoryId: category.id,
+      createdById: author.id,
+      assignedToId,
+      lastUpdatedById: assignedToId,
+      closingMessage: null,
+      sourceDepartmentForUser: author.department,
+      ticketDepartment: category.department,
+      dueFirstResponse,
+      dueDate: dueWorkDate,
+      closedAt: null,
+      createdAt,
+      ...specificData,
+    },
+  });
+
+  await createTicketHistoryChain(ticket, specificLabel);
+
+  return ticket;
+}
+
+async function createClosedTicket(
+  author: AuthorRecord,
+  categoriesByDept: Record<Department, CategoryRecord[]>,
+  techniciansByDept: Record<Department, TechnicianRecord[]>,
+  specificSeedRef: { value: number }
+) {
+  const priority = pickRandom(PRIORITIES) as TicketPriority;
+  const createdAt = daysAgo(CLOSED_DAYS_BACK);
+  const dueFirstResponse = computeDueDate(priority, createdAt);
+  const dueWorkDate = computeDueWorkDate(dueFirstResponse);
+  const closedAt = randomDateBetween(dueFirstResponse, dueWorkDate);
+
+  const { category, specificData, specificLabel } = pickCategoryWithSpecific(
+    author.department,
+    categoriesByDept,
+    specificSeedRef
+  );
+
+  const assignedToId = await assignTechnician(
+    category.id,
+    author.id,
+    author.department,
+    techniciansByDept
+  );
+
+  const ticket = await prisma.ticket.create({
+    data: {
+      title: `Richiesta ${category.name.toLowerCase()} - ${author.firstName} ${author.lastName}`,
+      description: `Ticket per la categoria "${category.name}" del reparto ${author.department}, ora concluso.`,
+      status: "CLOSED",
+      priority,
+      categoryId: category.id,
+      createdById: author.id,
+      assignedToId,
+      lastUpdatedById: assignedToId,
+      closingMessage: pickRandom(CLOSED_MESSAGES),
+      sourceDepartmentForUser: author.department,
+      ticketDepartment: category.department,
+      dueFirstResponse,
+      dueDate: dueWorkDate,
+      closedAt,
+      createdAt,
+      ...specificData,
+    },
+  });
+
+  await createTicketHistoryChain(ticket, specificLabel);
+
+  return ticket;
+}
+
+async function createRefusedTicket(
+  author: AuthorRecord,
+  categoriesByDept: Record<Department, CategoryRecord[]>,
+  techniciansByDept: Record<Department, TechnicianRecord[]>,
+  specificSeedRef: { value: number }
+) {
+  const priority = pickRandom(PRIORITIES) as TicketPriority;
+  const createdAt = daysAgo(REFUSED_DAYS_BACK);
+  const dueFirstResponse = computeDueDate(priority, createdAt);
+  const closedAt = randomDateBetween(createdAt, dueFirstResponse);
+
+  const { category, specificData, specificLabel } = pickCategoryWithSpecific(
+    author.department,
+    categoriesByDept,
+    specificSeedRef
+  );
+
+  const assignedToId = await assignTechnician(
+    category.id,
+    author.id,
+    author.department,
+    techniciansByDept
+  );
+
+  const ticket = await prisma.ticket.create({
+    data: {
+      title: `Richiesta ${category.name.toLowerCase()} - ${author.firstName} ${author.lastName}`,
+      description: `Ticket per la categoria "${category.name}" del reparto ${author.department}, rifiutato dal tecnico.`,
+      status: "REFUSED",
+      priority,
+      categoryId: category.id,
+      createdById: author.id,
+      assignedToId,
+      lastUpdatedById: assignedToId,
+      closingMessage: pickRandom(REFUSED_REASONS),
+      sourceDepartmentForUser: author.department,
+      ticketDepartment: category.department,
+      dueFirstResponse,
+      dueDate: null,
+      closedAt,
+      createdAt,
+      ...specificData,
+    },
+  });
+
+  await createTicketHistoryChain(ticket, specificLabel);
+
+  return ticket;
+}
+
+// --- DISPATCHER ---
+
+async function createTicketsForAllUsers(
+  allUsers: AuthorRecord[],
+  categoriesByDept: Record<Department, CategoryRecord[]>,
+  techniciansByDept: Record<Department, TechnicianRecord[]>
+) {
+  const buckets = splitUsersByStatusWeights(allUsers);
+  const specificSeedRef = { value: 0 };
+
+  for (const author of buckets.OPEN) {
+    await createOpenTicket(author);
+  }
+
+  for (const author of buckets.ASSIGNED) {
+    await createAssignedTicket(author, categoriesByDept, techniciansByDept, specificSeedRef);
+  }
+
+  for (const author of buckets.IN_PROGRESS) {
+    await createInProgressTicket(author, categoriesByDept, techniciansByDept, specificSeedRef);
+  }
+
+  for (const author of buckets.CLOSED) {
+    await createClosedTicket(author, categoriesByDept, techniciansByDept, specificSeedRef);
+  }
+
+  for (const author of buckets.REFUSED) {
+    await createRefusedTicket(author, categoriesByDept, techniciansByDept, specificSeedRef);
+  }
+}
+
+// --- MAIN ---
+
 export async function main() {
   /*
    * Pulizia database.
@@ -221,15 +836,7 @@ export async function main() {
 
   const hashedPassword = await bcrypt.hash("Password123!", 10);
 
-  const categoriesByDept: Record<
-    Department,
-    {
-      id: number;
-      name: string;
-      department: Department;
-      specificField: TicketSpecificField | null;
-    }[]
-  > = {
+  const categoriesByDept: Record<Department, CategoryRecord[]> = {
     IT: [],
     HR: [],
     FINANCE: [],
@@ -257,13 +864,13 @@ export async function main() {
   }
 
   /*
- * ACCESSO ALLE CATEGORIE
- *
- * Il dipartimento proprietario ha sempre accesso automaticamente.
- *
- * requesterMinRole = EMPLOYEE significa:
- * EMPLOYEE, TECHNICIAN e ADMIN.
- */
+   * ACCESSO ALLE CATEGORIE
+   *
+   * Il dipartimento proprietario ha sempre accesso automaticamente.
+   *
+   * requesterMinRole = EMPLOYEE significa:
+   * EMPLOYEE, TECHNICIAN e ADMIN.
+   */
 
   /*
    * IT
@@ -301,18 +908,13 @@ export async function main() {
    * Sconti per cliente e Problemi contabili:
    * visibili a tutti i ruoli di SUPPORT.
    */
-  for (const categoryName of [
-    "Sconti per cliente",
-    "Problemi contabili",
-  ]) {
+  for (const categoryName of ["Sconti per cliente", "Problemi contabili"]) {
     const category = categoriesByDept.FINANCE.find(
       (category) => category.name === categoryName
     );
 
     if (!category) {
-      throw new Error(
-        `Categoria FINANCE "${categoryName}" non trovata`
-      );
+      throw new Error(`Categoria FINANCE "${categoryName}" non trovata`);
     }
 
     await prisma.ticketCategoryAccess.create({
@@ -353,10 +955,7 @@ export async function main() {
    * visibili a tutti i ruoli di FINANCE e LOGISTIC.
    */
   for (const category of categoriesByDept.SUPPORT) {
-    for (const requesterDepartment of [
-      Department.FINANCE,
-      Department.LOGISTIC,
-    ]) {
+    for (const requesterDepartment of [Department.FINANCE, Department.LOGISTIC]) {
       await prisma.ticketCategoryAccess.create({
         data: {
           categoryId: category.id,
@@ -383,15 +982,7 @@ export async function main() {
     });
   }
 
-
-  const techniciansByDept: Record<
-    Department,
-    {
-      id: number;
-      firstName: string;
-      lastName: string;
-    }[]
-  > = {
+  const techniciansByDept: Record<Department, TechnicianRecord[]> = {
     IT: [],
     HR: [],
     FINANCE: [],
@@ -399,20 +990,16 @@ export async function main() {
     LOGISTIC: [],
   };
 
-  const employeesByDept: Record<
-    Department,
-    {
-      id: number;
-      firstName: string;
-      lastName: string;
-    }[]
-  > = {
+  const employeesByDept: Record<Department, TechnicianRecord[]> = {
     IT: [],
     HR: [],
     FINANCE: [],
     SUPPORT: [],
     LOGISTIC: [],
   };
+
+  // Accumula TUTTI gli utenti (admin + tecnici + employee) per la creazione ticket
+  const allUsers: AuthorRecord[] = [];
 
   let personIndex = 0;
 
@@ -450,7 +1037,14 @@ export async function main() {
       ],
     });
 
-    const technicians = [];
+    allUsers.push({
+      id: admin.id,
+      firstName: admin.firstName,
+      lastName: admin.lastName,
+      department: dept,
+    });
+
+    const technicians: TechnicianRecord[] = [];
 
     for (const category of categoriesByDept[dept]) {
       const technician = await prisma.user.create({
@@ -470,11 +1064,18 @@ export async function main() {
       });
 
       technicians.push(technician);
+
+      allUsers.push({
+        id: technician.id,
+        firstName: technician.firstName,
+        lastName: technician.lastName,
+        department: dept,
+      });
     }
 
     techniciansByDept[dept] = technicians;
 
-    const employees = [];
+    const employees: TechnicianRecord[] = [];
 
     for (let i = 0; i < 6; i++) {
       const employee = await prisma.user.create({
@@ -487,6 +1088,13 @@ export async function main() {
       });
 
       employees.push(employee);
+
+      allUsers.push({
+        id: employee.id,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        department: dept,
+      });
     }
 
     employeesByDept[dept] = employees;
@@ -494,329 +1102,18 @@ export async function main() {
 
   /*
    * CREAZIONE TICKET
+   *
+   * Ogni utente (admin, tecnico o employee) riceve un ticket, con stato
+   * scelto secondo i pesi in STATUS_WEIGHTS. Le funzioni di creazione
+   * girano in sequenza (non in parallelo) perché autoAssign conta i
+   * ticket aperti già esistenti nel DB per bilanciare il carico.
+   *
+   * Ogni funzione crea anche, subito dopo il Ticket, la relativa catena
+   * di TicketHistory coerente con lo stato finale.
    */
-  let specificSeed = 0;
+  await createTicketsForAllUsers(allUsers, categoriesByDept, techniciansByDept);
 
-  for (const dept of DEPARTMENTS) {
-    const categories = categoriesByDept[dept];
-    const employees = employeesByDept[dept];
-    const technicians = techniciansByDept[dept];
-
-    /*
-     * 1) Ticket OPEN garantito per ogni employee del reparto.
-     *
-     * La categoria viene assegnata a rotazione tra quelle del reparto,
-     * così ogni employee ha comunque un ticket con categoria valida.
-     */
-    for (let e = 0; e < employees.length; e++) {
-      const author = employees[e];
-      const category = categories[e % categories.length];
-
-      const { data: specificData, label: specificLabel } = buildSpecificData(
-        category.department,
-        category.specificField,
-        specificSeed++
-      );
-
-      const dueDate = new Date(
-        Date.now() + (e + 2) * 24 * 60 * 60 * 1000
-      );
-
-      const ticket = await prisma.ticket.create({
-        data: {
-          title: `Richiesta ${category.name.toLowerCase()} - ${author.firstName} ${author.lastName}`,
-
-          description:
-            `Ticket di esempio per la categoria "${category.name}" ` +
-            `del reparto ${dept}.`,
-
-          status: "OPEN",
-
-          priority: PRIORITIES[e % PRIORITIES.length],
-
-          categoryId: category.id,
-
-          createdById: author.id,
-
-          assignedToId: null,
-
-          lastUpdatedById: author.id,
-
-          closingMessage: null,
-
-          sourceDepartmentForUser: dept,
-
-          ticketDepartment: category.department,
-
-          dueDate,
-
-          closedAt: null,
-
-          ...specificData,
-        },
-      });
-
-      await prisma.ticketHistory.create({
-        data: {
-          originalTicketId: ticket.id,
-
-          title: ticket.title,
-          description: ticket.description,
-          status: ticket.status,
-          priority: ticket.priority,
-
-          categoryId: category.id,
-          createdById: author.id,
-          assignedToId: null,
-          lastUpdatedById: author.id,
-
-          closingMessage: null,
-
-          sourceDepartmentForUser: ticket.sourceDepartmentForUser,
-          ticketDepartment: ticket.ticketDepartment,
-
-          ticketSpecific: specificLabel,
-
-          createdAt: ticket.createdAt,
-          updatedAt: ticket.updatedAt,
-          dueDate: ticket.dueDate,
-          closedAt: ticket.closedAt,
-        },
-      });
-    }
-
-    /*
-     * 2) Ticket aggiuntivi per varietà di stati (OPEN, ASSIGNED,
-     *    IN_PROGRESS, CLOSED, REFUSED) e conversazioni di esempio.
-     */
-    for (let i = 0; i < categories.length; i++) {
-      const category = categories[i];
-
-      const author = employees[i % employees.length];
-      const technician = technicians[i % technicians.length];
-
-      let status:
-        | "OPEN"
-        | "ASSIGNED"
-        | "IN_PROGRESS"
-        | "CLOSED"
-        | "REFUSED";
-
-      switch (i % 5) {
-        case 0:
-          status = "OPEN";
-          break;
-
-        case 1:
-          status = "ASSIGNED";
-          break;
-
-        case 2:
-          status = "IN_PROGRESS";
-          break;
-
-        case 3:
-          status = "CLOSED";
-          break;
-
-        default:
-          status = "REFUSED";
-          break;
-      }
-
-      const priority = PRIORITIES[i % PRIORITIES.length];
-
-      const initialDueDate = new Date(
-        Date.now() + (i + 2) * 24 * 60 * 60 * 1000
-      );
-
-      const closingMessageContent =
-        status === "CLOSED"
-          ? "Problema risolto. Puoi effettuare una verifica."
-          : status === "REFUSED"
-            ? "La richiesta non è di competenza della categoria selezionata. Creare un nuovo ticket con la categoria corretta."
-            : null;
-
-      const { data: specificData, label: specificLabel } = buildSpecificData(
-        category.department,
-        category.specificField,
-        specificSeed++
-      );
-
-      const ticket = await prisma.ticket.create({
-        data: {
-          title: `Richiesta ${category.name.toLowerCase()} #${i + 1}`,
-
-          description:
-            `Ticket di esempio per la categoria "${category.name}" ` +
-            `del reparto ${dept}.`,
-
-          status: "OPEN",
-
-          priority,
-
-          categoryId: category.id,
-
-          createdById: author.id,
-
-          assignedToId: null,
-
-          lastUpdatedById: author.id,
-
-          closingMessage: null,
-
-          sourceDepartmentForUser: dept,
-
-          ticketDepartment: category.department,
-
-          dueDate: initialDueDate,
-
-          closedAt: null,
-
-          ...specificData,
-        },
-      });
-
-      await prisma.ticketHistory.create({
-        data: {
-          originalTicketId: ticket.id,
-
-          title: ticket.title,
-          description: ticket.description,
-          status: ticket.status,
-          priority: ticket.priority,
-
-          categoryId: category.id,
-          createdById: author.id,
-          assignedToId: null,
-          lastUpdatedById: author.id,
-
-          closingMessage: null,
-
-          sourceDepartmentForUser: ticket.sourceDepartmentForUser,
-          ticketDepartment: ticket.ticketDepartment,
-
-          ticketSpecific: specificLabel,
-
-          createdAt: ticket.createdAt,
-          updatedAt: ticket.updatedAt,
-          dueDate: ticket.dueDate,
-          closedAt: ticket.closedAt,
-        },
-      });
-
-      if (status !== "OPEN") {
-        const updatedTicket = await prisma.ticket.update({
-          where: {
-            id: ticket.id,
-          },
-
-          data: {
-            status,
-
-            assignedToId: technician.id,
-
-            lastUpdatedById: technician.id,
-
-            closingMessage: closingMessageContent,
-
-            dueDate:
-              status === "CLOSED" || status === "REFUSED"
-                ? null
-                : initialDueDate,
-
-            closedAt:
-              status === "CLOSED" || status === "REFUSED"
-                ? new Date(Date.now() - 24 * 60 * 60 * 1000)
-                : null,
-          },
-        });
-
-        await prisma.ticketHistory.create({
-          data: {
-            originalTicketId: updatedTicket.id,
-
-            title: updatedTicket.title,
-            description: updatedTicket.description,
-            status: updatedTicket.status,
-            priority: updatedTicket.priority,
-
-            categoryId: category.id,
-            createdById: author.id,
-            assignedToId: technician.id,
-            lastUpdatedById: technician.id,
-
-            closingMessage: closingMessageContent,
-
-            sourceDepartmentForUser: updatedTicket.sourceDepartmentForUser,
-            ticketDepartment: updatedTicket.ticketDepartment,
-
-            ticketSpecific: specificLabel,
-
-            createdAt: updatedTicket.createdAt,
-            updatedAt: updatedTicket.updatedAt,
-            dueDate: updatedTicket.dueDate,
-            closedAt: updatedTicket.closedAt,
-          },
-        });
-      }
-
-      if (status === "IN_PROGRESS") {
-        await prisma.ticketMessage.createMany({
-          data: [
-            {
-              ticketId: ticket.id,
-              authorId: author.id,
-              content:
-                "Buongiorno, potete darmi un aggiornamento sulla richiesta?",
-            },
-            {
-              ticketId: ticket.id,
-              authorId: technician.id,
-              content:
-                "Ho preso in carico il ticket. Sto verificando il problema.",
-            },
-          ],
-        });
-      }
-
-      if (status === "CLOSED") {
-        await prisma.ticketMessage.createMany({
-          data: [
-            {
-              ticketId: ticket.id,
-              authorId: author.id,
-              content: "Avete aggiornamenti sulla richiesta?",
-            },
-            {
-              ticketId: ticket.id,
-              authorId: technician.id,
-              content: closingMessageContent!,
-            },
-            {
-              ticketId: ticket.id,
-              authorId: author.id,
-              content: "Confermo, tutto risolto. Grazie.",
-            },
-          ],
-        });
-      }
-
-      if (status === "REFUSED") {
-        await prisma.ticketMessage.createMany({
-          data: [
-            {
-              ticketId: ticket.id,
-              authorId: technician.id,
-              content: closingMessageContent!,
-            },
-          ],
-        });
-      }
-    }
-  }
-
-  console.log("Seed completato");
+  console.log(`Seed completato: ${allUsers.length} utenti, ${allUsers.length} ticket creati`);
 }
 
 main()

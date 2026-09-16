@@ -17,7 +17,8 @@ export type TicketSortField =
   | "ASSIGNED_TO"
   | "CREATED_AT"
   | "UPDATED_AT"
-  | "CLOSED_AT";
+  | "CLOSED_AT"
+  | "DUE_FIRST_RESPONSE";   // ← nuovo
 
 export const TICKET_SORT_FIELD_MAP: Record<TicketSortField, string> = {
   ID: "id",
@@ -32,6 +33,7 @@ export const TICKET_SORT_FIELD_MAP: Record<TicketSortField, string> = {
   CREATED_AT: "createdAt",
   UPDATED_AT: "updatedAt",
   CLOSED_AT: "closedAt",
+  DUE_FIRST_RESPONSE: "dueFirstResponse",   // ← nuovo
 };
 
 export type TicketScope =
@@ -103,6 +105,51 @@ export function buildTicketWhere(
       status: {
         notIn: ["CLOSED", "REFUSED"],
       },
+    });
+  }
+
+    // Solo ticket scaduti
+  if (filter.overdue === true) {
+    conditions.push({
+      dueDate: {
+        lt: new Date(),
+      },
+      status: {
+        notIn: ["CLOSED", "REFUSED"],
+      },
+    });
+  }
+
+  // Solo ticket con SLA di prima risposta scaduto.
+  // Assunzione: una volta che il ticket esce da OPEN/ASSIGNED (es. entra in
+  // IN_PROGRESS) si considera "già risposto", quindi il filtro ha senso solo
+  // per ticket ancora in quei due stati. Fammi sapere se la definizione di
+  // "prima risposta data" deve invece dipendere da un altro segnale (es. un
+  // messaggio del tecnico), nel qual caso va rivista.
+  if (filter.firstResponseOverdue === true) {
+    conditions.push({
+      dueFirstResponse: {
+        lt: new Date(),
+      },
+      status: {
+        in: ["OPEN", "ASSIGNED"],
+      },
+    });
+  }
+
+  // Solo ticket riaperti almeno una volta.
+  if (filter.reopened === true) {
+    conditions.push({
+      reopenCount: {
+        gt: 0,
+      },
+    });
+  }
+
+  // Solo ticket non assegnati
+  if (filter.unassigned === true) {
+    conditions.push({
+      assignedToId: null,
     });
   }
 

@@ -3,7 +3,7 @@ import { getPrisma } from "@/lib/prisma/index";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
 import { UpdateTicketSchema } from "@/lib/validators/ticket-detail.schema";
-import { computeDueDate } from "@/lib/ticket/dueDate";
+import { computeDueDate, computeDueWorkDate } from "@/lib/ticket/dueDate";
 import { autoAssign } from "@/lib/ticket/autoAssign";
 import { assertCanUpdateTicket } from "@/lib/casl/abilities/ticket/guards";
 import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
@@ -11,10 +11,12 @@ import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
 import { getSpecificMapping, getFieldsForTable } from "./specific-field-config";
 
 export async function updateTicket(_parent: unknown, args: { id: number; input: unknown }) {
+  // ============================================================
+  // 1. AUTH & INPUT
+  // ============================================================
   const session = await requireSession();
   const ability = defineAbilityForTicket(session);
   const prisma = await getPrisma();
-
 
   const result = UpdateTicketSchema.safeParse(args.input);
   if (!result.success) {
@@ -24,6 +26,9 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   }
   const input = result.data;
 
+  // ============================================================
+  // 2. LOAD EXISTING TICKET
+  // ============================================================
   const existing = await prisma.ticket.findUnique({
     where: { id: args.id },
     include: {
@@ -43,11 +48,39 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     throw new GraphQLError("Ticket not found", { extensions: { code: "NOT_FOUND" } });
   }
 
-  // Permessi CASL campo per campo + transizioni di stato: va fatto PRIMA di
+  // ============================================================
+  // 3. AUTHORIZATION (CASL)
+  // ============================================================
+  // Permessi campo per campo + transizioni di stato: va fatto PRIMA di
   // qualsiasi calcolo su categoria/specifica, così un utente senza i permessi
   // giusti si ferma qui senza che il resolver faccia lavoro inutile.
   assertCanUpdateTicket(ability, session, existing, input);
 
+  // ============================================================
+  // 4. BUSINESS RULE: dueDate ↔ transizione a IN_PROGRESS
+  // ============================================================
+  // CASL autorizza il campo `dueDate` in base allo STATO ATTUALE del ticket
+  // (ASSIGNED o IN_PROGRESS), ma non sa cosa contiene il resto del payload.
+  // Qui aggiungiamo il vincolo di business: la scadenza può essere data/
+  // corretta liberamente una volta IN_PROGRESS, oppure impostata
+  // contestualmente al passaggio in lavorazione (prima stima esplicita).
+  //
+  // Le due variabili sono condivise anche con la sezione 8, dove decidiamo
+  // se calcolare un default automatico per la dueDate.
+  const isAlreadyInProgress = existing.status === "IN_PROGRESS";
+  const isTransitioningToInProgress =
+    existing.status === "ASSIGNED" && input.status === "IN_PROGRESS";
+
+  if (input.dueDate !== undefined && !isAlreadyInProgress && !isTransitioningToInProgress) {
+    throw new GraphQLError(
+      "dueDate can only be set when the ticket enters IN_PROGRESS, or once it is already IN_PROGRESS",
+      { extensions: { code: "DUE_DATE_NOT_ALLOWED" } }
+    );
+  }
+
+  // ============================================================
+  // 5. CATEGORY RESOLUTION
+  // ============================================================
   // targetCategory rappresenta la categoria "di destinazione" dopo l'update:
   // - input.categoryId === undefined -> la categoria non cambia, resta quella esistente
   // - input.categoryId === null      -> il ticket viene portato a "nessuna categoria"
@@ -73,49 +106,41 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     }
   }
 
+  const categoryId = input.categoryId !== undefined ? input.categoryId : existing.categoryId;
+
+  // ============================================================
+  // 6. ASSIGNMENT RESOLUTION
+  // ============================================================
+  // Include: validazione utente assegnato, check specializzazione,
+  // auto-assegnazione per cambio categoria, e la transizione di stato
+  // automatica che ne consegue (OPEN -> ASSIGNED).
   if (input.assignedToId !== undefined && input.assignedToId !== null) {
     const assignee = await prisma.user.findUnique({ where: { id: input.assignedToId } });
     if (!assignee) {
       throw new GraphQLError("User for assigned to not found", { extensions: { code: "ASSIGNED_TO_ERROR" } });
     }
-  }
 
-  let closedAt: Date | undefined = undefined;
-  let dueDate: Date | undefined = undefined;
-
-  if (input.status === "CLOSED") {
-    closedAt = new Date();
-  }
-
-  if (input.priority !== undefined && input.priority !== existing.priority && input.dueDate === undefined) {
-    dueDate = computeDueDate(input.priority);
-  }
-
-  if (input.dueDate !== undefined) {
-    dueDate = input.dueDate;
-  }
-
-  const categoryId = input.categoryId !== undefined ? input.categoryId : existing.categoryId;
-
-  if (input.assignedToId !== undefined && input.assignedToId !== null && categoryId !== null) {
-    const specialization = await prisma.userSpecialization.findUnique({
-      where: {
-        userId_categoryId: {
-          userId: input.assignedToId,
-          categoryId,
+    if (categoryId !== null) {
+      const specialization = await prisma.userSpecialization.findUnique({
+        where: {
+          userId_categoryId: {
+            userId: input.assignedToId,
+            categoryId,
+          },
         },
-      },
-    });
+      });
 
-    if (!specialization) {
-      throw new GraphQLError(
-        "The assigned to user selected doesn't have the correct specialization for this ticket",
-        { extensions: { code: "ASSIGNED_TO_ERROR" } }
-      );
+      if (!specialization) {
+        throw new GraphQLError(
+          "The assigned to user selected doesn't have the correct specialization for this ticket",
+          { extensions: { code: "ASSIGNED_TO_ERROR" } }
+        );
+      }
     }
   }
 
   let status = input.status;
+  let assignedToId = input.assignedToId;
 
   if (
     input.assignedToId !== undefined &&
@@ -125,11 +150,18 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     status = "ASSIGNED";
   }
 
-  let assignedToId = input.assignedToId;
-
   if (input.categoryId !== undefined && input.categoryId !== null && input.assignedToId === undefined) {
     assignedToId = await autoAssign(prisma, input.categoryId, existing.createdById);
     status = "ASSIGNED";
+  }
+
+  // ============================================================
+  // 7. STATUS TRANSITIONS (closing / reopening)
+  // ============================================================
+  let closedAt: Date | undefined = undefined;
+
+  if (input.status === "CLOSED") {
+    closedAt = new Date();
   }
 
   // closingMessage arriva già validato come obbligatorio quando status è
@@ -138,8 +170,58 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   const isClosingTransition = status === "CLOSED" || status === "REFUSED";
   const closingMessage = isClosingTransition ? input.closingMessage : undefined;
 
-  // ================= Gestione specifica dinamica =================
-  //
+  // Un ticket è "riaperto" quando ERA chiuso/rifiutato ed esce da quello
+  // stato verso un altro. Va distinto da:
+  // - status non toccato in questo update (input.status === undefined)
+  // - il ticket resta in uno stato chiuso (es. CLOSED -> REFUSED), che è
+  //   una closing transition, non una reopen transition.
+  const wasClosed = existing.status === "CLOSED" || existing.status === "REFUSED";
+  const isReopenTransition =
+    wasClosed && input.status !== undefined && !isClosingTransition;
+
+  if (isReopenTransition && !input.reopenReason) {
+    throw new GraphQLError(
+      "reopenReason is required when reopening a ticket",
+      { extensions: { code: "REOPEN_REASON_REQUIRED" } }
+    );
+  }
+
+  // ============================================================
+  // 8. DUE DATE COMPUTATION
+  // ============================================================
+  let dueDate: Date | undefined = undefined;
+
+  if (input.dueDate !== undefined) {
+    // Il tecnico ha specificato esplicitamente una data: rispettala sempre,
+    // sia in transizione a IN_PROGRESS sia in una correzione/estensione
+    // successiva (il campo resta sempre modificabile).
+    dueDate = input.dueDate;
+  } else if (isTransitioningToInProgress) {
+    // Prima stima automatica: il tecnico porta il ticket in lavorazione
+    // senza indicare una dueDate esplicita. Non lasciamo il campo vuoto:
+    // calcoliamo un default a partire dalla priorità effettiva del ticket
+    // (che potrebbe essere cambiata nello stesso payload), così il
+    // creatore ha comunque un riferimento temporale visibile subito.
+    const effectivePriority = input.priority ?? existing.priority;
+
+    dueDate = computeDueWorkDate(
+      effectivePriority,
+      existing.dueFirstResponse ?? existing.createdAt
+    );
+  }
+
+  // ============================================================
+  // 8b. DUE FIRST RESPONSE DATE COMPUTATION
+  // ============================================================
+  let dueFirstResponse: Date | undefined = undefined;
+
+  if (input.priority !== undefined && input.priority !== existing.priority) {
+    dueFirstResponse = computeDueDate(input.priority);
+  }
+
+  // ============================================================
+  // 9. SPECIFIC FIELD MAPPING
+  // ============================================================
   // A differenza della versione precedente, la categoria PUÒ cambiare in
   // update. Quindi la specifica non segue più "sempre la categoria attuale
   // del ticket": va ricalcolata sulla categoria di destinazione (targetCategory).
@@ -162,8 +244,8 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   // superRefine, ma li ricontrolliamo qui come difesa in profondità, perché
   // qui abbiamo accesso ai dati reali di categoria/dipartimento dal DB.)
 
-  // 1. Cambio categoria verso una categoria che richiede una specifica,
-  //    ma la specifica non è stata mandata nello stesso payload.
+  // 9.1 Cambio categoria verso una categoria che richiede una specifica,
+  //     ma la specifica non è stata mandata nello stesso payload.
   if (categoryChanged && newMapping && input.specificValue == null) {
     throw new GraphQLError(
       `The selected category requires to specify the correct specific, "${newMapping.field}"`,
@@ -171,8 +253,8 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     );
   }
 
-  // 2. Specifica mandata ma la categoria di destinazione non ne prevede nessuna
-  //    (categoria senza specificField, o categoryId portato a null).
+  // 9.2 Specifica mandata ma la categoria di destinazione non ne prevede nessuna
+  //     (categoria senza specificField, o categoryId portato a null).
   if (!newMapping && input.specificValue != null) {
     throw new GraphQLError(
       "The category doesn't have or requires any specific value",
@@ -180,7 +262,7 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     );
   }
 
-  // 3. Valore fuori dall'enum ammesso per il campo specifico di destinazione.
+  // 9.3 Valore fuori dall'enum ammesso per il campo specifico di destinazione.
   if (
     newMapping &&
     input.specificValue != null &&
@@ -235,6 +317,9 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     };
   }
 
+  // ============================================================
+  // 10. PERSIST (transazione: update + snapshot storico)
+  // ============================================================
   // Transazione interattiva: lo snapshot fotografa lo stato DOPO l'update
   // (coerente con lo snapshot "di nascita" in create.ts), quindi serve il
   // risultato di ticket.update prima di poterlo costruire.
@@ -250,8 +335,13 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
         assignedToId: assignedToId,
         closedAt,
         dueDate,
+        dueFirstResponse,
         lastUpdatedById: session.userId,
         closingMessage,
+        ...(isReopenTransition && {
+          reopenCount: { increment: 1 },
+          reopenReason: input.reopenReason,
+        }),
         ...specificUpdate,
       },
       include: {
@@ -284,8 +374,11 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
         ticketSpecific: input.specificValue != null ? input.specificValue : oldSpecificValue,
         createdAt: result.createdAt,
         updatedAt: result.updatedAt,
+        dueFirstResponse: result.dueFirstResponse,
         dueDate: result.dueDate,
         closedAt: result.closedAt,
+        reopenCount: result.reopenCount,
+        reopenReason: result.reopenReason,
       },
     });
 

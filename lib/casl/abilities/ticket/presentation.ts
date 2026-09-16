@@ -97,3 +97,51 @@ export function useTicketAllowedStatuses(
     );
   }, [ability, subject, role, ticket.status]);
 }
+
+/**
+ * Determina come popolare il campo "Tecnico assegnato" nel form di update.
+ * L'admin, quando il ticket è ancora OPEN, può scegliere tra tutti i
+ * tecnici del proprio dipartimento (lista completa via usersByDepartment);
+ * negli altri casi si usa la ricerca testuale filtrata per categoria
+ * (usersForCategoryId).
+ *
+ * Il check ability.can(...) resta la guardia di base: se l'utente non
+ * può proprio modificare assignedToId per questo ticket, il modo non è
+ * rilevante (nessun campo verrà mostrato editabile comunque).
+ */
+export function useTicketAssigneeBrowseMode(
+  ticket: TicketFieldsFragment
+): "list" | "search" {
+  const ability = useAbility();
+  const subject = useMemo(() => toTicketSubject(ticket), [ticket]);
+
+  const { data: meData } = useQuery(ME_QUERY);
+  const role = meData?.me?.role;
+
+  return useMemo(() => {
+    if (!ability.can("update", subject, "assignedToId")) {
+      return "search";
+    }
+
+    if (role === "ADMIN" && ticket.status === "OPEN") {
+      return "list";
+    }
+
+    return "search";
+  }, [ability, subject, role, ticket.status]);
+}
+
+/**
+ * Determina se l'utente attuale può riaprire il ticket dal form.
+ * Verifica che il ticket sia CLOSED o REFUSED e che l'utente abbia
+ * il permesso CASL di aggiornarne il motivo di riapertura (reopenReason).
+ */
+export function useTicketCanReopen(ticket: TicketFieldsFragment): boolean {
+  const ability = useAbility();
+  const subject = useMemo(() => toTicketSubject(ticket), [ticket]);
+
+  return useMemo(() => {
+    const isClosedOrRefused = ticket.status === "CLOSED" || ticket.status === "REFUSED";
+    return isClosedOrRefused && ability.can("update", subject, "reopenReason");
+  }, [ability, subject, ticket.status]);
+}
