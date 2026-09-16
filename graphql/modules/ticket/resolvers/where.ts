@@ -18,7 +18,8 @@ export type TicketSortField =
   | "CREATED_AT"
   | "UPDATED_AT"
   | "CLOSED_AT"
-  | "DUE_FIRST_RESPONSE";   // ← nuovo
+  | "DUE_FIRST_RESPONSE"
+  | "DUE_DATE";
 
 export const TICKET_SORT_FIELD_MAP: Record<TicketSortField, string> = {
   ID: "id",
@@ -26,14 +27,15 @@ export const TICKET_SORT_FIELD_MAP: Record<TicketSortField, string> = {
   DESCRIPTION: "description",
   STATUS: "status",
   PRIORITY: "priority",
-  CATEGORY: "category.name",
+  CATEGORY: "category.id",        
   DEPARTMENT: "ticketDepartment",
   CREATED_BY: "createdBy.firstName",
   ASSIGNED_TO: "assignedTo.firstName",
   CREATED_AT: "createdAt",
   UPDATED_AT: "updatedAt",
   CLOSED_AT: "closedAt",
-  DUE_FIRST_RESPONSE: "dueFirstResponse",   // ← nuovo
+  DUE_FIRST_RESPONSE: "dueFirstResponse",
+  DUE_DATE: "dueDate"
 };
 
 export type TicketScope =

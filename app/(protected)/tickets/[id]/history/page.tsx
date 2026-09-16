@@ -75,6 +75,7 @@ export default function TicketHistoryPage() {
                             ? "highlighted-cell"
                             : undefined
                     }
+                    actionsWidth="80px"
                     actions={(row) => (
                         <Tooltip title="Dettaglio modifica" arrow>
                             <IconButton

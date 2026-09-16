@@ -2,26 +2,13 @@
 import { makeConnectionTypeDefs } from "@/graphql/pagination/typeDefs";
 import { makeSortTypeDefs } from "@/graphql/sorting/sort-typeDefs";
 import { DateTypeDefinition } from "graphql-scalars";
+import { TICKET_SORT_FIELD_MAP } from "./resolvers/where";
 export const ticketTypeDefs = `#graphql
   ${DateTypeDefinition}
 
   
   ${makeConnectionTypeDefs("Ticket")}
-  ${makeSortTypeDefs("Ticket", [
-  "ID",
-  "TITLE",
-  "DESCRIPTION",
-  "STATUS",
-  "PRIORITY",
-  "CATEGORY",
-  "DEPARTMENT",
-  "CREATED_BY",
-  "ASSIGNED_TO",
-  "CREATED_AT",
-  "UPDATED_AT",
-  "CLOSED_AT",
-  "DUE_FIRST_RESPONSE",
-])}
+  ${makeSortTypeDefs("Ticket", Object.keys(TICKET_SORT_FIELD_MAP))}
 
   enum TicketStatus { 
     OPEN 

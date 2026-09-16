@@ -166,6 +166,22 @@ export default function TicketHistoryDetailModal({
                 />
 
                 <TextField
+                    label="N° riaperture"
+                    value={displayValue(row.reopenCount)}
+                    fullWidth
+                    disabled
+                    sx={fieldSx("reopenCount")}
+                />
+
+                <TextField
+                    label="Cancellato da"
+                    value={userLabel(row.deletedBy)}
+                    fullWidth
+                    disabled
+                    sx={fieldSx("deletedBy")}
+                />
+
+                <TextField
                     label="Data modifica"
                     value={displayValue(toDatetimeLocalValue(row.createdAt))}
                     type="datetime-local"
@@ -175,18 +191,18 @@ export default function TicketHistoryDetailModal({
                     sx={disabledFieldSx}
                 />
 
+                {/*
+                  FIX: prima qui c'era un campo "Ultimo aggiornamento" con
+                  value={userLabel(row.lastUpdatedBy)} ma type="datetime-local"
+                  (nome dentro un input che si aspetta una data) — ed era un
+                  doppione di "Modificato da" qui sopra. Rimosso.
+                  Il vecchio "Ultimo aggiornamento di" (che in realtà mostrava
+                  updatedAt, cioè la data di questo snapshot) è stato
+                  rinominato in "Snapshot" per coerenza con la colonna
+                  "Snapshot" già usata in column.def.tsx.
+                */}
                 <TextField
-                    label="Ultimo aggiornamento"
-                    value={row.lastUpdatedBy ? userLabel(row.lastUpdatedBy) : "-"}
-                    type="datetime-local"
-                    fullWidth
-                    disabled
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    sx={fieldSx("lastUpdatedBy")}
-                />
-
-                <TextField
-                    label="Ultimo aggiornamento di"
+                    label="Snapshot"
                     value={displayValue(toDatetimeLocalValue(row.updatedAt))}
                     type="datetime-local"
                     fullWidth
@@ -216,6 +232,16 @@ export default function TicketHistoryDetailModal({
                 />
 
                 <TextField
+                    label="Entro (prima risposta)"
+                    value={row.dueFirstResponse ? toDatetimeLocalValue(row.dueFirstResponse) : "-"}
+                    type={row.dueFirstResponse ? "datetime-local" : "text"}
+                    fullWidth
+                    disabled
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    sx={fieldSx("dueFirstResponse")}
+                />
+
+                <TextField
                     label="Descrizione"
                     value={displayValue(row.description)}
                     fullWidth
@@ -225,6 +251,19 @@ export default function TicketHistoryDetailModal({
                     sx={{
                         gridColumn: { xs: "1", md: "1 / -1" },
                         ...fieldSx("description"),
+                    }}
+                />
+
+                <TextField
+                    label="Motivo riapertura"
+                    value={displayValue(row.reopenReason)}
+                    fullWidth
+                    multiline
+                    minRows={2}
+                    disabled
+                    sx={{
+                        gridColumn: { xs: "1", md: "1 / -1" },
+                        ...fieldSx("reopenReason"),
                     }}
                 />
 

@@ -33,6 +33,7 @@ const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
     adapter,
+    // log: [{ emit: "stdout", level: "query" }],
   });
 
 // Solo in development: aggancia il PrismaClient a global come proprietà

@@ -14,18 +14,6 @@ import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.confi
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
 import { HeadCell } from "@/components/table";
 
-// Mappa: colonna FE -> campo di sort che il BE si aspetta
-export const ticketSortFieldMap: Partial<
-    Record<keyof TicketFieldsFragment, TicketSortField>
-> = {
-    id: "ID",
-    title: "TITLE",
-    status: "STATUS",
-    priority: "PRIORITY",
-    ticketDepartment: "DEPARTMENT",
-    createdAt: "CREATED_AT",
-};
-
 type TicketHeadCellsOptions = {
     scope: TicketScope;
 };
@@ -75,7 +63,7 @@ export function createTicketHeadCells({
         {
             id: "category",
             label: "Categoria",
-            sortable: false,
+            sortable: true,
             render: (ticket) =>
                 ticket.category ? ticket.category.name : "Nessuna categoria",
         },
@@ -94,7 +82,7 @@ export function createTicketHeadCells({
         {
             id: "dueFirstResponse",
             label: "Revisione iniziale entro",
-            sortable: false,
+            sortable: true,
             render: (ticket) =>
                 ticket.dueFirstResponse
                     ? new Date(ticket.dueFirstResponse).toLocaleDateString("it-IT")
@@ -103,7 +91,7 @@ export function createTicketHeadCells({
         {
             id: "dueDate",
             label: "Entro",
-            sortable: false,
+            sortable: true,
             render: (ticket) =>
                 ticket.dueDate
                     ? new Date(ticket.dueDate).toLocaleDateString("it-IT")
@@ -115,7 +103,7 @@ export function createTicketHeadCells({
         headCells.push({
             id: "assignedTo",
             label: "Assegnato a",
-            sortable: false,
+            sortable: true,
             render: (ticket) =>
                 ticket.assignedTo
                     ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
@@ -127,7 +115,7 @@ export function createTicketHeadCells({
         headCells.push({
             id: "createdBy",
             label: "Creato da",
-            sortable: false,
+            sortable: true,
             render: (ticket) =>
                 ticket.createdBy
                     ? `${ticket.createdBy.firstName} ${ticket.createdBy.lastName}`

@@ -18,11 +18,8 @@ export type TicketHistoryRow = NonNullable<
 // "highlighted-cell" già definita nel tema), non più a uno stile inline.
 export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
     return [
-        { id: "originalTicketId", label: "Ticket originale", sortable: false },
 
-        { id: "title", label: "Titolo", sortable: false },
-
-        { id: "description", label: "Descrizione", sortable: false },
+        { id: "title", label: "Titolo", sortable: false, width: 15 },
 
         {
             id: "status",
@@ -34,6 +31,7 @@ export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
                 return (
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         <Icon sx={{ color: config.color, fontSize: 20 }} />
+                        {config.label}
                     </Box>
                 );
             },
@@ -49,6 +47,7 @@ export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
                 return (
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         <Icon sx={{ color: config.color, fontSize: 20 }} />
+                        {config.label}
                     </Box>
                 );
             },
@@ -61,12 +60,6 @@ export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
             render: (row) => (row.category ? row.category.name : "Nessuna categoria"),
         },
 
-        {
-            id: "ticketSpecific",
-            label: "Specifica",
-            sortable: false,
-            render: (row) => row.ticketSpecific ?? "Nessuna specifica",
-        },
 
         { id: "ticketDepartment", label: "Dipartimento ticket", sortable: false },
 
@@ -99,24 +92,9 @@ export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
         },
 
         {
-            id: "closingMessage",
-            label: "Messaggio di chiusura",
-            sortable: false,
-            render: (row) => row.closingMessage ?? "-",
-        },
-
-        {
-            id: "createdAt",
-            label: "Creazione",
-            sortable: false,
-            render: (row) => new Date(row.createdAt).toLocaleDateString("it-IT"),
-        },
-
-        {
             id: "updatedAt",
             label: "Snapshot",
             sortable: false,
-            width: 10,
             render: (row) => new Date(row.updatedAt).toLocaleDateString("it-IT"),
         },
 
@@ -132,12 +110,6 @@ export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
             label: "Chiuso il",
             sortable: false,
             render: (row) => (row.closedAt ? new Date(row.closedAt).toLocaleDateString("it-IT") : "-"),
-        },
-         {
-            id: "deletedAt",
-            label: "Cancellato",
-            sortable: false,
-            render: (row) => (row.deletedAt ? new Date(row.deletedAt).toLocaleDateString("it-IT") : "-"),
         },
     ];
 }

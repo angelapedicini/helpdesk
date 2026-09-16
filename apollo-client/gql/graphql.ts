@@ -146,6 +146,7 @@ export type TicketSortField =
   | 'CREATED_BY'
   | 'DEPARTMENT'
   | 'DESCRIPTION'
+  | 'DUE_DATE'
   | 'DUE_FIRST_RESPONSE'
   | 'ID'
   | 'PRIORITY'

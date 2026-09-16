@@ -1,6 +1,7 @@
 import { graphql } from "@/apollo-client/gql";
 import type { ResultOf } from "@graphql-typed-document-node/core";
-import type { TicketFieldsFragment } from "@/apollo-client/gql/graphql";
+// import type { TicketFieldsFragment } from "@/apollo-client/gql/graphql";
+import type { TicketFieldsFragment, TicketSortField } from "@/apollo-client/gql/graphql";
 
 export const GET_TICKETS = graphql(`
   query Tickets(
@@ -31,20 +32,24 @@ export type TicketNode = TicketConnection["edges"][number]["node"];
 // = il tipo del fragment generato direttamente da codegen
 export type Ticket = TicketFieldsFragment;
 
-export type TicketSortField =
-  | "ID"
-  | "TITLE"
-  | "DESCRIPTION"
-  | "STATUS"
-  | "PRIORITY"
-  | "CATEGORY"
-  | "DEPARTMENT"
-  | "CREATED_BY"
-  | "ASSIGNED_TO"
-  | "CREATED_AT"
-  | "UPDATED_AT"
-  | "CLOSED_AT"
-  | "DUE_FIRST_RESPONSE";
+export const ticketSortFieldMap: Partial<
+    Record<keyof TicketFieldsFragment, TicketSortField>
+> = {
+    id: "ID",
+    title: "TITLE",
+    description: "DESCRIPTION",
+    status: "STATUS",
+    priority: "PRIORITY",
+    category: "CATEGORY",
+    ticketDepartment: "DEPARTMENT",
+    createdBy: "CREATED_BY",
+    assignedTo: "ASSIGNED_TO",
+    createdAt: "CREATED_AT",
+    updatedAt: "UPDATED_AT",
+    closedAt: "CLOSED_AT",
+    dueFirstResponse: "DUE_FIRST_RESPONSE",
+    dueDate: "DUE_DATE",
+};
 
 export type TicketScope = "MINE" | "ASSIGNED_TO_ME" | "DEPARTMENT";
 

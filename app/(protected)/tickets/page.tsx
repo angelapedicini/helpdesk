@@ -17,14 +17,14 @@ import {
     type TicketFieldsFragment,
     type TicketScope,
 } from "@/apollo-client/gql/graphql";
-import { GET_TICKETS, Ticket } from "@/apollo-client/queries/ticket/ticket.queries";
+import { GET_TICKETS, Ticket, ticketSortFieldMap } from "@/apollo-client/queries/ticket/ticket.queries";
 import { DELETE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
 import { FilterTicketOutput } from "@/lib/validators/ticket-detail.schema";
 import { useFragment } from "@/apollo-client/gql";
 import { isTicketOverdue } from "@/lib/ticket/expired-status";
 import EnhancedTable from "@/components/table";
-import { createTicketHeadCells, ticketSortFieldMap } from "@/app/(protected)/tickets/_components/column.def";
+import { createTicketHeadCells } from "@/app/(protected)/tickets/_components/column.def";
 import TicketRowActions from "@/app/(protected)/tickets/_components/actions";
 
 const PAGE_SIZE = 20;

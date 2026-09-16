@@ -14,6 +14,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { autoAssign } from "../lib/ticket/autoAssign";
 import { computeDueDate } from "../lib/ticket/dueDate";
+import { getTicketCase, OPEN_TICKET_CASE } from "@/lib/helper/seed-helper";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
@@ -103,18 +104,6 @@ const STATUS_WEIGHTS: {
 const CLOSED_DAYS_BACK = 60;
 const REFUSED_DAYS_BACK = 45;
 
-const CLOSED_MESSAGES = [
-  "Problema risolto. Puoi effettuare una verifica.",
-  "Richiesta completata con successo.",
-  "Intervento concluso, ticket chiuso.",
-];
-
-const REFUSED_REASONS = [
-  "La richiesta non è di competenza della categoria selezionata. Creare un nuovo ticket con la categoria corretta.",
-  "Impossibile procedere: mancano informazioni sufficienti per gestire la richiesta.",
-  "La richiesta risulta duplicata rispetto a un ticket già aperto.",
-];
-
 type CategoryRecord = {
   id: number;
   name: string;
@@ -136,9 +125,23 @@ type TechnicianRecord = {
 };
 
 /*
+ * "SNAKE_CASE" -> "Snake Case", per mostrare i valori enum in modo
+ * leggibile nel campo "Specifica" senza gridare in maiuscolo.
+ */
+function humanizeEnum(value: string): string {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/*
  * Costruisce il nested-create Prisma per il "ticket specific" coerente
  * con il campo specifico richiesto dalla categoria, più un'etichetta
- * leggibile (utile per la history).
+ * leggibile per la history: SOLO il valore (es. "Jira", "PR-0001"),
+ * senza prefisso "Software:"/"Hardware:" — la categoria è già mostrata
+ * a fianco, il prefisso sarebbe ridondante.
  *
  * `seedIndex` serve solo a variare i valori tra un ticket e l'altro
  * (ciclando sugli enum o incrementando i reference testuali).
@@ -159,7 +162,7 @@ function buildSpecificData(
 
       return {
         data: { itSpecific: { create: { hardwareType } } },
-        label: `Hardware: ${hardwareType}`,
+        label: humanizeEnum(hardwareType),
       };
     }
 
@@ -169,7 +172,7 @@ function buildSpecificData(
 
       return {
         data: { itSpecific: { create: { software } } },
-        label: `Software: ${software}`,
+        label: humanizeEnum(software),
       };
     }
 
@@ -178,7 +181,7 @@ function buildSpecificData(
 
       return {
         data: { hrSpecific: { create: { payrollReference } } },
-        label: `Busta paga: ${payrollReference}`,
+        label: payrollReference,
       };
     }
 
@@ -187,32 +190,33 @@ function buildSpecificData(
 
       return {
         data: { hrSpecific: { create: { employeeReference } } },
-        label: `Dipendente: ${employeeReference}`,
+        label: employeeReference,
       };
     }
 
     case TicketSpecificField.CUSTOMER: {
       const values = Object.values(Customer);
       const customer = values[seedIndex % values.length];
+      const label = humanizeEnum(customer);
 
       if (department === Department.FINANCE) {
         return {
           data: { financeSpecific: { create: { customer } } },
-          label: `Cliente: ${customer}`,
+          label,
         };
       }
 
       if (department === Department.SUPPORT) {
         return {
           data: { supportSpecific: { create: { customer } } },
-          label: `Cliente: ${customer}`,
+          label,
         };
       }
 
       // LOGISTIC
       return {
         data: { logisticSpecific: { create: { customer } } },
-        label: `Cliente: ${customer}`,
+        label,
       };
     }
 
@@ -221,7 +225,7 @@ function buildSpecificData(
 
       return {
         data: { financeSpecific: { create: { invoiceReference } } },
-        label: `Fattura: ${invoiceReference}`,
+        label: invoiceReference,
       };
     }
 
@@ -231,7 +235,7 @@ function buildSpecificData(
 
       return {
         data: { financeSpecific: { create: { budgetType } } },
-        label: `Budget: ${budgetType}`,
+        label: humanizeEnum(budgetType),
       };
     }
 
@@ -240,7 +244,7 @@ function buildSpecificData(
 
       return {
         data: { logisticSpecific: { create: { shipmentReference } } },
-        label: `Spedizione: ${shipmentReference}`,
+        label: shipmentReference,
       };
     }
 
@@ -343,7 +347,7 @@ async function assignTechnician(
   return fallback.id;
 }
 
-// --- SCELTA CATEGORIA + SPECIFICA (helper condiviso) ---
+// --- SCELTA CATEGORIA + SPECIFICA + CONTENUTO (helper condiviso) ---
 
 function pickCategoryWithSpecific(
   dept: Department,
@@ -356,8 +360,9 @@ function pickCategoryWithSpecific(
     category.specificField,
     specificSeedRef.value++
   );
+  const ticketCase = getTicketCase(category.department, category.name);
 
-  return { category, specificData, specificLabel };
+  return { category, specificData, specificLabel, ticketCase };
 }
 
 // --- GENERAZIONE TICKET HISTORY (catena a ritroso in base allo stato finale) ---
@@ -558,8 +563,8 @@ async function createOpenTicket(author: AuthorRecord) {
 
   const ticket = await prisma.ticket.create({
     data: {
-      title: `Richiesta generica - ${author.firstName} ${author.lastName}`,
-      description: `Ticket creato da ${author.firstName} ${author.lastName}, in attesa di valutazione da parte di un ADMIN.`,
+      title: OPEN_TICKET_CASE.title,
+      description: OPEN_TICKET_CASE.description,
       status: "OPEN",
       priority,
       categoryId: null,
@@ -591,7 +596,7 @@ async function createAssignedTicket(
   const createdAt = new Date();
   const dueFirstResponse = computeDueDate(priority, createdAt);
 
-  const { category, specificData, specificLabel } = pickCategoryWithSpecific(
+  const { category, specificData, specificLabel, ticketCase } = pickCategoryWithSpecific(
     author.department,
     categoriesByDept,
     specificSeedRef
@@ -606,8 +611,8 @@ async function createAssignedTicket(
 
   const ticket = await prisma.ticket.create({
     data: {
-      title: `Richiesta ${category.name.toLowerCase()} - ${author.firstName} ${author.lastName}`,
-      description: `Ticket per la categoria "${category.name}" del reparto ${author.department}.`,
+      title: ticketCase.title,
+      description: ticketCase.description,
       status: "ASSIGNED",
       priority,
       categoryId: category.id,
@@ -641,7 +646,7 @@ async function createInProgressTicket(
   const dueFirstResponse = computeDueDate(priority, createdAt);
   const dueWorkDate = computeDueWorkDate(dueFirstResponse);
 
-  const { category, specificData, specificLabel } = pickCategoryWithSpecific(
+  const { category, specificData, specificLabel, ticketCase } = pickCategoryWithSpecific(
     author.department,
     categoriesByDept,
     specificSeedRef
@@ -656,8 +661,8 @@ async function createInProgressTicket(
 
   const ticket = await prisma.ticket.create({
     data: {
-      title: `Richiesta ${category.name.toLowerCase()} - ${author.firstName} ${author.lastName}`,
-      description: `Ticket per la categoria "${category.name}" del reparto ${author.department}, attualmente in lavorazione.`,
+      title: ticketCase.title,
+      description: ticketCase.description,
       status: "IN_PROGRESS",
       priority,
       categoryId: category.id,
@@ -692,7 +697,7 @@ async function createClosedTicket(
   const dueWorkDate = computeDueWorkDate(dueFirstResponse);
   const closedAt = randomDateBetween(dueFirstResponse, dueWorkDate);
 
-  const { category, specificData, specificLabel } = pickCategoryWithSpecific(
+  const { category, specificData, specificLabel, ticketCase } = pickCategoryWithSpecific(
     author.department,
     categoriesByDept,
     specificSeedRef
@@ -707,15 +712,15 @@ async function createClosedTicket(
 
   const ticket = await prisma.ticket.create({
     data: {
-      title: `Richiesta ${category.name.toLowerCase()} - ${author.firstName} ${author.lastName}`,
-      description: `Ticket per la categoria "${category.name}" del reparto ${author.department}, ora concluso.`,
+      title: ticketCase.title,
+      description: ticketCase.description,
       status: "CLOSED",
       priority,
       categoryId: category.id,
       createdById: author.id,
       assignedToId,
       lastUpdatedById: assignedToId,
-      closingMessage: pickRandom(CLOSED_MESSAGES),
+      closingMessage: ticketCase.closingMessage,
       sourceDepartmentForUser: author.department,
       ticketDepartment: category.department,
       dueFirstResponse,
@@ -742,7 +747,7 @@ async function createRefusedTicket(
   const dueFirstResponse = computeDueDate(priority, createdAt);
   const closedAt = randomDateBetween(createdAt, dueFirstResponse);
 
-  const { category, specificData, specificLabel } = pickCategoryWithSpecific(
+  const { category, specificData, specificLabel, ticketCase } = pickCategoryWithSpecific(
     author.department,
     categoriesByDept,
     specificSeedRef
@@ -757,15 +762,15 @@ async function createRefusedTicket(
 
   const ticket = await prisma.ticket.create({
     data: {
-      title: `Richiesta ${category.name.toLowerCase()} - ${author.firstName} ${author.lastName}`,
-      description: `Ticket per la categoria "${category.name}" del reparto ${author.department}, rifiutato dal tecnico.`,
+      title: ticketCase.title,
+      description: ticketCase.description,
       status: "REFUSED",
       priority,
       categoryId: category.id,
       createdById: author.id,
       assignedToId,
       lastUpdatedById: assignedToId,
-      closingMessage: pickRandom(REFUSED_REASONS),
+      closingMessage: ticketCase.refusedReason,
       sourceDepartmentForUser: author.department,
       ticketDepartment: category.department,
       dueFirstResponse,
