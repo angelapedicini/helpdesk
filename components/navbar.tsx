@@ -53,10 +53,10 @@ const NAV_LINKS: NavLinkItem[] = [
     roles: ["SYSTEM_ADMIN"],
   },
   {
-    label: "Specializzazioni del dipartimento",
+    label: "Specializzazioni",
     href: "/userCategory",
     icon: <DataObjectIcon />,
-    roles: ["ADMIN", "TECHNICIAN"],
+    roles: ["ADMIN", "TECHNICIAN", "SYSTEM_ADMIN"],
   },
   {
     label: "I miei ticket cancellati",

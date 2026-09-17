@@ -15,7 +15,7 @@ import {
     Select,
 } from "@mui/material";
 import { skipToken, useQuery, useMutation, useApolloClient } from "@apollo/client/react";
-import { Department } from "@/apollo-client/gql/graphql";
+import { Department } from "@/graphql-generated/graphql";
 import { EasyLogin, EasyLoginDep, EasyLoginDepSchema, EasyLoginSchema } from "@/lib/validators/auth.schema";
 import { GET_USERS_BY_DEP_FOR_LOGIN } from "@/apollo-client/queries/user/user-queries";
 import { DepartmentEnum } from "@/lib/validators/enums.schema";

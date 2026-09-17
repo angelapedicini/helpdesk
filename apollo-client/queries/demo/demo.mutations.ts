@@ -1,4 +1,4 @@
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const START_DEMO_MUTATION = graphql(`
   mutation StartDemo {

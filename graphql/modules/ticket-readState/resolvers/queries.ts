@@ -16,7 +16,7 @@ export const ticketReadStateQueries = {
         // - technician: ticket assegnati a lui
         // - admin: ticket del proprio reparto
         //
-        // Per gli admin aggiungiamo un ulteriore filtro:
+        // Per admin e system admin aggiungiamo un ulteriore filtro:
         // ricevono notifiche solo per i ticket che:
         // - hanno creato loro stessi
         // - oppure per i quali hanno attivato una subscription
@@ -27,7 +27,7 @@ export const ticketReadStateQueries = {
                 AND: [
                     accessibleBy(ability, "read").ofType("Ticket"),
 
-                    ...(session.role === "ADMIN"
+                    ...(session.role === "ADMIN" || session.role === "SYSTEM_ADMIN"
                         ? [
                             {
                                 OR: [

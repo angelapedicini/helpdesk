@@ -1,7 +1,6 @@
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 import type { ResultOf } from "@graphql-typed-document-node/core";
-// import type { TicketFieldsFragment } from "@/apollo-client/gql/graphql";
-import type { TicketFieldsFragment, TicketSortField } from "@/apollo-client/gql/graphql";
+import type { TicketFieldsFragment, TicketSortField } from "@/graphql-generated/graphql";
 
 export const GET_TICKETS = graphql(`
   query Tickets(
@@ -50,8 +49,6 @@ export const ticketSortFieldMap: Partial<
     dueFirstResponse: "DUE_FIRST_RESPONSE",
     dueDate: "DUE_DATE",
 };
-
-export type TicketScope = "MINE" | "ASSIGNED_TO_ME" | "DEPARTMENT"| "ALL";
 
 export const GET_TICKET_BY_ID = graphql(`
   query GetTicketById($id: Int!) {

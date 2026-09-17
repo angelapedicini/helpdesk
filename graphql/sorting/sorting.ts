@@ -1,5 +1,5 @@
 // graphql/sorting/sorting.ts
-export type SortDirection = "ASC" | "DESC";
+import type { SortDirection } from "@/graphql-generated/schema";
 
 export type SortArg<TField extends string> = {
   field: TField;

@@ -6,6 +6,11 @@ import type { AccessTokenPayload } from "@/lib/auth/jwt";
 export function defineAbilityForTicketHistory(user: AccessTokenPayload): TicketHistoryAbility {
   const { can, build } = new AbilityBuilder<TicketHistoryAbility>(createPrismaAbility);
 
+  // System Admin: tutta la history, nessuna condizione
+  if (user.role === "SYSTEM_ADMIN") {
+    can("read", "TicketHistory");
+  }
+
   // Employee: solo la history dei ticket creati da lui
   can("read", "TicketHistory", { createdById: user.userId });
 

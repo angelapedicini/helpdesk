@@ -1,4 +1,4 @@
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 import type { ResultOf } from "@graphql-typed-document-node/core";
 
 export const GET_MESSAGES = graphql(`

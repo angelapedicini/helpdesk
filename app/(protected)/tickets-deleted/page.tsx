@@ -6,21 +6,24 @@ import { useQuery } from "@apollo/client/react";
 import { Box, IconButton, Stack, Typography } from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
 
+import { useFragment } from "@/graphql-generated/fragment-masking";
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
 import EnhancedTable from "@/components/table";
 import { GET_DELETED_TICKETS } from "@/apollo-client/queries/ticket-history/ticket-history.queries";
+import { TICKET_HISTORY_FIELDS } from "@/apollo-client/queries/ticket-history/ticket-history.fragment";
 import { createDeletedTicketHeadCells, type DeletedTicketRow } from "./column.def";
-import type { TicketScope } from "@/apollo-client/gql/graphql";
+import type { TicketScope } from "@/graphql-generated/graphql";
 
 const PAGE_SIZE = 20;
 
 const SCOPE_TITLES: Record<TicketScope, string> = {
     MINE: "I miei ticket eliminati",
+    ALL: "Tutti i ticket eliminati",
     DEPARTMENT: "Ticket eliminati del dipartimento",
     ASSIGNED_TO_ME: "Ticket eliminati assegnati a me",
 };
 
-const VALID_SCOPES: TicketScope[] = ["MINE", "DEPARTMENT", "ASSIGNED_TO_ME"];
+const VALID_SCOPES: TicketScope[] = ["ALL", "MINE", "DEPARTMENT", "ASSIGNED_TO_ME"];
 
 export default function DeletedTicketsPage() {
     const router = useRouter();
@@ -45,7 +48,9 @@ export default function DeletedTicketsPage() {
     });
 
     const deletedTickets: DeletedTicketRow[] =
-        data?.deletedTickets?.edges?.map((edge) => edge.node) ?? [];
+        data?.deletedTickets?.edges?.map((edge) =>
+            useFragment(TICKET_HISTORY_FIELDS, edge.node)
+        ) ?? [];
 
     const { hasNextPage, loadMore } = useCursorPagination(
         data?.deletedTickets?.pageInfo,

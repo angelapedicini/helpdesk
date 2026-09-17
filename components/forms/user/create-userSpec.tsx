@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Box, Button, FormHelperText, TextField } from "@mui/material";
 import { GET_CATEGORIES } from "@/apollo-client/queries/ticket-category/ticket-category.queries";
-import { type Department } from "@/apollo-client/gql/graphql";
+import { type Department } from "@/graphql-generated/graphql";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { AppSelect } from "../inputs/select-input";
 import { CreateUserSpecInput, CreateUserSpecOutput, CreateUserSpecSchema } from "@/lib/validators/userSpec.schema";

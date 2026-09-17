@@ -1,5 +1,5 @@
 // apollo-client/queries/ticket-read-state/ticket-read-state.mutation.ts
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const MARK_TICKET_MESSAGES_READ = graphql(`
   mutation MarkTicketMessagesRead($ticketId: Int!) {

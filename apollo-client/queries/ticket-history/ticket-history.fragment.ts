@@ -1,5 +1,5 @@
 // apollo-client/queries/ticket-history/ticket-history.fragment.ts
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const TICKET_HISTORY_FIELDS = graphql(`
   fragment TicketHistoryFields on TicketHistory {

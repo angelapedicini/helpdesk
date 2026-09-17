@@ -4,16 +4,14 @@ import { useRouter } from "next/navigation";
 import IconButton from "@mui/material/IconButton";
 import HistoryIcon from "@mui/icons-material/History";
 
-import { DeletedTicketsQuery } from "@/apollo-client/gql/graphql";
+import type { TicketHistoryFieldsFragment } from "@/graphql-generated/graphql";
 
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
 import { HeadCell } from "@/components/table";
 import { Box } from "@mui/material";
 
-export type DeletedTicketRow = NonNullable<
-    DeletedTicketsQuery["deletedTickets"]
->["edges"][number]["node"];
+export type DeletedTicketRow = TicketHistoryFieldsFragment;
 
 export function createDeletedTicketHeadCells(): HeadCell<DeletedTicketRow>[] {
     return [

@@ -5,7 +5,8 @@ import { paginateByCursor } from "@/graphql/pagination/pagination";
 import type { Prisma } from "@/app/generated/prisma/client";
 import { SortArg, toPrismaOrderBy } from "@/graphql/sorting/sorting";
 import { accessibleBy } from "@casl/prisma";
-import { TicketSortField, TICKET_SORT_FIELD_MAP, TicketScope, buildTicketWhere, buildScopeWhere } from "./where";
+import { TICKET_SORT_FIELD_MAP, buildTicketWhere, buildScopeWhere } from "./where";
+import type { TicketScope, TicketSortField } from "@/graphql-generated/schema";
 import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
 
 export const ticketQueries = {

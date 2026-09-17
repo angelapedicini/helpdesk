@@ -135,6 +135,7 @@ export type TicketPriority =
   | 'URGENT';
 
 export type TicketScope =
+  | 'ALL'
   | 'ASSIGNED_TO_ME'
   | 'DEPARTMENT'
   | 'MINE';

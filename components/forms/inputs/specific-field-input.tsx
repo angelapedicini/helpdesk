@@ -3,7 +3,7 @@
 
 import { Controller, type Control, type FieldValues, type Path } from "react-hook-form";
 import { TextField } from "@mui/material";
-import { TicketSpecificField } from "@/apollo-client/gql/graphql";
+import { TicketSpecificField } from "@/graphql-generated/graphql";
 
 import { HARDWARE_TYPE_CONFIG } from "@/components/enums/hardware-type.config";
 import { SOFTWARE_CONFIG } from "@/components/enums/software.config";

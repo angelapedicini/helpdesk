@@ -2,12 +2,13 @@
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 
-import { UsersByDepartmentQuery } from "@/apollo-client/gql/graphql";
+import { UsersByDepartmentQuery } from "@/graphql-generated/graphql";
 import { HeadCell } from "@/components/table";
 
 export type UserDepartmentRow = UsersByDepartmentQuery["usersByDepartment"][number];
 
 const ROLE_LABEL: Record<UserDepartmentRow["role"], string> = {
+    SYSTEM_ADMIN: "Admin di sistema",
     ADMIN: "Admin",
     TECHNICIAN: "Tecnico",
     EMPLOYEE: "Dipendente",

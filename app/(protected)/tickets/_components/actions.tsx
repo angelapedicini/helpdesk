@@ -9,7 +9,7 @@ import HistoryIcon from "@mui/icons-material/History";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import MessageIcon from '@mui/icons-material/Message';
 
-import type { TicketFieldsFragment, TicketScope } from "@/apollo-client/gql/graphql";
+import type { TicketFieldsFragment, TicketScope } from "@/graphql-generated/graphql";
 import { useTicketDeletePermission } from "@/lib/casl/abilities/ticket/presentation";
 
 interface TicketRowActionsProps {

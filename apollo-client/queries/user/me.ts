@@ -1,4 +1,4 @@
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const ME_QUERY = graphql(`
   query Me {

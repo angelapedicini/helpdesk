@@ -29,6 +29,7 @@ export const ticketTypeDefs = `#graphql
     MINE
     ASSIGNED_TO_ME
     DEPARTMENT
+    ALL
   }
 
   type Ticket {

@@ -1,4 +1,4 @@
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const SEARCH_USERS = graphql(`
   query SearchUsers($search: String, $role: Role, $department: Department) {

@@ -1,5 +1,6 @@
 // modules/ticket/resolvers/mutations/update.ts
 import { getPrisma } from "@/lib/prisma/index";
+import { buildTicketHistoryData } from "@/lib/ticket/history";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
 import { UpdateTicketSchema } from "@/lib/validators/ticket-detail.schema";
@@ -358,28 +359,10 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     });
 
     await tx.ticketHistory.create({
-      data: {
-        originalTicketId: args.id,
-        title: result.title,
-        description: result.description,
-        status: result.status,
-        priority: result.priority,
-        categoryId: result.categoryId,
-        createdById: result.createdById,
-        assignedToId: result.assignedToId,
-        lastUpdatedById: result.lastUpdatedById,
-        closingMessage: result.closingMessage,
-        sourceDepartmentForUser: result.sourceDepartmentForUser,
-        ticketDepartment: result.ticketDepartment,
-        ticketSpecific: input.specificValue != null ? input.specificValue : oldSpecificValue,
-        createdAt: result.createdAt,
-        updatedAt: result.updatedAt,
-        dueFirstResponse: result.dueFirstResponse,
-        dueDate: result.dueDate,
-        closedAt: result.closedAt,
-        reopenCount: result.reopenCount,
-        reopenReason: result.reopenReason,
-      },
+      data: buildTicketHistoryData(result, {
+        ticketSpecific:
+          input.specificValue != null ? input.specificValue : oldSpecificValue,
+      }),
     });
 
     return result;

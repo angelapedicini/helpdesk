@@ -1,5 +1,5 @@
 // @/apollo-client/queries/user-specialization/user-specialization.mutation.ts
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const ADD_USER_SPECIALIZATION = graphql(`
   mutation AddUserSpecialization($input: UserSpecInput!) {

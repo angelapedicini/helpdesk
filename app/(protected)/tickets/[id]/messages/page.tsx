@@ -36,7 +36,8 @@ export default function TicketMessagesPage() {
 
     const { data: meData } = useQuery(ME_QUERY);
     const myId = meData?.me?.id;
-    const isAdmin = meData?.me?.role === "ADMIN";
+    const isNotificationManager =
+        meData?.me?.role === "ADMIN" || meData?.me?.role === "SYSTEM_ADMIN";
 
     // --------------------------------
     // QUERY MESSAGGI
@@ -91,7 +92,7 @@ export default function TicketMessagesPage() {
 
     const { data: notificationData } = useQuery(GET_TICKET_NOTIFICATION_SUBSCRIPTION, {
         variables: { ticketId },
-        skip: !isValidTicketId || !isAdmin,
+        skip: !isValidTicketId || !isNotificationManager,
     });
 
     const isSubscribed = !!notificationData?.ticketNotificationSubscription;
@@ -174,7 +175,7 @@ export default function TicketMessagesPage() {
                     Messaggi ticket #{ticketId}
                 </Typography>
 
-                {isAdmin && (
+                {isNotificationManager && (
                     <NotificationBell
                         isSubscribed={isSubscribed}
                         busy={notificationBusy}

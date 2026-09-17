@@ -1,5 +1,6 @@
 // modules/ticket/resolvers/mutations/delete.ts
 import { getPrisma } from "@/lib/prisma/index";
+import { buildTicketHistoryData } from "@/lib/ticket/history";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
 import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
@@ -48,35 +49,16 @@ export async function deleteTicket(_parent: unknown, args: { id: number }) {
     : null;
 
   const deleted = await prisma.$transaction(async (tx) => {
+    const now = new Date();
+
     await tx.ticketHistory.create({
-      data: {
-        originalTicketId: existing.id,
-
-        title: existing.title,
-        description: existing.description,
-        status: existing.status,
-        priority: existing.priority,
-
-        categoryId: existing.categoryId,
-        createdById: existing.createdById,
-        assignedToId: existing.assignedToId,
-        lastUpdatedById: session.userId,
-
-        closingMessage: existing.closingMessage,
-
-        sourceDepartmentForUser: existing.sourceDepartmentForUser,
-        ticketDepartment: existing.ticketDepartment,
-
+      data: buildTicketHistoryData(existing, {
         ticketSpecific,
-
-        createdAt: existing.createdAt,
-        updatedAt:  new Date(),
-        dueDate: existing.dueDate,
-        closedAt: existing.closedAt,
-
-        deletedAt: new Date(),
+        lastUpdatedById: session.userId,
+        updatedAt: now,
+        deletedAt: now,
         deletedById: session.userId,
-      },
+      }),
     });
 
     // onDelete: Cascade su tutte le *Specific verso Ticket -> basta questo,

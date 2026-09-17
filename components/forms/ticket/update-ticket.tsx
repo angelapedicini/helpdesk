@@ -18,7 +18,7 @@ import { GET_CATEGORIES } from "@/apollo-client/queries/ticket-category/ticket-c
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 
-import type { TicketFieldsFragment } from "@/apollo-client/gql/graphql";
+import type { TicketFieldsFragment } from "@/graphql-generated/graphql";
 
 import {
     TicketPriority,

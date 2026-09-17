@@ -3,6 +3,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type { Order } from "@/components/table";
+import type { SortDirection } from "@/graphql-generated/schema";
 
 interface SortState<K> {
     orderBy: K;
@@ -22,7 +23,7 @@ export function useSortState<K>(initialOrderBy: K, initialOrder: Order = "desc")
         });
     }, []);
 
-    const sortDirection = useMemo<"ASC" | "DESC">(
+    const sortDirection = useMemo<SortDirection>(
         () => (state.order === "asc" ? "ASC" : "DESC"),
         [state.order]
     );

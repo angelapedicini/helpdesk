@@ -1,4 +1,4 @@
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const TICKET_FIELDS = graphql(`
  fragment TicketFields on Ticket {

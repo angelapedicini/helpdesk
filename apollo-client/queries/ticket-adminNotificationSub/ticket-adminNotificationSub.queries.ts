@@ -1,4 +1,4 @@
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const GET_TICKET_NOTIFICATION_SUBSCRIPTION = graphql(`
   query TicketNotificationSubscription($ticketId: Int!) {

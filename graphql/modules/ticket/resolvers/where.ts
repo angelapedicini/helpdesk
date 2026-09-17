@@ -4,22 +4,7 @@ import type { Prisma } from "@/app/generated/prisma/client";
 import { GraphQLError } from "graphql/error";
 import { AccessTokenPayload } from "@/lib/auth/jwt";
 import { FilterTicketSchema } from "@/lib/validators/ticket-detail.schema";
-
-export type TicketSortField =
-  | "ID"
-  | "TITLE"
-  | "DESCRIPTION"
-  | "STATUS"
-  | "PRIORITY"
-  | "CATEGORY"
-  | "DEPARTMENT"
-  | "CREATED_BY"
-  | "ASSIGNED_TO"
-  | "CREATED_AT"
-  | "UPDATED_AT"
-  | "CLOSED_AT"
-  | "DUE_FIRST_RESPONSE"
-  | "DUE_DATE";
+import type { TicketScope, TicketSortField } from "@/graphql-generated/schema";
 
 export const TICKET_SORT_FIELD_MAP: Record<TicketSortField, string> = {
   ID: "id",
@@ -37,12 +22,6 @@ export const TICKET_SORT_FIELD_MAP: Record<TicketSortField, string> = {
   DUE_FIRST_RESPONSE: "dueFirstResponse",
   DUE_DATE: "dueDate"
 };
-
-export type TicketScope =
-  | "MINE"
-  | "ASSIGNED_TO_ME"
-  | "DEPARTMENT"
-  | "ALL";
 
 export function buildTicketWhere(
   rawFilter: unknown

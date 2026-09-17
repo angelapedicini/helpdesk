@@ -1,5 +1,5 @@
 // lib/ticket/diff.ts
-import type { TicketHistoryFieldsFragment } from "@/apollo-client/gql/graphql";
+import type { TicketHistoryFieldsFragment } from "@/graphql-generated/graphql";
 
 export type ChangedFields = Set<string>;
 

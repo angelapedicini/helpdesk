@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
-import { useFragment } from "@/apollo-client/gql/fragment-masking";
+import { useFragment } from "@/graphql-generated/fragment-masking";
 import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";

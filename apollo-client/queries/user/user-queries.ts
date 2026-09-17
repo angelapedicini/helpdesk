@@ -1,4 +1,4 @@
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 // @/apollo-client/queries/user-specialization/user-specialization.queries.ts (o dove preferisci)
 export const GET_USERS_BY_DEPARTMENT = graphql(`

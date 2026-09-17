@@ -10,7 +10,7 @@ import {
     CreateTicketSchema,
 } from "@/lib/validators/ticket-detail.schema";
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
-import { CategoryByIdQuery, Role, type Department } from "@/apollo-client/gql/graphql";
+import { CategoryByIdQuery, Role, type Department } from "@/graphql-generated/graphql";
 import { skipToken, useMutation, useQuery } from "@apollo/client/react";
 import { TicketPriority } from "@/lib/validators/enums.schema";
 import { CREATE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";

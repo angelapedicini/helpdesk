@@ -3,12 +3,12 @@
 
 import Box from "@mui/material/Box";
 
-import { TicketHistoryByTicketIdQuery } from "@/apollo-client/gql/graphql";
+import { TicketHistoryByTicketIdQuery } from "@/graphql-generated/graphql";
 
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
 import { HeadCell } from "@/components/table";
-import type { TicketHistoryFieldsFragment } from "@/apollo-client/gql/graphql";
+import type { TicketHistoryFieldsFragment } from "@/graphql-generated/graphql";
 
 export type TicketHistoryRow = TicketHistoryFieldsFragment;
 

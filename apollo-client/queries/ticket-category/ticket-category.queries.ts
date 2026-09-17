@@ -1,4 +1,4 @@
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const GET_CATEGORIES = graphql(`
   query Categories($department: Department) {

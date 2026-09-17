@@ -1,5 +1,5 @@
 // modules/stats/queries.ts
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const TICKET_STATS_BY_DEPARTMENT_QUERY = graphql(`
   query TicketStatsByDepartment {

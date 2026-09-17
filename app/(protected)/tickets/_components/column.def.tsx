@@ -8,7 +8,7 @@ import {
     TicketFieldsFragment,
     TicketScope,
     TicketSortField,
-} from "@/apollo-client/gql/graphql";
+} from "@/graphql-generated/graphql";
 
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";

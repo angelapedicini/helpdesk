@@ -14,6 +14,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { autoAssign } from "../lib/ticket/autoAssign";
 import { computeDueDate } from "../lib/ticket/dueDate";
+import { buildTicketHistoryData } from "../lib/ticket/history";
 import { getTicketCase, OPEN_TICKET_CASE } from "@/lib/helper/seed-helper";
 
 const adapter = new PrismaPg({
@@ -390,21 +391,6 @@ async function createTicketHistoryChain(
   ticket: TicketRecord,
   ticketSpecific: string | null
 ) {
-  const common = {
-    originalTicketId: ticket.id,
-    title: ticket.title,
-    description: ticket.description,
-    priority: ticket.priority,
-    createdById: ticket.createdById,
-    sourceDepartmentForUser: ticket.sourceDepartmentForUser,
-    ticketDepartment: ticket.ticketDepartment,
-    ticketSpecific,
-    reopenCount: 0,
-    reopenReason: null as string | null,
-    deletedAt: null as Date | null,
-    deletedById: null as number | null,
-  };
-
   type Step = {
     status: TicketRecord["status"];
     createdAt: Date;
@@ -537,19 +523,14 @@ async function createTicketHistoryChain(
 
   for (const step of steps) {
     await prisma.ticketHistory.create({
-      data: {
-        ...common,
-        status: step.status,
-        createdAt: step.createdAt,
-        updatedAt: step.createdAt,
-        lastUpdatedById: step.lastUpdatedById,
-        categoryId: step.categoryId,
-        assignedToId: step.assignedToId,
-        closingMessage: step.closingMessage,
-        dueFirstResponse: step.dueFirstResponse,
-        dueDate: step.dueDate,
-        closedAt: step.closedAt,
-      },
+      data: buildTicketHistoryData(
+        {
+          ...ticket,
+          ...step,
+          updatedAt: step.createdAt,
+        },
+        { ticketSpecific }
+      ),
     });
   }
 }

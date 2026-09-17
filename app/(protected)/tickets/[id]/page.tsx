@@ -3,9 +3,9 @@
 
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
-import { useFragment } from "@/apollo-client/gql/fragment-masking";
+import { useFragment } from "@/graphql-generated/fragment-masking";
 import { GET_TICKET_BY_ID } from "@/apollo-client/queries/ticket/ticket.queries";
-import { TicketFieldsFragmentDoc } from "@/apollo-client/gql/graphql";
+import { TicketFieldsFragmentDoc } from "@/graphql-generated/graphql";
 import {
     Box,
     Skeleton,

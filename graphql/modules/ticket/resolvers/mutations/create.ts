@@ -9,6 +9,7 @@ import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
 import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
 import { getSpecificMapping } from "@/graphql/modules/ticket/resolvers/mutations/specific-field-config";
 import { getPrisma } from "@/lib/prisma/index";
+import { buildTicketHistoryData } from "@/lib/ticket/history";
 
 export async function createTicket(_parent: unknown, args: { input: unknown }) {
   const session = await requireSession();
@@ -104,33 +105,9 @@ export async function createTicket(_parent: unknown, args: { input: unknown }) {
     });
 
     await tx.ticketHistory.create({
-      data: {
-        originalTicketId: created.id,
-
-        title: created.title,
-        description: created.description,
-        status: created.status,
-        priority: created.priority,
-
-        categoryId: created.categoryId,
-        createdById: created.createdById,
-        assignedToId: created.assignedToId,
-        lastUpdatedById: null,
-
-        closingMessage: created.closingMessage,
-
-        sourceDepartmentForUser: created.sourceDepartmentForUser,
-        ticketDepartment: created.ticketDepartment,
-
+      data: buildTicketHistoryData(created, {
         ticketSpecific: input.specificValue ?? null,
-
-        createdAt: created.createdAt,
-        updatedAt: created.updatedAt,
-        dueFirstResponse: created.dueFirstResponse,
-        closedAt: created.closedAt,
-        reopenCount: created.reopenCount,
-        reopenReason: created.reopenReason,
-      },
+      }),
     });
 
     return created;

@@ -4,13 +4,22 @@ const config: CodegenConfig = {
   schema: 'http://localhost:3000/api/graphql',
   documents: ['app/**/*.tsx', 'lib/**/*.ts', 'apollo-client/**/*.ts'],
   generates: {
-    './apollo-client/gql/': {
+    './graphql-generated/': {
       preset: 'client',
       plugins: [],
       config: {
         scalars: {
           Date: 'string',
         },
+      },
+    },
+    './graphql-generated/schema.ts': {
+      plugins: ['typescript'],
+      config: {
+        scalars: {
+          Date: 'string',
+        },
+        enumsAsConst: true,
       },
     },
   },

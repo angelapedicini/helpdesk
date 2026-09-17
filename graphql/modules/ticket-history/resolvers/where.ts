@@ -4,7 +4,7 @@ import type { Prisma } from "@/app/generated/prisma/client";
 import { GraphQLError } from "graphql/error";
 import { AccessTokenPayload } from "@/lib/auth/jwt";
 import { FilterTicketSchema } from "@/lib/validators/ticket-detail.schema";
-import { TicketScope } from "../../ticket/resolvers/where";
+import type { TicketScope } from "@/graphql-generated/schema";
 
 export function buildTicketWhere(
   rawFilter: unknown
@@ -140,6 +140,16 @@ export function buildHistoryScopeWhere(
       return {
         ticketDepartment: session.department,
       };
+
+    case "ALL":
+      if (session.role !== "SYSTEM_ADMIN") {
+        throw new GraphQLError(
+          "View not available to role",
+          { extensions: { code: "FORBIDDEN" } }
+        );
+      }
+
+      return {};
 
     default: {
       const _exhaustive: never = scope;

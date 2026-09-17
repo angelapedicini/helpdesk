@@ -1,20 +1,35 @@
 import { getPrisma } from "@/lib/prisma/index";
-import { requireAdmin } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
+import { accessibleBy } from "@casl/prisma";
+import { defineAbilityForTicketNotification } from "@/lib/casl/abilities/ticket-notification/rules";
+import {
+    assertCanCreateTicketNotification,
+    assertCanDeleteTicketNotification,
+} from "@/lib/casl/abilities/ticket-notification/guards";
+import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
 
 export const ticketAdminNotificationMutations = {
     createTicketNotificationSubscription: async (
         _parent: unknown,
         args: { ticketId: number }
     ) => {
-        const session = await requireAdmin();
+        const session = await requireSession();
+        const ability = defineAbilityForTicketNotification(session);
+        assertCanCreateTicketNotification(ability, {
+            userId: session.userId,
+            ticketId: args.ticketId,
+        });
         const prisma = await getPrisma();
 
 
-        const ticket = await prisma.ticket.findUnique({
+        // Solo ticket leggibili dall'utente (admin: solo del proprio reparto).
+        const ticketAbility = defineAbilityForTicket(session);
+        const ticket = await prisma.ticket.findFirst({
             where: {
                 id: args.ticketId,
                 // deletedAt: null 
+                AND: [accessibleBy(ticketAbility, "read").ofType("Ticket")],
             },
         });
 
@@ -41,7 +56,12 @@ export const ticketAdminNotificationMutations = {
         _parent: unknown,
         args: { ticketId: number }
     ) => {
-        const session = await requireAdmin();
+        const session = await requireSession();
+        const ability = defineAbilityForTicketNotification(session);
+        assertCanDeleteTicketNotification(ability, {
+            userId: session.userId,
+            ticketId: args.ticketId,
+        });
         const prisma = await getPrisma();
 
 

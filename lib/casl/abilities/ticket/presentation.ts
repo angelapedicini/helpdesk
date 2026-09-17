@@ -5,7 +5,7 @@ import { useAbility } from "@/lib/casl/abilityContext";
 import { toTicketSubject } from "./guards";
 import { ALLOWED_STATUS_TRANSITIONS } from "./rules";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
-import type { TicketFieldsFragment } from "@/apollo-client/gql/graphql";
+import type { TicketFieldsFragment } from "@/graphql-generated/graphql";
 import type { TicketStatus } from "@/lib/validators/enums.schema";
 
 

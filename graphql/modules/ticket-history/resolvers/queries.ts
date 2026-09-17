@@ -4,7 +4,7 @@ import { paginateByCursor } from "@/graphql/pagination/pagination";
 import { getReadableTicketHistoryWhere } from "@/lib/casl/abilities/ticket-history/guards";
 import { Prisma } from "@/app/generated/prisma/client";
 import { buildHistoryScopeWhere, buildTicketWhere } from "./where";
-import { TicketScope } from "../../ticket/resolvers/where";
+import type { TicketScope } from "@/graphql-generated/schema";
 
 export const ticketHistoryQueries = {
   ticketHistory: async (

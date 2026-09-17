@@ -1,4 +1,4 @@
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const REGISTER = graphql(`
   mutation CreateUser($input: CreateUserInput!) {

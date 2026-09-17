@@ -1,5 +1,5 @@
 // apollo-client/queries/ticket-message/ticket-message.mutation.ts
-import { graphql } from "@/apollo-client/gql";
+import { graphql } from "@/graphql-generated";
 
 export const SUBSCRIBE_TO_TICKET_NOTIFICATIONS = graphql(`
   mutation CreateTicketNotificationSubscription($ticketId: Int!) {
