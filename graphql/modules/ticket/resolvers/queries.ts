@@ -7,7 +7,7 @@ import { SortArg, toPrismaOrderBy } from "@/graphql/sorting/sorting";
 import { accessibleBy } from "@casl/prisma";
 import { TICKET_SORT_FIELD_MAP, buildTicketWhere, buildScopeWhere } from "./where";
 import type { TicketScope, TicketSortField } from "@/graphql-generated/schema";
-import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 
 export const ticketQueries = {
   tickets: async (
@@ -21,7 +21,7 @@ export const ticketQueries = {
     }
   ) => {
     const session = await requireSession();
-    const ability = defineAbilityForTicket(session);
+    const ability = defineAbility(session);
     const prisma = await getPrisma();
 
 
@@ -67,7 +67,7 @@ export const ticketQueries = {
 
   ticket: async (_parent: unknown, args: { id: number }) => {
     const session = await requireSession();
-    const ability = defineAbilityForTicket(session);
+    const ability = defineAbility(session);
     const prisma = await getPrisma();
 
 

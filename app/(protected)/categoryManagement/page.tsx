@@ -30,7 +30,7 @@ import CategoryForm from "@/components/forms/category/category-form";
 import CategoryAccessForm from "@/components/forms/category/category-access-form";
 import { ROLE_CONFIG } from "@/components/enums/role.config";
 import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
-import { useCategoryManagementPermissions } from "@/lib/casl/abilities/category/presentation";
+import { useCategoryManagementPermissions } from "@/lib/casl/abilities/category/hook-permission";
 
 export default function CategoryManagementPage() {
     const { data: meData } = useQuery(ME_QUERY);

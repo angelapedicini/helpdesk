@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Box, Button, FormControl, FormHelperText, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { Alert, Box, Button, TextField } from "@mui/material";
 import {
     CreateTicketFormOutput,
     CreateTicketFormValues,
@@ -18,8 +18,7 @@ import { AppSelect } from "../inputs/select-input";
 import { useRouter } from "next/navigation";
 import { SOLE_SPECIALIST_CATEGORY_IDS } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
 import { SpecificFieldInput } from "../inputs/specific-field-input";
-import { useAbility } from "@/lib/casl/abilityContext";
-import { toTicketDepartmentSubject } from "@/lib/casl/abilities/ticket/guards";
+import { useTicketCreateSelfAssignment } from "@/lib/casl/abilities/ticket/hook-permission";
 
 
 type TicketDetailFormProps = {
@@ -32,7 +31,6 @@ type TicketDetailFormProps = {
 
 export default function CreateTicket({ category, department, onSubmit }: TicketDetailFormProps) {
     const router = useRouter();
-    const ability = useAbility();
 
     const {
         register,
@@ -68,13 +66,7 @@ export default function CreateTicket({ category, department, onSubmit }: TicketD
     // Mostriamo il suggerimento di auto-assegnazione solo quando l'utente
     // può creare un ticket assegnandolo a sé stesso in questo dipartimento
     // (regola CASL: technician nel proprio dipartimento).
-    const canSeeSoleSpecialistHint =
-        !!department &&
-        ability.can(
-            "create",
-            toTicketDepartmentSubject(department),
-            "assignedToId"
-        );
+    const canSeeSoleSpecialistHint = useTicketCreateSelfAssignment(department);
 
     // Una sola chiamata per l'intero form, non una per ogni categoria selezionata.
     const { data: soleCategoriesData } = useQuery(
@@ -164,16 +156,6 @@ export default function CreateTicket({ category, department, onSubmit }: TicketD
                         },
                     }}
                 />
-
-
-
-                {/* <AppSelect
-                    name="categoryId"
-                    label="Categoria"
-                    control={control}
-                    options={categoryOptions}
-                    disabled={!department}
-                /> */}
 
                 <SpecificFieldInput
                     specificField={category?.specificField}

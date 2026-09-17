@@ -1,5 +1,5 @@
 import { accessibleBy } from "@casl/prisma";
-import { defineAbilityForTicketHistory } from "./rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import type { AccessTokenPayload } from "@/lib/auth/jwt";
 import type { Prisma } from "@/app/generated/prisma/client";
 
@@ -12,6 +12,6 @@ import type { Prisma } from "@/app/generated/prisma/client";
 export function getReadableTicketHistoryWhere(
   session: AccessTokenPayload
 ): Prisma.TicketHistoryWhereInput {
-  const ability = defineAbilityForTicketHistory(session);
+  const ability = defineAbility(session);
   return accessibleBy(ability, "read").ofType("TicketHistory");
 }

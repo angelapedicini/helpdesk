@@ -2,14 +2,14 @@ import { getPrisma } from "@/lib/prisma/index";
 
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
-import { defineAbilityForUserManagement } from "@/lib/casl/abilities/user/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanManageSpecialization } from "@/lib/casl/abilities/user/guards";
 
 type PrismaClient = Awaited<ReturnType<typeof getPrisma>>;
 
 async function assertTargetCanBeManaged(prisma: PrismaClient, userId: number) {
   const session = await requireSession();
-  const ability = defineAbilityForUserManagement(session);
+  const ability = defineAbility(session);
 
   const target = await prisma.user.findUnique({
     where: { id: userId },

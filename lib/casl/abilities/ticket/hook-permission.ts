@@ -2,11 +2,11 @@
 import { useMemo } from "react";
 import { useQuery } from "@apollo/client/react";
 import { useAbility } from "@/lib/casl/abilityContext";
-import { toTicketSubject } from "./guards";
+import { toTicketSubject, toTicketDepartmentSubject } from "./guards";
 import { ALLOWED_STATUS_TRANSITIONS } from "./rules";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
 import type { TicketFieldsFragment } from "@/graphql-generated/graphql";
-import type { TicketStatus } from "@/lib/validators/enums.schema";
+import type { TicketStatus, Department } from "@/lib/validators/enums.schema";
 
 
 const TICKET_EDITABLE_FIELDS = [
@@ -26,9 +26,20 @@ export type TicketFieldPermissions = Record<
   boolean
 >;
 
-export function useTicketCreatePermission(): boolean {
+export function useTicketCreateSelfAssignment(
+  department: Department | undefined
+): boolean {
   const ability = useAbility();
-  return ability.can("create", "Ticket");
+  return useMemo(
+    () =>
+      !!department &&
+      ability.can(
+        "create",
+        toTicketDepartmentSubject(department),
+        "assignedToId"
+      ),
+    [ability, department]
+  );
 }
 
 export function useTicketUpdatePermissions(
@@ -57,12 +68,6 @@ export function useTicketDeletePermission(ticket: TicketFieldsFragment): boolean
   const ability = useAbility();
   const subject = useMemo(() => toTicketSubject(ticket), [ticket]);
   return ability.can("delete", subject);
-}
-
-export function useTicketReadPermission(ticket: TicketFieldsFragment): boolean {
-  const ability = useAbility();
-  const subject = useMemo(() => toTicketSubject(ticket), [ticket]);
-  return ability.can("read", subject);
 }
 
 /**

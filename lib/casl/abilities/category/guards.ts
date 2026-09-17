@@ -1,15 +1,13 @@
 import { accessibleBy } from "@casl/prisma";
 import { GraphQLError } from "graphql/error";
 import type { PrismaClient } from "@/app/generated/prisma/client";
-import { defineAbilityForCategory } from "./rules";
-import type { CategoryAbility, CategoryActions, CategoryUser } from "./types";
+import type { AppAbility } from "@/lib/casl/defineAbility";
+import type { CategoryActions } from "./types";
 
 export async function getAllowedCategoryIds(
   prisma: PrismaClient,
-  user: CategoryUser
+  ability: AppAbility
 ): Promise<number[]> {
-  const ability = defineAbilityForCategory(user);
-
   const categories = await prisma.ticketCategory.findMany({
     where: accessibleBy(ability, "read").ofType("TicketCategory"),
     select: { id: true },
@@ -20,10 +18,8 @@ export async function getAllowedCategoryIds(
 
 export async function getAllowedCategories(
   prisma: PrismaClient,
-  user: CategoryUser
+  ability: AppAbility
 ) {
-  const ability = defineAbilityForCategory(user);
-
   return prisma.ticketCategory.findMany({
     where: accessibleBy(ability, "read").ofType("TicketCategory"),
     select: { id: true, name: true, department: true, specificField: true, disabled: true },
@@ -34,7 +30,7 @@ export async function getAllowedCategories(
 type CategoryManageAction = Extract<CategoryActions, "manage" | "read" | "create" | "update" | "delete" | "restore">;
 
 export function assertCanManageTicketCategory(
-  ability: CategoryAbility,
+  ability: AppAbility,
   action: CategoryManageAction
 ): void {
   if (ability.cannot(action, "TicketCategory")) {
@@ -45,7 +41,7 @@ export function assertCanManageTicketCategory(
 }
 
 export function assertCanManageTicketCategoryAccess(
-  ability: CategoryAbility,
+  ability: AppAbility,
   action: CategoryManageAction
 ): void {
   if (ability.cannot(action, "TicketCategoryAccess")) {

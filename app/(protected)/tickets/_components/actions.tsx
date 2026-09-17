@@ -10,7 +10,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import MessageIcon from '@mui/icons-material/Message';
 
 import type { TicketFieldsFragment, TicketScope } from "@/graphql-generated/graphql";
-import { useTicketDeletePermission } from "@/lib/casl/abilities/ticket/presentation";
+import { useTicketDeletePermission } from "@/lib/casl/abilities/ticket/hook-permission";
 
 interface TicketRowActionsProps {
     ticket: TicketFieldsFragment;

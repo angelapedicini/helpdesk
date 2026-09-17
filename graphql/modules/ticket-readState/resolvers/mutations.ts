@@ -1,6 +1,6 @@
 import { getPrisma } from "@/lib/prisma/index";
 import { requireSession } from "@/lib/auth/session";
-import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import { accessibleBy } from "@casl/prisma";
 import { GraphQLError } from "graphql/error";
 
@@ -16,7 +16,7 @@ export const ticketReadStateMutations = {
             ticketId: args.ticketId,
             time: new Date().toISOString(),
         });
-        const ability = defineAbilityForTicket(session);
+        const ability = defineAbility(session);
         const prisma = await getPrisma();
 
 

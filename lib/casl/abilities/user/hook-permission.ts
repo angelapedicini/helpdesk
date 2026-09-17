@@ -1,11 +1,11 @@
 // lib/casl/abilities/user/presentation.ts
 import { useMemo } from "react";
-import { useUserManagementAbility } from "@/lib/casl/userManagementAbilityContext";
+import { useAbility } from "@/lib/casl/abilityContext";
 import { toUserSubject } from "./guards";
 import type { UserForAbility } from "./types";
 
 export function useUserManagementPermissions() {
-    const ability = useUserManagementAbility();
+    const ability = useAbility();
 
     return useMemo(
         () => ({

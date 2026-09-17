@@ -2,7 +2,7 @@ import { getPrisma } from "@/lib/prisma/index";
 import { getSession, requireSession } from "@/lib/auth/session";
 import { Department } from "@/app/generated/prisma/enums";
 import { getAllowedCategories, assertCanManageTicketCategoryAccess } from "@/lib/casl/abilities/category/guards";
-import { defineAbilityForCategory } from "@/lib/casl/abilities/category/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 
 export const categoryQueries = {
   categories: async (
@@ -14,10 +14,7 @@ export const categoryQueries = {
     const prisma = await getPrisma();
 
 
-    const categories = await getAllowedCategories(prisma, {
-      department: session.department,
-      role: session.role,
-    });
+    const categories = await getAllowedCategories(prisma, defineAbility(session));
 
     if (args.department) {
       return categories.filter(
@@ -39,10 +36,7 @@ export const categoryQueries = {
 
     // const prisma = await getPrismaClient();
 
-    const allowed = await getAllowedCategories(prisma, {
-      department: session.department,
-      role: session.role,
-    });
+    const allowed = await getAllowedCategories(prisma, defineAbility(session));
 
     const isAllowed = allowed.some((c) => c.id === args.id);
     if (!isAllowed) return null;
@@ -58,7 +52,7 @@ export const categoryQueries = {
     args: { categoryId?: number }
   ) => {
     const session = await requireSession();
-    const ability = defineAbilityForCategory(session);
+    const ability = defineAbility(session);
     assertCanManageTicketCategoryAccess(ability, "read");
     const prisma = await getPrisma();
 

@@ -19,7 +19,7 @@ import {
     UNSUBSCRIBE_FROM_TICKET_NOTIFICATIONS,
 } from "@/apollo-client/queries/ticket-adminNotificationSub/ticket-adminNotificationSub.mutation";
 import NotificationBell from "@/components/notification-bell";
-import { useTicketNotificationPermissions } from "@/lib/casl/abilities/ticket-notification/presentation";
+import { useTicketNotificationPermissions } from "@/lib/casl/abilities/ticket-notification/hook-permission";
 
 const PAGE_SIZE = 20;
 

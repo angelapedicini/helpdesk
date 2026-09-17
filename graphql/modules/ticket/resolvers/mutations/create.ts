@@ -5,7 +5,7 @@ import { autoAssign } from "@/lib/ticket/autoAssign";
 import { CreateTicketSchema } from "@/lib/validators/ticket-detail.schema";
 import { computeDueDate } from "@/lib/ticket/dueDate";
 import { assertCanCreateTicket } from "@/lib/casl/abilities/ticket/guards";
-import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
 import { getSpecificMapping } from "@/graphql/modules/ticket/resolvers/mutations/specific-field-config";
 import { getPrisma } from "@/lib/prisma/index";
@@ -13,7 +13,7 @@ import { buildTicketHistoryData } from "@/lib/ticket/history";
 
 export async function createTicket(_parent: unknown, args: { input: unknown }) {
   const session = await requireSession();
-  const ability = defineAbilityForTicket(session);
+  const ability = defineAbility(session);
   const prisma = await getPrisma();
 
   assertCanCreateTicket(ability);
@@ -29,10 +29,7 @@ export async function createTicket(_parent: unknown, args: { input: unknown }) {
   let category: Awaited<ReturnType<typeof getAllowedCategories>>[number] | undefined;
 
   if (input.categoryId !== undefined) {
-    const allowedCategories = await getAllowedCategories(prisma, {
-      department: session.department,
-      role: session.role,
-    });
+    const allowedCategories = await getAllowedCategories(prisma, ability);
 
     category = allowedCategories.find((c) => c.id === input.categoryId);
     if (!category) {

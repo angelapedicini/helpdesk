@@ -1,7 +1,7 @@
 // graphql/modules/ticket-category/resolvers/mutations.ts
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
-import { defineAbilityForCategory } from "@/lib/casl/abilities/category/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import {
   assertCanManageTicketCategory,
   assertCanManageTicketCategoryAccess,
@@ -16,7 +16,7 @@ import { getPrisma } from "@/lib/prisma/index";
 export const categoryMutations = {
   createTicketCategory: async (_parent: unknown, args: { input: unknown }) => {
     const session = await requireSession();
-    const ability = defineAbilityForCategory(session);
+    const ability = defineAbility(session);
     assertCanManageTicketCategory(ability, "create");
     const prisma = await getPrisma();
 
@@ -35,7 +35,7 @@ export const categoryMutations = {
     args: { id: number; input: unknown }
   ) => {
     const session = await requireSession();
-    const ability = defineAbilityForCategory(session);
+    const ability = defineAbility(session);
     assertCanManageTicketCategory(ability, "update");
     const prisma = await getPrisma();
 
@@ -67,7 +67,7 @@ export const categoryMutations = {
 
   deleteTicketCategory: async (_parent: unknown, args: { id: number }) => {
     const session = await requireSession();
-    const ability = defineAbilityForCategory(session);
+    const ability = defineAbility(session);
     assertCanManageTicketCategory(ability, "delete");
     const prisma = await getPrisma();
 
@@ -88,7 +88,7 @@ export const categoryMutations = {
 
   restoreTicketCategory: async (_parent: unknown, args: { id: number }) => {
     const session = await requireSession();
-    const ability = defineAbilityForCategory(session);
+    const ability = defineAbility(session);
     assertCanManageTicketCategory(ability, "restore");
     const prisma = await getPrisma();
 
@@ -109,7 +109,7 @@ export const categoryMutations = {
 
   createTicketCategoryAccess: async (_parent: unknown, args: { input: unknown }) => {
     const session = await requireSession();
-    const ability = defineAbilityForCategory(session);
+    const ability = defineAbility(session);
     assertCanManageTicketCategoryAccess(ability, "create");
     const prisma = await getPrisma();
 
@@ -161,7 +161,7 @@ export const categoryMutations = {
 
   deleteTicketCategoryAccess: async (_parent: unknown, args: { id: number }) => {
     const session = await requireSession();
-    const ability = defineAbilityForCategory(session);
+    const ability = defineAbility(session);
     assertCanManageTicketCategoryAccess(ability, "delete");
     const prisma = await getPrisma();
 
@@ -182,7 +182,7 @@ export const categoryMutations = {
 
   restoreTicketCategoryAccess: async (_parent: unknown, args: { id: number }) => {
     const session = await requireSession();
-    const ability = defineAbilityForCategory(session);
+    const ability = defineAbility(session);
     assertCanManageTicketCategoryAccess(ability, "restore");
     const prisma = await getPrisma();
 

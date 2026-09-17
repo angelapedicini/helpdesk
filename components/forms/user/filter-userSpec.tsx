@@ -16,6 +16,7 @@ import {
 } from "../inputs/search-input";
 
 import { useResetRegistry } from "../hooks/use-reset-registry";
+import { useUserManagementPermissions } from "@/lib/casl/abilities/user/hook-permission";
 
 import { FilterUserSpecInput, FilterUserSpecOutput, FilterUserSpecSchema } from "@/lib/validators/userSpec.schema";
 import { ROLE_CONFIG } from "@/components/enums/role.config";
@@ -26,14 +27,13 @@ import { Department, Role } from "@/lib/validators/enums.schema";
 type FilterUserSpecFormProps = {
     onApply: (filter: FilterUserSpecOutput) => void;
     onReset?: () => void;
-    showDepartment?: boolean;
 };
 
 export default function FilterUserSpecForm({
     onApply,
     onReset,
-    showDepartment = false,
 }: FilterUserSpecFormProps) {
+    const { canUseDepartmentFilter } = useUserManagementPermissions();
     const { registerReset, resetAll } = useResetRegistry();
 
     const {
@@ -142,7 +142,7 @@ export default function FilterUserSpecForm({
                     options={roleOptions}
                 />
 
-                {showDepartment && (
+                {canUseDepartmentFilter && (
                     <AppSelect
                         name="department"
                         label="Dipartimento"

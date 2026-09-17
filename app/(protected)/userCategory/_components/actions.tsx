@@ -9,7 +9,7 @@ import ControlPointIcon from "@mui/icons-material/ControlPoint";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 import type { UserManagementRow } from "../column.def";
-import { useUserManagementPermissions } from "@/lib/casl/abilities/user/presentation";
+import { useUserManagementPermissions } from "@/lib/casl/abilities/user/hook-permission";
 
 interface UserManagementRowActionsProps {
     user: UserManagementRow;

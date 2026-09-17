@@ -22,14 +22,13 @@ import AddUserSpecializationForm from "@/components/forms/user/create-userSpec";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
 import RemoveUserSpecializationForm from "@/components/forms/user/remove-userSpec";
 import UpdateUserRoleForm from "@/components/forms/user/update-user-role-form";
-import { useUserManagementPermissions } from "@/lib/casl/abilities/user/presentation";
+import { useUserManagementPermissions } from "@/lib/casl/abilities/user/hook-permission";
 import UserManagementRowActions from "./_components/actions";
 
 export default function UsersManagementPage() {
     const { data: meData, loading } = useQuery(ME_QUERY);
     const {
         canViewFilters,
-        canUseDepartmentFilter,
     } = useUserManagementPermissions();
 
     // --------------------------------
@@ -179,7 +178,6 @@ export default function UsersManagementPage() {
                     <FilterUserSpecForm
                         onApply={userFilters.apply}
                         onReset={userFilters.reset}
-                        showDepartment={canUseDepartmentFilter}
                     />
                 </Box>
             </FiltersSidebar>

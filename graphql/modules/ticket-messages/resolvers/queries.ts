@@ -1,7 +1,7 @@
 import { getPrisma } from "@/lib/prisma/index";
 import { requireSession } from "@/lib/auth/session";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
-import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import { accessibleBy } from "@casl/prisma";
 
 export const ticketMessageQueries = {
@@ -10,7 +10,7 @@ export const ticketMessageQueries = {
     args: { ticketId: number; first?: number; after?: string }
   ) => {
     const session = await requireSession();
-    const ability = defineAbilityForTicket(session);
+    const ability = defineAbility(session);
     const prisma = await getPrisma();
 
 

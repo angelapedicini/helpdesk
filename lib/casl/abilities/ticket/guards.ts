@@ -1,7 +1,7 @@
 import { GraphQLError } from "graphql/error";
 import { subject } from "@casl/ability";
 import { ALLOWED_STATUS_TRANSITIONS } from "./rules";
-import type { TicketAbility } from "./types";
+import type { AppAbility } from "@/lib/casl/defineAbility";
 import type { AccessTokenPayload } from "@/lib/auth/jwt";
 import type { Department } from "@/app/generated/prisma/enums";
 import type { Ticket, TicketMessage } from "@/app/generated/prisma/client";
@@ -74,7 +74,7 @@ export function toTicketMessageSubject(message: GraphQLTicketMessage) {
  * CREATE — nessuna istanza esiste ancora, quindi il check è "type-level",
  * non ci sono campi/condizioni da valutare sull'oggetto.
  */
-export function assertCanCreateTicket(ability: TicketAbility): void {
+export function assertCanCreateTicket(ability: AppAbility): void {
   if (ability.cannot("create", "Ticket")) {
     throw new GraphQLError("Non hai i permessi per creare un ticket", {
       extensions: { code: "FORBIDDEN" },
@@ -87,7 +87,7 @@ export function assertCanCreateTicket(ability: TicketAbility): void {
  * Per le liste, usa accessibleBy(ability) direttamente nella query Prisma
  * invece di questo assert.
  */
-export function assertCanReadTicket(ability: TicketAbility, existing: Ticket): void {
+export function assertCanReadTicket(ability: AppAbility, existing: Ticket): void {
   const ticketSubject = subject("Ticket", existing);
   if (ability.cannot("read", ticketSubject)) {
     throw new GraphQLError("Non hai i permessi per visualizzare questo ticket", {
@@ -101,7 +101,7 @@ export function assertCanReadTicket(ability: TicketAbility, existing: Ticket): v
  * di stato consentite per il ruolo dell'utente.
  */
 export function assertCanUpdateTicket(
-  ability: TicketAbility,
+  ability: AppAbility,
   session: AccessTokenPayload,
   existing: Ticket,
   input: UpdateTicketInput
@@ -140,7 +140,7 @@ export function assertCanUpdateTicket(
  * DELETE — verifica i permessi CASL sull'istanza esistente
  * (creatore + stato ancora OPEN/ASSIGNED, come da regola in rules.ts).
  */
-export function assertCanDeleteTicket(ability: TicketAbility, existing: Ticket): void {
+export function assertCanDeleteTicket(ability: AppAbility, existing: Ticket): void {
   const ticketSubject = subject("Ticket", existing);
   if (ability.cannot("delete", ticketSubject)) {
     throw new GraphQLError("Non hai i permessi per eliminare questo ticket", {
@@ -158,7 +158,7 @@ export function assertCanDeleteTicket(ability: TicketAbility, existing: Ticket):
  * nelle condizioni di rules.ts (`{ ticket: { createdById, ... } }`).
  */
 export function assertCanCreateTicketMessage(
-  ability: TicketAbility,
+  ability: AppAbility,
   ticket: Pick<Ticket, "id" | "createdById" | "assignedToId" | "categoryId" | "ticketDepartment" | "status">
 ): void {
   const messageSubject = subject("TicketMessage", {
@@ -185,7 +185,7 @@ export function assertCanCreateTicketMessage(
  * (come da regola in rules.ts).
  */
 export function assertCanDeleteTicketMessage(
-  ability: TicketAbility,
+  ability: AppAbility,
   existing: TicketMessage
 ): void {
   const messageSubject = subject("TicketMessage", existing);

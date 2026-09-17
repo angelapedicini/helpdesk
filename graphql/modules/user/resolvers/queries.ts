@@ -3,7 +3,7 @@ import { getSession, requireSession } from "@/lib/auth/session";
 import { Department, Role } from "@/app/generated/prisma/enums";
 import { Prisma } from "@/app/generated/prisma/client";
 import { accessibleBy } from "@casl/prisma";
-import { defineAbilityForUserManagement } from "@/lib/casl/abilities/user/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 
 export const userQueries = {
   me: async () => {
@@ -36,7 +36,7 @@ export const userQueries = {
     }
   ) => {
     const session = await requireSession();
-    const ability = defineAbilityForUserManagement(session);
+    const ability = defineAbility(session);
     const prisma = await getPrisma();
 
     const { search, userId, role, department, categoryId } = args;

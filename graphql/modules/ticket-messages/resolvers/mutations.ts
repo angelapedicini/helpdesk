@@ -1,6 +1,6 @@
 import { getPrisma } from "@/lib/prisma/index";
 import { requireSession } from "@/lib/auth/session";
-import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import { GraphQLError } from "graphql/error";
 import { assertCanCreateTicketMessage, assertCanDeleteTicketMessage } from "@/lib/casl/abilities/ticket/guards";
 
@@ -10,7 +10,7 @@ export const ticketMessageMutations = {
         args: { input: { ticketId: number; content: string } }
     ) => {
         const session = await requireSession();
-        const ability = defineAbilityForTicket(session);
+        const ability = defineAbility(session);
         const prisma = await getPrisma();
 
 
@@ -82,7 +82,7 @@ export const ticketMessageMutations = {
 
     deleteTicketMessage: async (_parent: unknown, args: { id: number }) => {
         const session = await requireSession();
-        const ability = defineAbilityForTicket(session);
+        const ability = defineAbility(session);
         const prisma = await getPrisma();
 
 

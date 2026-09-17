@@ -2,7 +2,7 @@
 import { GraphQLError } from "graphql/error";
 import { subject } from "@casl/ability";
 import type { Ticket, TicketMessage } from "@/app/generated/prisma/client";
-import { TicketAbility } from "../types";
+import type { AppAbility } from "@/lib/casl/defineAbility";
 
 /**
  * CREATE — non esiste ancora l'istanza del messaggio: la regola CASL dipende
@@ -11,7 +11,7 @@ import { TicketAbility } from "../types";
  * nelle condizioni di rules.ts (`{ ticket: { createdById, ... } }`).
  */
 export function assertCanCreateTicketMessage(
-    ability: TicketAbility,
+    ability: AppAbility,
     ticket: Pick<Ticket, "id" | "createdById" | "assignedToId" | "categoryId" | "ticketDepartment" | "status">
 ): void {
     const messageSubject = subject("TicketMessage", {
@@ -38,7 +38,7 @@ export function assertCanCreateTicketMessage(
  * (come da regola in rules.ts).
  */
 export function assertCanDeleteTicketMessage(
-    ability: TicketAbility,
+    ability: AppAbility,
     existing: TicketMessage
 ): void {
     const messageSubject = subject("TicketMessage", existing);

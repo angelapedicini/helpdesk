@@ -25,7 +25,7 @@ import {
     departmentStatsHeadCells,
     DepartmentStatsRow,
 } from "./_components/department-stats-columns";
-import { useStatsPermissions } from "@/lib/casl/abilities/stats/presentation";
+import { useStatsPermissions } from "@/lib/casl/abilities/stats/hook-permission";
 
 type ViewMode = "table" | "chart";
 

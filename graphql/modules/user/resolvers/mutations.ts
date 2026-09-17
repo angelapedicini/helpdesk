@@ -1,7 +1,7 @@
 // graphql/modules/user/resolvers/mutations.ts
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
-import { defineAbilityForUserManagement } from "@/lib/casl/abilities/user/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanUpdateUserRole } from "@/lib/casl/abilities/user/guards";
 import { assertAllowedRoleTransition } from "@/lib/user/roleTransitions";
 import { UpdateUserRoleSchema } from "@/lib/validators/user.schema";
@@ -19,7 +19,7 @@ const USER_SELECT = {
 export const userMutations = {
   updateUserRole: async (_parent: unknown, args: { input: unknown }) => {
     const session = await requireSession();
-    const ability = defineAbilityForUserManagement(session);
+    const ability = defineAbility(session);
     const prisma = await getPrisma();
 
     const result = UpdateUserRoleSchema.safeParse(args.input);

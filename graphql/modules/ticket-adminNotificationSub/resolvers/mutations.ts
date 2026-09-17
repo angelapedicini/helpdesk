@@ -2,12 +2,11 @@ import { getPrisma } from "@/lib/prisma/index";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
 import { accessibleBy } from "@casl/prisma";
-import { defineAbilityForTicketNotification } from "@/lib/casl/abilities/ticket-notification/rules";
 import {
     assertCanCreateTicketNotification,
     assertCanDeleteTicketNotification,
 } from "@/lib/casl/abilities/ticket-notification/guards";
-import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 
 export const ticketAdminNotificationMutations = {
     createTicketNotificationSubscription: async (
@@ -15,7 +14,7 @@ export const ticketAdminNotificationMutations = {
         args: { ticketId: number }
     ) => {
         const session = await requireSession();
-        const ability = defineAbilityForTicketNotification(session);
+        const ability = defineAbility(session);
         assertCanCreateTicketNotification(ability, {
             userId: session.userId,
             ticketId: args.ticketId,
@@ -24,12 +23,11 @@ export const ticketAdminNotificationMutations = {
 
 
         // Solo ticket leggibili dall'utente (admin: solo del proprio reparto).
-        const ticketAbility = defineAbilityForTicket(session);
         const ticket = await prisma.ticket.findFirst({
             where: {
                 id: args.ticketId,
                 // deletedAt: null 
-                AND: [accessibleBy(ticketAbility, "read").ofType("Ticket")],
+                AND: [accessibleBy(ability, "read").ofType("Ticket")],
             },
         });
 
@@ -57,7 +55,7 @@ export const ticketAdminNotificationMutations = {
         args: { ticketId: number }
     ) => {
         const session = await requireSession();
-        const ability = defineAbilityForTicketNotification(session);
+        const ability = defineAbility(session);
         assertCanDeleteTicketNotification(ability, {
             userId: session.userId,
             ticketId: args.ticketId,

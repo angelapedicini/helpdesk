@@ -7,7 +7,7 @@ import { UpdateTicketSchema } from "@/lib/validators/ticket-detail.schema";
 import { computeDueDate, computeDueWorkDate } from "@/lib/ticket/dueDate";
 import { autoAssign } from "@/lib/ticket/autoAssign";
 import { assertCanUpdateTicket } from "@/lib/casl/abilities/ticket/guards";
-import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
 import { getSpecificMapping, getFieldsForTable } from "./specific-field-config";
 
@@ -16,7 +16,7 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   // 1. AUTH & INPUT
   // ============================================================
   const session = await requireSession();
-  const ability = defineAbilityForTicket(session);
+  const ability = defineAbility(session);
   const prisma = await getPrisma();
 
   const result = UpdateTicketSchema.safeParse(args.input);
@@ -92,10 +92,7 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     if (input.categoryId === null) {
       targetCategory = null;
     } else {
-      const allowedCategories = await getAllowedCategories(prisma, {
-        department: session.department,
-        role: session.role,
-      });
+      const allowedCategories = await getAllowedCategories(prisma, ability);
 
       const found = allowedCategories.find((c) => c.id === input.categoryId);
       if (!found) {

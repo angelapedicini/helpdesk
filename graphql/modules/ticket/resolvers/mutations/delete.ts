@@ -3,13 +3,13 @@ import { getPrisma } from "@/lib/prisma/index";
 import { buildTicketHistoryData } from "@/lib/ticket/history";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
-import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanDeleteTicket } from "@/lib/casl/abilities/ticket/guards";
 import { getSpecificMapping } from "./specific-field-config";
 
 export async function deleteTicket(_parent: unknown, args: { id: number }) {
   const session = await requireSession();
-  const ability = defineAbilityForTicket(session);
+  const ability = defineAbility(session);
   const prisma = await getPrisma();
 
   const existing = await prisma.ticket.findUnique({

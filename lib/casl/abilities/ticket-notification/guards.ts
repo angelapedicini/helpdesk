@@ -1,7 +1,7 @@
 import { GraphQLError } from "graphql/error";
 import { subject } from "@casl/ability";
 import type { TicketAdminNotificationSubscription } from "@/app/generated/prisma/client";
-import type { TicketNotificationAbility } from "./types";
+import type { AppAbility } from "@/lib/casl/defineAbility";
 
 type TicketNotificationSubject = Pick<
   TicketAdminNotificationSubscription,
@@ -9,7 +9,7 @@ type TicketNotificationSubject = Pick<
 >;
 
 export function assertCanReadTicketNotification(
-  ability: TicketNotificationAbility,
+  ability: AppAbility,
   subscription: TicketNotificationSubject
 ): void {
   if (ability.cannot("read", subject("TicketNotification", subscription))) {
@@ -20,7 +20,7 @@ export function assertCanReadTicketNotification(
 }
 
 export function assertCanCreateTicketNotification(
-  ability: TicketNotificationAbility,
+  ability: AppAbility,
   subscription: TicketNotificationSubject
 ): void {
   if (ability.cannot("create", subject("TicketNotification", subscription))) {
@@ -32,7 +32,7 @@ export function assertCanCreateTicketNotification(
 }
 
 export function assertCanDeleteTicketNotification(
-  ability: TicketNotificationAbility,
+  ability: AppAbility,
   subscription: TicketNotificationSubject
 ): void {
   if (ability.cannot("delete", subject("TicketNotification", subscription))) {

@@ -39,7 +39,7 @@ import { SearchInput, SearchResult } from "../inputs/search-input";
 import { SpecificFieldInput } from "../inputs/specific-field-input";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
-import { useTicketAllowedStatuses, useTicketAssigneeBrowseMode, useTicketCanReopen, useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/presentation";
+import { useTicketAllowedStatuses, useTicketAssigneeBrowseMode, useTicketCanReopen, useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/hook-permission";
 import { SOLE_SPECIALIST_CATEGORY_IDS, USERS_SPEC_BY_CATID } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
 import { computeDueDate, computeDueWorkDate } from "@/lib/ticket/dueDate";
 

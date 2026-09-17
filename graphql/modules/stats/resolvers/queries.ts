@@ -4,7 +4,7 @@ import { Department } from "@/app/generated/prisma/enums";
 import { requireSession } from "@/lib/auth/session";
 import { Prisma } from "@/app/generated/prisma/client";
 import { GraphQLError } from "graphql/error";
-import { defineAbilityForStats } from "@/lib/casl/abilities/stats/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 
 export const statQueries = {
   ticketStatsByDepartment: async (
@@ -12,7 +12,7 @@ export const statQueries = {
     args: { department?: Department }
   ) => {
     const session = await requireSession();
-    const ability = defineAbilityForStats(session);
+    const ability = defineAbility(session);
     const prisma = await getPrisma();
 
     if (ability.cannot("read", "TicketStats")) {

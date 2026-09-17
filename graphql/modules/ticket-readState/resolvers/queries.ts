@@ -1,15 +1,13 @@
 import { getPrisma } from "@/lib/prisma/index";
 import { Prisma } from "@/app/generated/prisma/client";
 import { requireSession } from "@/lib/auth/session";
-import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
-import { defineAbilityForTicketNotification } from "@/lib/casl/abilities/ticket-notification/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import { accessibleBy } from "@casl/prisma";
 
 export const ticketReadStateQueries = {
     unreadTicketMessages: async () => {
         const session = await requireSession();
-        const ability = defineAbilityForTicket(session);
-        const notificationAbility = defineAbilityForTicketNotification(session);
+        const ability = defineAbility(session);
         const prisma = await getPrisma();
 
 
@@ -22,7 +20,7 @@ export const ticketReadStateQueries = {
         // un ulteriore filtro: ricevono notifiche solo per i ticket che:
         // - hanno creato loro stessi
         // - oppure per i quali hanno attivato una subscription
-        const canFilterBySubscription = notificationAbility.can(
+        const canFilterBySubscription = ability.can(
             "read",
             "TicketNotification"
         );

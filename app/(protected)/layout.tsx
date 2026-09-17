@@ -4,10 +4,8 @@ import { redirect } from "next/navigation";
 import { getPrisma } from "@/lib/prisma";
 import Navbar from "@/components/navbar";
 import { buildNavLinks } from "@/components/nav-links";
-import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
 import { AbilityProvider } from "@/lib/casl/abilityContext";
-import { defineAbilityForUserManagement } from "@/lib/casl/abilities/user/rules";
-import { UserManagementAbilityProvider } from "@/lib/casl/userManagementAbilityContext";
+import { defineAbility } from "@/lib/casl/defineAbility";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
     const session = await getSession();
@@ -21,17 +19,14 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     });
     if (!user) redirect("/");
 
-    const ability = defineAbilityForTicket(session);
-    const userManagementAbility = defineAbilityForUserManagement(session);
+    const ability = defineAbility(session);
     const navLinks = buildNavLinks(session);
 
     return (
         <>
             <Navbar links={navLinks} />
             <AbilityProvider initialRules={ability.rules}>
-                <UserManagementAbilityProvider initialRules={userManagementAbility.rules}>
-                    {children}
-                </UserManagementAbilityProvider>
+                {children}
             </AbilityProvider>
         </>
     );

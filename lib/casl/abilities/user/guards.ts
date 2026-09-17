@@ -1,6 +1,6 @@
 import { GraphQLError } from "graphql/error";
 import { subject } from "@casl/ability";
-import type { UserManagementAbility } from "./types";
+import type { AppAbility } from "@/lib/casl/defineAbility";
 import type { UserForAbility } from "./types";
 
 export function toUserSubject(user: UserForAbility) {
@@ -12,7 +12,7 @@ export function toUserSubject(user: UserForAbility) {
 }
 
 export function assertCanUpdateUserRole(
-  ability: UserManagementAbility,
+  ability: AppAbility,
   target: UserForAbility
 ): void {
   if (ability.cannot("updateRole", toUserSubject(target))) {
@@ -23,7 +23,7 @@ export function assertCanUpdateUserRole(
 }
 
 export function assertCanManageSpecialization(
-  ability: UserManagementAbility,
+  ability: AppAbility,
   target: UserForAbility
 ): void {
   if (ability.cannot("manageSpecialization", toUserSubject(target))) {

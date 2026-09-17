@@ -3,11 +3,8 @@ import DataObjectIcon from "@mui/icons-material/DataObject";
 import type { NavLinkItem } from "./types/navlink";
 import type { AccessTokenPayload } from "@/lib/auth/jwt";
 import type { TicketScope } from "@/graphql-generated/schema";
-import { defineAbilityForTicketScope } from "@/lib/casl/abilities/ticket-scope/rules";
 import { toTicketScopeSubject } from "@/lib/casl/abilities/ticket-scope/guards";
-import { defineAbilityForUserManagement } from "@/lib/casl/abilities/user/rules";
-import { defineAbilityForCategory } from "@/lib/casl/abilities/category/rules";
-import { defineAbilityForStats } from "@/lib/casl/abilities/stats/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 
 /**
  * Costruisce i link di navigazione visibili per la sessione corrente.
@@ -16,13 +13,10 @@ import { defineAbilityForStats } from "@/lib/casl/abilities/stats/rules";
  * le rispettive query, così non esistono elenchi di ruoli duplicati.
  */
 export function buildNavLinks(session: AccessTokenPayload): NavLinkItem[] {
-  const scopeAbility = defineAbilityForTicketScope(session);
-  const userAbility = defineAbilityForUserManagement(session);
-  const categoryAbility = defineAbilityForCategory(session);
-  const statsAbility = defineAbilityForStats(session);
+  const ability = defineAbility(session);
 
   const canSeeScope = (scope: TicketScope) =>
-    scopeAbility.can("read", toTicketScopeSubject(scope));
+    ability.can("read", toTicketScopeSubject(scope));
 
   const links: NavLinkItem[] = [
     { label: "Dashboard", href: "/dashboard", icon: <DataObjectIcon /> },
@@ -57,7 +51,7 @@ export function buildNavLinks(session: AccessTokenPayload): NavLinkItem[] {
     });
   }
 
-  if (userAbility.can("read", "User")) {
+  if (ability.can("read", "User")) {
     links.push({
       label: "Utenti e specializzazioni",
       href: "/userCategory",
@@ -65,7 +59,7 @@ export function buildNavLinks(session: AccessTokenPayload): NavLinkItem[] {
     });
   }
 
-  if (categoryAbility.can("manage", "TicketCategory")) {
+  if (ability.can("manage", "TicketCategory")) {
     links.push({
       label: "Categorie e accessi",
       href: "/categoryManagement",
@@ -95,7 +89,7 @@ export function buildNavLinks(session: AccessTokenPayload): NavLinkItem[] {
     });
   }
 
-  if (statsAbility.can("read", "TicketStats")) {
+  if (ability.can("read", "TicketStats")) {
     links.push({
       label: "Statistiche",
       href: "/stats",

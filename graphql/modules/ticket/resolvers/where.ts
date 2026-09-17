@@ -5,7 +5,7 @@ import { GraphQLError } from "graphql/error";
 import { AccessTokenPayload } from "@/lib/auth/jwt";
 import { FilterTicketSchema } from "@/lib/validators/ticket-detail.schema";
 import type { TicketScope, TicketSortField } from "@/graphql-generated/schema";
-import { defineAbilityForTicketScope } from "@/lib/casl/abilities/ticket-scope/rules";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanReadTicketScope } from "@/lib/casl/abilities/ticket-scope/guards";
 
 export const TICKET_SORT_FIELD_MAP: Record<TicketSortField, string> = {
@@ -174,7 +174,7 @@ export function buildScopeWhere(
   scope: TicketScope,
   session: AccessTokenPayload
 ): Prisma.TicketWhereInput {
-  const ability = defineAbilityForTicketScope(session);
+  const ability = defineAbility(session);
   assertCanReadTicketScope(ability, scope);
 
   switch (scope) {
