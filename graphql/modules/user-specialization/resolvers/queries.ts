@@ -2,6 +2,7 @@ import { getPrisma } from "@/lib/prisma/index";
 import { Department } from "@/app/generated/prisma/enums";
 import { getSession } from "@/lib/auth/session";
 import { Prisma } from "@/app/generated/prisma/client";
+import { defineAbilityForUserManagement } from "@/lib/casl/abilities/user/rules";
 
 
 export const userSpecQueries = {
@@ -17,7 +18,8 @@ export const userSpecQueries = {
         const targetUserId = args.userId ?? session.userId;
 
         const isSelf = targetUserId === session.userId;
-        if (!isSelf && session.role !== "ADMIN") return [];
+        const ability = defineAbilityForUserManagement(session);
+        if (!isSelf && ability.cannot("manageSpecialization", "User")) return [];
 
         const targetRole = isSelf
             ? session.role

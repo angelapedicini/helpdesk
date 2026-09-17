@@ -26,15 +26,9 @@ import { isTicketOverdue } from "@/lib/ticket/expired-status";
 import EnhancedTable from "@/components/table";
 import { createTicketHeadCells } from "@/app/(protected)/tickets/_components/column.def";
 import TicketRowActions from "@/app/(protected)/tickets/_components/actions";
+import { TICKET_SCOPE_CONFIG } from "@/components/enums/ticket-scope.config";
 
 const PAGE_SIZE = 20;
-
-const SCOPE_TITLES: Record<TicketScope, string> = {
-    MINE: "I miei ticket",
-    ALL: "Tutti i ticket",
-    DEPARTMENT: "Ticket del dipartimento",
-    ASSIGNED_TO_ME: "Ticket assegnati a me",
-};
 
 const VALID_SCOPES: TicketScope[] = ["ALL", "MINE", "DEPARTMENT", "ASSIGNED_TO_ME"];
 
@@ -47,7 +41,7 @@ export default function TicketsPage() {
         ? (scopeParam as TicketScope)
         : "MINE";
 
-    const title = SCOPE_TITLES[scope];
+    const title = TICKET_SCOPE_CONFIG[scope].label;
 
     // --------------------------------
     // FILTRI

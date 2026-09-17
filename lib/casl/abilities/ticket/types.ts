@@ -1,7 +1,7 @@
 import type { PrismaAbility, Subjects as PrismaSubjects } from "@casl/prisma";
 import type { Ticket } from "@/app/generated/prisma/client";
 
-export type TicketActions = "create" | "read" | "update" | "delete";
+export type TicketActions = "create" | "read" | "update" | "delete" | "browseAssignees";
 
 // Solo i campi che compaiono nelle condizioni di defineAbilityForTicket.
 // Un Ticket Prisma reale (backend) soddisfa questo tipo per costruzione (è un superset).

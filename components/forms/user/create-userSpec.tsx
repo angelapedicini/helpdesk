@@ -61,7 +61,7 @@ export default function AddUserSpecializationForm({
         context: {
             successMessage: "Specializzazione aggiunta con successo.",
         },
-        refetchQueries: ["UsersByDepartment"],
+        refetchQueries: ["UsersManagement"],
         awaitRefetchQueries: true,
     });
 

@@ -153,6 +153,14 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
   // ------------------------------------------------------------
 
   if (user.role === "ADMIN") {
+    // L'admin può sfogliare l'elenco completo dei tecnici del proprio
+    // dipartimento (invece della ricerca testuale) quando il ticket è OPEN:
+    // è una capability di presentazione, non un permesso di modifica.
+    can("browseAssignees", "Ticket", {
+      ticketDepartment: user.department,
+      status: "OPEN",
+    });
+
     // L'admin può modificare l'assegnatario dei ticket
     // appartenenti al proprio dipartimento, finché sono
     // OPEN o ASSIGNED.

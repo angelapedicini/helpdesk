@@ -16,9 +16,10 @@ import { TicketPriority } from "@/lib/validators/enums.schema";
 import { CREATE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
 import { AppSelect } from "../inputs/select-input";
 import { useRouter } from "next/navigation";
-import { ME_QUERY } from "@/apollo-client/queries/user/me";
 import { SOLE_SPECIALIST_CATEGORY_IDS } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
 import { SpecificFieldInput } from "../inputs/specific-field-input";
+import { useAbility } from "@/lib/casl/abilityContext";
+import { toTicketDepartmentSubject } from "@/lib/casl/abilities/ticket/guards";
 
 
 type TicketDetailFormProps = {
@@ -31,7 +32,7 @@ type TicketDetailFormProps = {
 
 export default function CreateTicket({ category, department, onSubmit }: TicketDetailFormProps) {
     const router = useRouter();
-    const { data: meData } = useQuery(ME_QUERY);
+    const ability = useAbility();
 
     const {
         register,
@@ -64,8 +65,16 @@ export default function CreateTicket({ category, department, onSubmit }: TicketD
         color: TICKET_PRIORITY_CONFIG[id].color,
     }));
 
+    // Mostriamo il suggerimento di auto-assegnazione solo quando l'utente
+    // può creare un ticket assegnandolo a sé stesso in questo dipartimento
+    // (regola CASL: technician nel proprio dipartimento).
     const canSeeSoleSpecialistHint =
-        meData?.me?.role === "TECHNICIAN" && meData?.me.department === department;
+        !!department &&
+        ability.can(
+            "create",
+            toTicketDepartmentSubject(department),
+            "assignedToId"
+        );
 
     // Una sola chiamata per l'intero form, non una per ogni categoria selezionata.
     const { data: soleCategoriesData } = useQuery(

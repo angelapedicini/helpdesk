@@ -1,22 +1,40 @@
 import { getPrisma } from "@/lib/prisma/index";
 
-import { requireAdmin } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
+import { defineAbilityForUserManagement } from "@/lib/casl/abilities/user/rules";
+import { assertCanManageSpecialization } from "@/lib/casl/abilities/user/guards";
+
+type PrismaClient = Awaited<ReturnType<typeof getPrisma>>;
+
+async function assertTargetCanBeManaged(prisma: PrismaClient, userId: number) {
+  const session = await requireSession();
+  const ability = defineAbilityForUserManagement(session);
+
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true },
+  });
+
+  if (!target) {
+    throw new GraphQLError("User not found", {
+      extensions: { code: "NOT_FOUND" },
+    });
+  }
+
+  assertCanManageSpecialization(ability, { id: target.id, role: target.role });
+}
 
 export const userSpecMutations = {
   removeUserSpecialization: async (
     _parent: unknown,
     args: { input: { userId: number; categoryId: number } }
   ) => {
-    const session = await requireAdmin();
-    if (!session) {
-      throw new GraphQLError("Unauthorized", {
-        extensions: { code: "FORBIDDEN" },
-      });
-    }
     const prisma = await getPrisma();
 
     const { userId, categoryId } = args.input;
+
+    await assertTargetCanBeManaged(prisma, userId);
 
     try {
       await prisma.userSpecialization.delete({
@@ -37,16 +55,11 @@ export const userSpecMutations = {
     _parent: unknown,
     args: { input: { userId: number; categoryId: number } }
   ) => {
-    const session = await requireAdmin();
-    if (!session) {
-      throw new GraphQLError("Unauthorized", {
-        extensions: { code: "FORBIDDEN" },
-      });
-    }
     const prisma = await getPrisma();
 
-
     const { userId, categoryId } = args.input;
+
+    await assertTargetCanBeManaged(prisma, userId);
 
     try {
       const specialization = await prisma.userSpecialization.create({

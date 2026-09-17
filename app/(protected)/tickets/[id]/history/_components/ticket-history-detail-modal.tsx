@@ -10,6 +10,8 @@ import {
 
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
+import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
+import { Department } from "@/lib/validators/enums.schema";
 import { TicketHistoryRow } from "../column.def";
 import type { ChangedFields } from "@/lib/ticket/diff";
 import { toDatetimeLocalValue } from "@/lib/helper/date-helper";
@@ -21,6 +23,11 @@ function statusLabel(status: TicketStatus) {
 
 function priorityLabel(priority: TicketPriority) {
     return TICKET_PRIORITY_CONFIG[priority].label;
+}
+
+function departmentLabel(department: string | null | undefined): string {
+    if (!department) return "-";
+    return DEPARTMENT_CONFIG[department as Department]?.label ?? department;
 }
 
 function userLabel(user: { firstName: string; lastName: string } | null | undefined) {
@@ -151,7 +158,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Dipartimento origine"
-                    value={displayValue(row.sourceDepartmentForUser)}
+                    value={departmentLabel(row.sourceDepartmentForUser)}
                     fullWidth
                     disabled
                     sx={fieldSx("sourceDepartmentForUser")}
@@ -159,7 +166,7 @@ export default function TicketHistoryDetailModal({
 
                 <TextField
                     label="Dipartimento"
-                    value={displayValue(row.ticketDepartment)}
+                    value={departmentLabel(row.ticketDepartment)}
                     fullWidth
                     disabled
                     sx={fieldSx("ticketDepartment")}

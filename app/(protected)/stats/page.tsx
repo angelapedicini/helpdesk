@@ -25,7 +25,7 @@ import {
     departmentStatsHeadCells,
     DepartmentStatsRow,
 } from "./_components/department-stats-columns";
-import { ME_QUERY } from "@/apollo-client/queries/user/me";
+import { useStatsPermissions } from "@/lib/casl/abilities/stats/presentation";
 
 type ViewMode = "table" | "chart";
 
@@ -60,16 +60,15 @@ function ViewToggle({
 
 export default function TicketStatsPage() {
     const [view, setView] = useState<ViewMode>("table");
-    const { data: meData } = useQuery(ME_QUERY);
-    const isAdmin = meData?.me?.role === "ADMIN";
+    const { canViewAllDepartments } = useStatsPermissions();
 
-    const viewLabels: Record<string, string> = isAdmin
-        ? { stati: "Stati per dipartimento" }
-        : {
+    const viewLabels: Record<string, string> = canViewAllDepartments
+        ? {
             totali: "Totali per dipartimento",
             media: "Media per dipartimento",
             stati: "Stati per dipartimento",
-        };
+        }
+        : { stati: "Stati per dipartimento" };
 
     const {
         data,

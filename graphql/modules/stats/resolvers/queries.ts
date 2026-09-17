@@ -3,6 +3,8 @@ import { getPrisma } from "@/lib/prisma/index";
 import { Department } from "@/app/generated/prisma/enums";
 import { requireSession } from "@/lib/auth/session";
 import { Prisma } from "@/app/generated/prisma/client";
+import { GraphQLError } from "graphql/error";
+import { defineAbilityForStats } from "@/lib/casl/abilities/stats/rules";
 
 export const statQueries = {
   ticketStatsByDepartment: async (
@@ -10,10 +12,20 @@ export const statQueries = {
     args: { department?: Department }
   ) => {
     const session = await requireSession();
+    const ability = defineAbilityForStats(session);
     const prisma = await getPrisma();
 
-    const departmentFilter =
-      session.role === "ADMIN" ? session.department : args.department;
+    if (ability.cannot("read", "TicketStats")) {
+      throw new GraphQLError("Accesso negato", {
+        extensions: { code: "FORBIDDEN" },
+      });
+    }
+
+    // SYSTEM_ADMIN (readAll) può filtrare su qualsiasi dipartimento;
+    // ADMIN è vincolato al proprio dipartimento.
+    const departmentFilter = ability.can("readAll", "TicketStats")
+      ? args.department
+      : session.department;
 
     const rows = await prisma.$queryRaw<
     {

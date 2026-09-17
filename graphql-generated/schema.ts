@@ -24,7 +24,13 @@ export const BudgetType = {
 } as const;
 
 export type BudgetType = typeof BudgetType[keyof typeof BudgetType];
-export type CreateTicketCategory = {
+export type CreateTicketCategoryAccessInput = {
+  categoryId: Scalars['Int']['input'];
+  requesterDepartment?: InputMaybe<Department>;
+  requesterMinRole: Role;
+};
+
+export type CreateTicketCategoryInput = {
   department: Department;
   name: Scalars['String']['input'];
   specificField: TicketSpecificField;
@@ -94,10 +100,14 @@ export type Mutation = {
   _empty?: Maybe<Scalars['String']['output']>;
   addUserSpecialization: UserSpecializationTot;
   createTicket: Ticket;
+  createTicketCategory: TicketCategory;
+  createTicketCategoryAccess: TicketCategoryAccess;
   createTicketMessage: TicketMessage;
   createTicketNotificationSubscription: TicketAdminNotificationSubscription;
   createUser: User;
   deleteTicket: Ticket;
+  deleteTicketCategory: TicketCategory;
+  deleteTicketCategoryAccess: TicketCategoryAccess;
   deleteTicketMessage: TicketMessage;
   deleteTicketNotificationSubscription: TicketAdminNotificationSubscription;
   login: LoginPayload;
@@ -105,8 +115,12 @@ export type Mutation = {
   markTicketMessagesRead?: Maybe<TicketReadState>;
   refreshToken: RefreshPayload;
   removeUserSpecialization: Scalars['Boolean']['output'];
+  restoreTicketCategory: TicketCategory;
+  restoreTicketCategoryAccess: TicketCategoryAccess;
   startDemo: StartDemoResult;
   updateTicket: Ticket;
+  updateTicketCategory: TicketCategory;
+  updateUserRole: User;
 };
 
 
@@ -117,6 +131,16 @@ export type MutationAddUserSpecializationArgs = {
 
 export type MutationCreateTicketArgs = {
   input: TicketInput;
+};
+
+
+export type MutationCreateTicketCategoryArgs = {
+  input: CreateTicketCategoryInput;
+};
+
+
+export type MutationCreateTicketCategoryAccessArgs = {
+  input: CreateTicketCategoryAccessInput;
 };
 
 
@@ -136,6 +160,16 @@ export type MutationCreateUserArgs = {
 
 
 export type MutationDeleteTicketArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationDeleteTicketCategoryArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationDeleteTicketCategoryAccessArgs = {
   id: Scalars['Int']['input'];
 };
 
@@ -165,9 +199,30 @@ export type MutationRemoveUserSpecializationArgs = {
 };
 
 
+export type MutationRestoreTicketCategoryArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationRestoreTicketCategoryAccessArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
 export type MutationUpdateTicketArgs = {
   id: Scalars['Int']['input'];
   input: TicketUpdateInput;
+};
+
+
+export type MutationUpdateTicketCategoryArgs = {
+  id: Scalars['Int']['input'];
+  input: UpdateTicketCategoryInput;
+};
+
+
+export type MutationUpdateUserRoleArgs = {
+  input: UpdateUserRoleInput;
 };
 
 export type PageInfo = {
@@ -180,6 +235,7 @@ export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
   categories: Array<TicketCategory>;
+  categoryAccesses: Array<TicketCategoryAccess>;
   categoryById?: Maybe<TicketCategory>;
   deletedTickets: TicketHistoryConnection;
   me?: Maybe<User>;
@@ -194,13 +250,17 @@ export type Query = {
   tickets: TicketConnection;
   unreadTicketMessages: Array<TicketUnreadCount>;
   usersByDepForLogin: Array<UserLoginInfo>;
-  usersByDepartment: Array<UserDepartmentInfo>;
   usersForCategoryId: Array<UserBasicInfo>;
 };
 
 
 export type QueryCategoriesArgs = {
   department?: InputMaybe<Department>;
+};
+
+
+export type QueryCategoryAccessesArgs = {
+  categoryId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -225,9 +285,11 @@ export type QueryMessagesArgs = {
 
 
 export type QuerySearchUsersArgs = {
+  categoryId?: InputMaybe<Scalars['Int']['input']>;
   department?: InputMaybe<Department>;
   role?: InputMaybe<Role>;
   search?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -273,13 +335,6 @@ export type QueryTicketsArgs = {
 
 export type QueryUsersByDepForLoginArgs = {
   department: Department;
-};
-
-
-export type QueryUsersByDepartmentArgs = {
-  categoryId?: InputMaybe<Scalars['Int']['input']>;
-  role?: InputMaybe<Role>;
-  userId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -362,9 +417,19 @@ export type TicketAdminNotificationSubscription = {
 export type TicketCategory = {
   __typename?: 'TicketCategory';
   department: Department;
+  disabled?: Maybe<Scalars['Boolean']['output']>;
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   specificField?: Maybe<TicketSpecificField>;
+};
+
+export type TicketCategoryAccess = {
+  __typename?: 'TicketCategoryAccess';
+  categoryId: Scalars['Int']['output'];
+  disabled?: Maybe<Scalars['Boolean']['output']>;
+  id: Scalars['Int']['output'];
+  requesterDepartment?: Maybe<Department>;
+  requesterMinRole: Role;
 };
 
 export type TicketConnection = {
@@ -611,6 +676,16 @@ export type TicketUpdateInput = {
   title?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateTicketCategoryInput = {
+  name?: InputMaybe<Scalars['String']['input']>;
+  specificField?: InputMaybe<TicketSpecificField>;
+};
+
+export type UpdateUserRoleInput = {
+  role: Role;
+  userId: Scalars['Int']['input'];
+};
+
 export type User = {
   __typename?: 'User';
   department: Department;
@@ -619,6 +694,7 @@ export type User = {
   id: Scalars['Int']['output'];
   lastName: Scalars['String']['output'];
   role: Role;
+  specializations: Array<TicketCategory>;
 };
 
 export type UserBasicInfo = {
@@ -626,15 +702,6 @@ export type UserBasicInfo = {
   firstName: Scalars['String']['output'];
   id: Scalars['Int']['output'];
   lastName: Scalars['String']['output'];
-};
-
-export type UserDepartmentInfo = {
-  __typename?: 'UserDepartmentInfo';
-  firstName: Scalars['String']['output'];
-  id: Scalars['Int']['output'];
-  lastName: Scalars['String']['output'];
-  role: Role;
-  specializations: Array<TicketCategory>;
 };
 
 export type UserLoginInfo = {

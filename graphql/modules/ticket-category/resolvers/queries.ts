@@ -1,7 +1,8 @@
 import { getPrisma } from "@/lib/prisma/index";
-import { getSession } from "@/lib/auth/session";
+import { getSession, requireSession } from "@/lib/auth/session";
 import { Department } from "@/app/generated/prisma/enums";
-import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
+import { getAllowedCategories, assertCanManageTicketCategoryAccess } from "@/lib/casl/abilities/category/guards";
+import { defineAbilityForCategory } from "@/lib/casl/abilities/category/rules";
 
 export const categoryQueries = {
   categories: async (
@@ -12,8 +13,6 @@ export const categoryQueries = {
     if (!session) return [];
     const prisma = await getPrisma();
 
-
-    // const prisma = await getPrismaClient();
 
     const categories = await getAllowedCategories(prisma, {
       department: session.department,
@@ -50,7 +49,29 @@ export const categoryQueries = {
 
     return prisma.ticketCategory.findUnique({
       where: { id: args.id },
-      select: { id: true, name: true, department: true, specificField: true },
+      select: { id: true, name: true, department: true, specificField: true, disabled: true },
+    });
+  },
+
+  categoryAccesses: async (
+    _parent: unknown,
+    args: { categoryId?: number }
+  ) => {
+    const session = await requireSession();
+    const ability = defineAbilityForCategory(session);
+    assertCanManageTicketCategoryAccess(ability, "read");
+    const prisma = await getPrisma();
+
+    return prisma.ticketCategoryAccess.findMany({
+      where: args.categoryId ? { categoryId: args.categoryId } : {},
+      select: {
+        id: true,
+        categoryId: true,
+        disabled: true,
+        requesterDepartment: true,
+        requesterMinRole: true,
+      },
+      orderBy: [{ categoryId: "asc" }, { id: "asc" }],
     });
   },
 };

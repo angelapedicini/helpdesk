@@ -8,8 +8,9 @@ import type { TicketHistoryFieldsFragment } from "@/graphql-generated/graphql";
 
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
+import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
 import { HeadCell } from "@/components/table";
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 
 export type DeletedTicketRow = TicketHistoryFieldsFragment;
 
@@ -60,6 +61,19 @@ export function createDeletedTicketHeadCells(): HeadCell<DeletedTicketRow>[] {
             id: "ticketDepartment",
             label: "Dipartimento",
             sortable: false,
+            render: (row) => {
+                const config = DEPARTMENT_CONFIG[row.ticketDepartment];
+                if (!config) return row.ticketDepartment;
+                const Icon = config.icon;
+                return (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Icon sx={{ color: config.color, fontSize: 20 }} />
+                        <Typography component="span" sx={{ color: config.color }}>
+                            {config.label}
+                        </Typography>
+                    </Box>
+                );
+            },
         },
 
         {

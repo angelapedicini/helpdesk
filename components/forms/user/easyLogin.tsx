@@ -22,6 +22,7 @@ import { DepartmentEnum } from "@/lib/validators/enums.schema";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { LOGIN } from "@/apollo-client/queries/auth/login/login.mutation";
+import { ROLE_CONFIG } from "@/components/enums/role.config";
 
 interface EasyLoginFormProps {
     defaultDepartment?: Department;
@@ -171,7 +172,7 @@ export default function EasyLoginForm({ defaultDepartment, defaultEmail }: EasyL
                             >
                                 {userOptions.map((u) => (
                                     <MenuItem key={u.id} value={u.email}>
-                                        {u.firstName} {u.lastName} — {u.role}
+                                        {u.firstName} {u.lastName} — {ROLE_CONFIG[u.role].label}
                                     </MenuItem>
                                 ))}
                             </Select>

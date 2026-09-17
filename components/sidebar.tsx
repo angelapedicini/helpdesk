@@ -10,26 +10,20 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import { NavLinkItem } from "./types/navlink";
-import { Role } from "@/lib/validators/enums.schema";
 
 
 type NavSidebarProps = {
   open: boolean;
   onClose: () => void;
   links: NavLinkItem[];
-  userRole: Role
 };
 
-export default function NavSidebar({ open, onClose, links, userRole }: NavSidebarProps) {
-  const visibleLinks = links.filter(
-    (link) => !link.roles || link.roles.includes(userRole)
-  );
-
+export default function NavSidebar({ open, onClose, links }: NavSidebarProps) {
   return (
     <Drawer open={open} onClose={onClose}>
       <Box sx={{ width: 250 }} role="presentation" onClick={onClose}>
         <List>
-          {visibleLinks.map((link) => (
+          {links.map((link) => (
             <ListItem key={link.href} disablePadding>
               <ListItemButton component={Link} href={link.href}>
                 <ListItemIcon>{link.icon}</ListItemIcon>

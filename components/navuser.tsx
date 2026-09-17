@@ -12,6 +12,7 @@ import Divider from "@mui/material/Divider";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
 import { LOGOUT } from "@/apollo-client/queries/auth/logout/logout.mutation";
+import { ROLE_CONFIG } from "@/components/enums/role.config";
 
 export default function NavUser() {
   const { data, loading } = useQuery(ME_QUERY);
@@ -43,7 +44,7 @@ export default function NavUser() {
         <Typography variant="body2" className="hidden md:block">
           {user.firstName} {user.lastName}
         </Typography>
-        <Chip label={user.role} size="small" color="primary" />
+        <Chip label={ROLE_CONFIG[user.role].label} size="small" color="primary" />
         <IconButton color="inherit" size="small">
           <AccountCircleIcon />
         </IconButton>

@@ -1,16 +1,9 @@
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import {
-    Box,
-    Button,
-    FormControlLabel,
-    Checkbox,
-} from "@mui/material";
-
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { Box, Button } from "@mui/material";
 
 import { useLazyQuery, useQuery } from "@apollo/client/react";
 
@@ -26,27 +19,28 @@ import { useResetRegistry } from "../hooks/use-reset-registry";
 
 import { FilterUserSpecInput, FilterUserSpecOutput, FilterUserSpecSchema } from "@/lib/validators/userSpec.schema";
 import { ROLE_CONFIG } from "@/components/enums/role.config";
-import { Role } from "@/lib/validators/enums.schema";
-import { ME_QUERY } from "@/apollo-client/queries/user/me";
+import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
+import { Department, Role } from "@/lib/validators/enums.schema";
 
 
 type FilterUserSpecFormProps = {
     onApply: (filter: FilterUserSpecOutput) => void;
     onReset?: () => void;
+    showDepartment?: boolean;
 };
 
 export default function FilterUserSpecForm({
     onApply,
     onReset,
+    showDepartment = false,
 }: FilterUserSpecFormProps) {
     const { registerReset, resetAll } = useResetRegistry();
-      const { data: meData } = useQuery(ME_QUERY);
 
     const {
         control,
         handleSubmit,
         reset,
-        formState: { errors, isSubmitting },
+        formState: { isSubmitting },
     } = useForm<FilterUserSpecInput, unknown, FilterUserSpecOutput>({
         resolver: zodResolver(FilterUserSpecSchema),
     });
@@ -60,7 +54,6 @@ export default function FilterUserSpecForm({
         const { data } = await searchUsers({
             variables: {
                 search,
-                department: meData?.me?.department,
             },
         });
 
@@ -85,6 +78,15 @@ export default function FilterUserSpecForm({
         label: ROLE_CONFIG[id].label,
         icon: ROLE_CONFIG[id].icon,
         color: ROLE_CONFIG[id].color,
+    }));
+
+    const departmentOptions = (
+        Object.keys(DEPARTMENT_CONFIG) as Department[]
+    ).map((id) => ({
+        id,
+        label: DEPARTMENT_CONFIG[id].label,
+        icon: DEPARTMENT_CONFIG[id].icon,
+        color: DEPARTMENT_CONFIG[id].color,
     }));
 
 
@@ -139,6 +141,15 @@ export default function FilterUserSpecForm({
                     control={control}
                     options={roleOptions}
                 />
+
+                {showDepartment && (
+                    <AppSelect
+                        name="department"
+                        label="Dipartimento"
+                        control={control}
+                        options={departmentOptions}
+                    />
+                )}
 
                 <Box
                     sx={{

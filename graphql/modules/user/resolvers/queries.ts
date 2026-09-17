@@ -1,7 +1,9 @@
 import { getPrisma } from "@/lib/prisma/index";
-import { getSession, requireAdmin } from "@/lib/auth/session";
+import { getSession, requireSession } from "@/lib/auth/session";
 import { Department, Role } from "@/app/generated/prisma/enums";
 import { Prisma } from "@/app/generated/prisma/client";
+import { accessibleBy } from "@casl/prisma";
+import { defineAbilityForUserManagement } from "@/lib/casl/abilities/user/rules";
 
 export const userQueries = {
   me: async () => {
@@ -25,19 +27,39 @@ export const userQueries = {
 
   searchUsers: async (
     _parent: unknown,
-    args: { search?: string; role?: Role; department?: Department }
+    args: {
+      search?: string;
+      userId?: number;
+      role?: Role;
+      department?: Department;
+      categoryId?: number;
+    }
   ) => {
+    const session = await requireSession();
+    const ability = defineAbilityForUserManagement(session);
     const prisma = await getPrisma();
 
-    const { search, role, department } = args;
+    const { search, userId, role, department, categoryId } = args;
 
-    const where: Prisma.UserWhereInput = {};
+    // Visibilità per ruolo centralizzata nell'ability "read User":
+    // - SYSTEM_ADMIN vede tutti gli utenti
+    // - ADMIN vede solo il proprio dipartimento
+    // - TECHNICIAN vede solo il proprio record
+    // I filtri richiesti vengono comunque combinati in AND con la
+    // visibilità, quindi non possono allargare ciò che l'utente può vedere.
+    const where: Prisma.UserWhereInput = {
+      AND: [accessibleBy(ability, "read").ofType("User")],
+    };
 
     if (search) {
       where.OR = [
         { firstName: { contains: search, mode: "insensitive" } },
         { lastName: { contains: search, mode: "insensitive" } },
       ];
+    }
+
+    if (userId) {
+      where.id = userId;
     }
 
     if (role) {
@@ -48,50 +70,8 @@ export const userQueries = {
       where.department = department;
     }
 
-    return prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        role: true,
-        department: true,
-      },
-    });
-  },
-
-  usersByDepartment: async (
-    _parent: unknown,
-    args: { userId?: number; role?: Role; categoryId?: number }
-  ) => {
-    const session = await getSession();
-    if (!session) return [];
-    const prisma = await getPrisma();
-
-
-    if (session.role !== "ADMIN" && session.role !== "TECHNICIAN") {
-      return [];
-    }
-
-    const { userId, role, categoryId } = args;
-
-    const isAdmin = session.role === "ADMIN";
-
-    const where: Prisma.UserWhereInput = {
-      department: session.department,
-      ...(categoryId
-        ? { specializations: { some: { categoryId } } }
-        : {}),
-    };
-
-    if (isAdmin) {
-      // ADMIN: vede tutti gli utenti del dipartimento, filtrabili
-      if (userId) where.id = userId;
-      if (role) where.role = role;
-    } else {
-      // TECHNICIAN: vede solo il proprio record
-      where.id = session.userId;
+    if (categoryId) {
+      where.specializations = { some: { categoryId } };
     }
 
     const users = await prisma.user.findMany({
@@ -100,7 +80,9 @@ export const userQueries = {
         id: true,
         firstName: true,
         lastName: true,
+        email: true,
         role: true,
+        department: true,
         specializations: {
           select: {
             category: {

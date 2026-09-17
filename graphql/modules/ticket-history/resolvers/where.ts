@@ -5,6 +5,8 @@ import { GraphQLError } from "graphql/error";
 import { AccessTokenPayload } from "@/lib/auth/jwt";
 import { FilterTicketSchema } from "@/lib/validators/ticket-detail.schema";
 import type { TicketScope } from "@/graphql-generated/schema";
+import { defineAbilityForTicketScope } from "@/lib/casl/abilities/ticket-scope/rules";
+import { assertCanReadTicketScope } from "@/lib/casl/abilities/ticket-scope/guards";
 
 export function buildTicketWhere(
   rawFilter: unknown
@@ -111,6 +113,9 @@ export function buildHistoryScopeWhere(
   scope: TicketScope,
   session: AccessTokenPayload
 ): Prisma.TicketHistoryWhereInput {
+  const ability = defineAbilityForTicketScope(session);
+  assertCanReadTicketScope(ability, scope);
+
   switch (scope) {
     case "MINE":
       return {
@@ -118,37 +123,16 @@ export function buildHistoryScopeWhere(
       };
 
     case "ASSIGNED_TO_ME":
-      if (session.role !== "TECHNICIAN") {
-        throw new GraphQLError(
-          "View not available to role",
-          { extensions: { code: "FORBIDDEN" } }
-        );
-      }
-
       return {
         assignedToId: session.userId,
       };
 
     case "DEPARTMENT":
-      if (session.role !== "ADMIN") {
-        throw new GraphQLError(
-          "View not available to role",
-          { extensions: { code: "FORBIDDEN" } }
-        );
-      }
-
       return {
         ticketDepartment: session.department,
       };
 
     case "ALL":
-      if (session.role !== "SYSTEM_ADMIN") {
-        throw new GraphQLError(
-          "View not available to role",
-          { extensions: { code: "FORBIDDEN" } }
-        );
-      }
-
       return {};
 
     default: {

@@ -13,7 +13,6 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
-import DataObjectIcon from "@mui/icons-material/DataObject";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
 import { UNREAD_TICKET_MESSAGES } from "@/apollo-client/queries/ticket-read-state/ticket-read-state.queries";
 import { NavLinkItem } from "./types/navlink";
@@ -23,67 +22,7 @@ import EasyLoginForm from "./forms/user/easyLogin";
 import { setNavigate } from "@/apollo-client/apollo-links/navigation";
 
 
-const NAV_LINKS: NavLinkItem[] = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: <DataObjectIcon />,
-  },
-  {
-    label: "I miei ticket",
-    href: "/tickets?scope=mine",
-    icon: <DataObjectIcon />,
-  },
-  {
-    label: "Ticket assegnati a me",
-    href: "/tickets?scope=assigned_to_me",
-    icon: <DataObjectIcon />,
-    roles: ["TECHNICIAN"],
-  },
-  {
-    label: "Ticket del dipartimento",
-    href: "/tickets?scope=department",
-    icon: <DataObjectIcon />,
-    roles: ["ADMIN"],
-  },
-  {
-    label: "Tutti i ticket",
-    href: "/tickets?scope=all",
-    icon: <DataObjectIcon />,
-    roles: ["SYSTEM_ADMIN"],
-  },
-  {
-    label: "Specializzazioni",
-    href: "/userCategory",
-    icon: <DataObjectIcon />,
-    roles: ["ADMIN", "TECHNICIAN", "SYSTEM_ADMIN"],
-  },
-  {
-    label: "I miei ticket cancellati",
-    href: "/tickets-deleted?scope=mine",
-    icon: <DataObjectIcon />,
-  },
-  {
-    label: "Ticket assegnati a me cancellati",
-    href: "/tickets-deleted?scope=assigned_to_me",
-    icon: <DataObjectIcon />,
-    roles: ["TECHNICIAN"],
-  },
-  {
-    label: "Ticket del dipartimento cancellati",
-    href: "/tickets-deleted?scope=department",
-    icon: <DataObjectIcon />,
-    roles: ["ADMIN"],
-  },
-  {
-    label: "Statistiche",
-    href: "/stats",
-    icon: <DataObjectIcon />,
-    roles: ["ADMIN", "SYSTEM_ADMIN"],
-  },
-];
-
-export default function Navbar() {
+export default function Navbar({ links }: { links: NavLinkItem[] }) {
   const router = useRouter();
   const { data, loading } = useQuery(ME_QUERY);
   const { data: unreadData } = useQuery(UNREAD_TICKET_MESSAGES);
@@ -170,8 +109,7 @@ export default function Navbar() {
       <NavSidebar
         open={open}
         onClose={() => setOpen(false)}
-        links={NAV_LINKS}
-        userRole={user.role}
+        links={links}
       />
     </>
   );

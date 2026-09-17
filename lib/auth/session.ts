@@ -36,13 +36,3 @@ export async function requireSession(): Promise<AccessTokenPayload> {
   }
   return session;
 }
-
-export async function requireAdmin(): Promise<AccessTokenPayload> {
-  const session = await requireSession();
-  if (session.role !== "ADMIN") {
-    throw new GraphQLError("Accesso negato", {
-      extensions: { code: "FORBIDDEN" },
-    });
-  }
-  return session;
-}

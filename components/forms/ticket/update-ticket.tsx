@@ -41,7 +41,6 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
 import { useTicketAllowedStatuses, useTicketAssigneeBrowseMode, useTicketCanReopen, useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/presentation";
 import { SOLE_SPECIALIST_CATEGORY_IDS, USERS_SPEC_BY_CATID } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
-import { GET_USERS_BY_DEPARTMENT } from "@/apollo-client/queries/user/user-queries";
 import { computeDueDate, computeDueWorkDate } from "@/lib/ticket/dueDate";
 
 
@@ -149,15 +148,21 @@ export default function TicketDetailForm({
     const assigneeBrowseMode = useTicketAssigneeBrowseMode(ticket);
 
     const { data: deptUsersData, loading: loadingDeptUsers } = useQuery(
-        GET_USERS_BY_DEPARTMENT,
-        assigneeBrowseMode === "list"
-            ? { variables: { role: "TECHNICIAN", categoryId: ticket.category?.id } }
+        SEARCH_USERS,
+        assigneeBrowseMode === "list" && ticket.ticketDepartment
+            ? {
+                variables: {
+                    role: "TECHNICIAN",
+                    categoryId: ticket.category?.id,
+                    department: ticket.ticketDepartment,
+                },
+              }
             : skipToken
     );
 
     const deptUserOptions = useMemo(
         () =>
-            (deptUsersData?.usersByDepartment ?? [])
+            (deptUsersData?.searchUsers ?? [])
                 .filter((u): u is typeof u & { id: number } => u?.id != null)
                 .map((u) => ({
                     id: u.id,

@@ -12,6 +12,7 @@ import {
 
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
+import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
 import { HeadCell } from "@/components/table";
 
 type TicketHeadCellsOptions = {
@@ -78,7 +79,23 @@ export function createTicketHeadCells({
                 return Object.values(fields).filter(Boolean).join(" / ") || "-";
             },
         },
-        { id: "ticketDepartment", label: "Dipartimento" },
+        {
+            id: "ticketDepartment",
+            label: "Dipartimento",
+            render: (ticket) => {
+                const config = DEPARTMENT_CONFIG[ticket.ticketDepartment];
+                if (!config) return ticket.ticketDepartment;
+                const Icon = config.icon;
+                return (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Icon sx={{ color: config.color, fontSize: 20 }} />
+                        <Typography component="span" sx={{ color: config.color }}>
+                            {config.label}
+                        </Typography>
+                    </Box>
+                );
+            },
+        },
         {
             id: "dueFirstResponse",
             label: "Revisione iniziale entro",

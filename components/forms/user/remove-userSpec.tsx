@@ -36,7 +36,7 @@ export default function RemoveUserSpecializationForm({
         context: {
             successMessage: "Specializzazione rimossa con successo.",
         },
-        refetchQueries: ["UsersByDepartment"],
+        refetchQueries: ["UsersManagement"],
         awaitRefetchQueries: true,
     });
 

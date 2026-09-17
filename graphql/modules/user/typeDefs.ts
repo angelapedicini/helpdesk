@@ -6,6 +6,7 @@ export const userTypeDefs = `#graphql
     email: String!
     role: Role!
     department: Department!
+    specializations: [TicketCategory!]!
   }
 
   enum Role {
@@ -28,18 +29,10 @@ export const userTypeDefs = `#graphql
     user: User!
   }
 
-  type UserDepartmentInfo {
+  type UserBasicInfo {
     id: Int!
     firstName: String!
     lastName: String!
-    role: Role!
-    specializations: [TicketCategory!]!
-  }
-
-  type UserBasicInfo {
-  id: Int!
-  firstName: String!
-  lastName: String!
   }
 
     type UserLoginInfo {
@@ -52,8 +45,16 @@ export const userTypeDefs = `#graphql
 
   extend type Query {
     me: User
-    searchUsers(search: String, role: Role, department: Department): [User!]!
-    usersByDepartment(userId: Int, role: Role, categoryId: Int): [UserDepartmentInfo!]!
+    searchUsers(search: String, userId: Int, role: Role, department: Department, categoryId: Int): [User!]!
     usersByDepForLogin(department: Department!): [UserLoginInfo!]!
+  }
+
+  input UpdateUserRoleInput {
+    userId: Int!
+    role: Role!
+  }
+
+  extend type Mutation {
+    updateUserRole(input: UpdateUserRoleInput!): User!
   }
 `;

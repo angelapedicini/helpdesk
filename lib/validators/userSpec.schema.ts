@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { RoleEnum, TicketPrioritySchema } from "./enums.schema";
+import { DepartmentEnum, RoleEnum } from "./enums.schema";
 
 export const FilterUserSpecSchema = z.object({
   userId: z.coerce.number().int().positive("Utente non valido").optional(),
   role: RoleEnum.optional(),
+  department: DepartmentEnum.optional(),
   categoryId: z.coerce.number().int().positive("Categoria non valida").optional(),
 });
 

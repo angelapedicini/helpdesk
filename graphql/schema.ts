@@ -73,9 +73,13 @@ export const resolvers = {
     ...ticketMessageResolvers.Mutation,
     ...ticketReadStateResolvers.Mutation,
     ...ticketAdminNotificationResolvers.Mutation,
+    ...userResolvers.Mutation,
     ...demoResolvers.Mutation,
+    ...categoryResolvers.Mutation,
+    ...userResolvers.Mutation,
 
   },
-  Ticket: ticketResolvers.Ticket,
-  TicketSpecific: ticketResolvers.TicketSpecific,
+Ticket: ticketResolvers.Ticket,
+    TicketSpecific: ticketResolvers.TicketSpecific,
+    User: userResolvers.User,
 };

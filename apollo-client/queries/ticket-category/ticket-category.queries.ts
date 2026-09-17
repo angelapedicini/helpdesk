@@ -7,6 +7,7 @@ export const GET_CATEGORIES = graphql(`
       name
       department
       specificField
+      disabled
     }
   }
 `);
@@ -18,6 +19,19 @@ export const GET_CATEGORY_BY_ID = graphql(`
       name
       department
       specificField
+      disabled
+    }
+  }
+`);
+
+export const GET_CATEGORY_ACCESSES = graphql(`
+  query CategoryAccesses($categoryId: Int) {
+    categoryAccesses(categoryId: $categoryId) {
+      id
+      categoryId
+      disabled
+      requesterDepartment
+      requesterMinRole
     }
   }
 `);

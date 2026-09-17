@@ -12,21 +12,26 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import FiltersSidebar from "@/components/filters-sidebar";
 import { useFilterState } from "@/components/hooks/use-filter-state";
 import EnhancedTable from "@/components/table";
-import { GET_USERS_BY_DEPARTMENT } from "@/apollo-client/queries/user/user-queries";
-import { createUserDepartmentHeadCells, UserDepartmentRow } from "./column.def";
+import { GET_USERS_FOR_MANAGEMENT } from "@/apollo-client/queries/user/user-queries";
+import { createUserManagementHeadCells, UserManagementRow } from "./column.def";
 import { FilterUserSpecOutput } from "@/lib/validators/userSpec.schema";
 import FilterUserSpecForm from "@/components/forms/user/filter-userSpec";
 import { useModalState } from "@/components/hooks/use-modal-state";
-import ControlPointIcon from '@mui/icons-material/ControlPoint';
 import Modal from "@/components/modal";
 import AddUserSpecializationForm from "@/components/forms/user/create-userSpec";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
-import DeleteIcon from '@mui/icons-material/Delete';
 import RemoveUserSpecializationForm from "@/components/forms/user/remove-userSpec";
+import UpdateUserRoleForm from "@/components/forms/user/update-user-role-form";
+import { useUserManagementPermissions } from "@/lib/casl/abilities/user/presentation";
+import UserManagementRowActions from "./_components/actions";
 
-export default function UsersByDepartmentPage() {
+export default function UsersManagementPage() {
     const { data: meData, loading } = useQuery(ME_QUERY);
-    const isAdmin = meData?.me?.role === "ADMIN";
+    const {
+        canViewFilters,
+        canUseDepartmentFilter,
+    } = useUserManagementPermissions();
+
     // --------------------------------
     // FILTRI
     // --------------------------------
@@ -40,41 +45,51 @@ export default function UsersByDepartmentPage() {
     const queryVariables = {
         userId: userFilters.filter?.userId,
         role: userFilters.filter?.role,
+        department: userFilters.filter?.department,
         categoryId: userFilters.filter?.categoryId,
     };
 
-    const { data } = useQuery(GET_USERS_BY_DEPARTMENT, {
+    const { data } = useQuery(GET_USERS_FOR_MANAGEMENT, {
         variables: queryVariables,
+        skip: loading,
     });
 
-    const users = data?.usersByDepartment ?? [];
+    const users = data?.searchUsers ?? [];
 
     // --------------------------------
     // COLUMNS
     // --------------------------------
 
-    const headCells = createUserDepartmentHeadCells();
+    const headCells = createUserManagementHeadCells();
 
     // --------------------------------
     // RENDER
     // --------------------------------
 
-    const specModal = useModalState<UserDepartmentRow>();
+    const specModal = useModalState<UserManagementRow>();
 
-    const handleAddSpec = (user: UserDepartmentRow) => {
+    const handleAddSpec = (user: UserManagementRow) => {
         specModal.open(user);
     };
 
-    const removeSpecModal = useModalState<UserDepartmentRow>();
+    const removeSpecModal = useModalState<UserManagementRow>();
 
-    const handleRemoveSpec = (user: UserDepartmentRow) => {
+    const handleRemoveSpec = (user: UserManagementRow) => {
         removeSpecModal.open(user);
     };
+
+    const roleModal = useModalState<UserManagementRow>();
+
+    const handleEditRole = (user: UserManagementRow) => {
+        roleModal.open(user);
+    };
+
+    const showFilters = canViewFilters;
 
     return (
         <Box sx={{ mt: 3, mx: 2 }}>
             <Stack direction="row" sx={{ alignItems: "center", mb: 3 }}>
-                {isAdmin && (
+                {showFilters && (
                     <IconButton onClick={userFilters.open} aria-label="Filtri">
                         <Badge
                             badgeContent={userFilters.activeCount}
@@ -86,35 +101,27 @@ export default function UsersByDepartmentPage() {
                     </IconButton>
                 )}
 
-                <Typography variant="h5">Specializzazioni utente dipartimento {meData?.me?.department}</Typography>
+                <Typography variant="h5">Utenti e specializzazioni</Typography>
             </Stack>
 
             <Box sx={{ height: "78vh" }}>
-                <EnhancedTable<typeof users[number]>
+                <EnhancedTable<UserManagementRow>
                     rows={users}
                     headCells={headCells}
                     actionsWidth="152px"
-                    actions={
-                        isAdmin
-                            ? (user) =>
-                                user.role === "TECHNICIAN" ? (
-                                    <>
-                                        <IconButton onClick={() => handleAddSpec(user)}>
-                                            <ControlPointIcon />
-                                        </IconButton>
-                                        <IconButton onClick={() => handleRemoveSpec(user)}>
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    </>
-                                ) : null
-                            : undefined
-                    }
+                    actions={(user) => (
+                        <UserManagementRowActions
+                            user={user}
+                            onAddSpec={handleAddSpec}
+                            onRemoveSpec={handleRemoveSpec}
+                            onEditRole={handleEditRole}
+                        />
+                    )}
                 />
             </Box>
 
             {/* SPEC MODAL */}
             <Modal
-
                 title="Assegna specializzazione"
                 isOpen={specModal.isOpen}
                 onClose={specModal.close}
@@ -146,6 +153,22 @@ export default function UsersByDepartmentPage() {
                 )}
             </Modal>
 
+            {/* ROLE MODAL */}
+            <Modal
+                title="Cambia ruolo"
+                isOpen={roleModal.isOpen}
+                onClose={roleModal.close}
+            >
+                {roleModal.value && (
+                    <UpdateUserRoleForm
+                        userId={roleModal.value.id}
+                        fullName={`${roleModal.value.firstName} ${roleModal.value.lastName}`}
+                        currentRole={roleModal.value.role}
+                        onSubmit={roleModal.close}
+                    />
+                )}
+            </Modal>
+
             {/* FILTRI */}
             <FiltersSidebar open={userFilters.isOpen} onClose={userFilters.close}>
                 <Box sx={{ p: 2 }}>
@@ -156,6 +179,7 @@ export default function UsersByDepartmentPage() {
                     <FilterUserSpecForm
                         onApply={userFilters.apply}
                         onReset={userFilters.reset}
+                        showDepartment={canUseDepartmentFilter}
                     />
                 </Box>
             </FiltersSidebar>

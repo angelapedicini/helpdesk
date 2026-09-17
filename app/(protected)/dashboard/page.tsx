@@ -17,6 +17,8 @@ import FolderIcon from "@mui/icons-material/Folder";
 import CategoryIcon from "@mui/icons-material/Category";
 import Link from "next/link";
 import React from "react";
+import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
+import { Department } from "@/lib/validators/enums.schema";
 
 export default function Page() {
     const { data, loading } = useQuery(GET_CATEGORIES);
@@ -86,7 +88,9 @@ export default function Page() {
                                     <FolderIcon />
                                 </ListItemIcon>
 
-                                <ListItemText primary={department} />
+                                <ListItemText
+                                    primary={DEPARTMENT_CONFIG[department as Department]?.label ?? department}
+                                />
 
                                 {openDepartments[department] ? (
                                     <ExpandLess />

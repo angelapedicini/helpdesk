@@ -5,6 +5,8 @@ import { GraphQLError } from "graphql/error";
 import { AccessTokenPayload } from "@/lib/auth/jwt";
 import { FilterTicketSchema } from "@/lib/validators/ticket-detail.schema";
 import type { TicketScope, TicketSortField } from "@/graphql-generated/schema";
+import { defineAbilityForTicketScope } from "@/lib/casl/abilities/ticket-scope/rules";
+import { assertCanReadTicketScope } from "@/lib/casl/abilities/ticket-scope/guards";
 
 export const TICKET_SORT_FIELD_MAP: Record<TicketSortField, string> = {
   ID: "id",
@@ -172,6 +174,9 @@ export function buildScopeWhere(
   scope: TicketScope,
   session: AccessTokenPayload
 ): Prisma.TicketWhereInput {
+  const ability = defineAbilityForTicketScope(session);
+  assertCanReadTicketScope(ability, scope);
+
   switch (scope) {
     case "MINE":
       return {
@@ -179,49 +184,16 @@ export function buildScopeWhere(
       };
 
     case "ASSIGNED_TO_ME":
-      if (session.role !== "TECHNICIAN") {
-        throw new GraphQLError(
-          "View not available to role",
-          {
-            extensions: {
-              code: "FORBIDDEN",
-            },
-          }
-        );
-      }
-
       return {
         assignedToId: session.userId,
       };
 
     case "DEPARTMENT":
-      if (session.role !== "ADMIN") {
-        throw new GraphQLError(
-          "View not available to role",
-          {
-            extensions: {
-              code: "FORBIDDEN",
-            },
-          }
-        );
-      }
-
       return {
         ticketDepartment: session.department,
       };
 
     case "ALL":
-      if (session.role !== "SYSTEM_ADMIN") {
-        throw new GraphQLError(
-          "View not available to role",
-          {
-            extensions: {
-              code: "FORBIDDEN",
-            },
-          }
-        );
-      }
-
       // nessun filtro di dipartimento: SYSTEM_ADMIN vede tutti i ticket
       return {};
 

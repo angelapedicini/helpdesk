@@ -1,13 +1,13 @@
 import { graphql } from "@/graphql-generated";
 
-// @/apollo-client/queries/user-specialization/user-specialization.queries.ts (o dove preferisci)
-export const GET_USERS_BY_DEPARTMENT = graphql(`
- query UsersByDepartment($userId: Int, $role: Role, $categoryId: Int) {
-    usersByDepartment(userId: $userId, role: $role, categoryId: $categoryId) {
+export const GET_USERS_FOR_MANAGEMENT = graphql(`
+  query UsersManagement($search: String, $userId: Int, $role: Role, $department: Department, $categoryId: Int) {
+    searchUsers(search: $search, userId: $userId, role: $role, department: $department, categoryId: $categoryId) {
       id
       firstName
       lastName
       role
+      department
       specializations {
         id
         name
@@ -16,7 +16,6 @@ export const GET_USERS_BY_DEPARTMENT = graphql(`
     }
   }
 `);
-
 
 export const GET_USERS_BY_DEP_FOR_LOGIN = graphql(`
   query UsersByDepForLogin($department: Department!) {

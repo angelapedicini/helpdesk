@@ -13,15 +13,9 @@ import { GET_DELETED_TICKETS } from "@/apollo-client/queries/ticket-history/tick
 import { TICKET_HISTORY_FIELDS } from "@/apollo-client/queries/ticket-history/ticket-history.fragment";
 import { createDeletedTicketHeadCells, type DeletedTicketRow } from "./column.def";
 import type { TicketScope } from "@/graphql-generated/graphql";
+import { TICKET_SCOPE_CONFIG } from "@/components/enums/ticket-scope.config";
 
 const PAGE_SIZE = 20;
-
-const SCOPE_TITLES: Record<TicketScope, string> = {
-    MINE: "I miei ticket eliminati",
-    ALL: "Tutti i ticket eliminati",
-    DEPARTMENT: "Ticket eliminati del dipartimento",
-    ASSIGNED_TO_ME: "Ticket eliminati assegnati a me",
-};
 
 const VALID_SCOPES: TicketScope[] = ["ALL", "MINE", "DEPARTMENT", "ASSIGNED_TO_ME"];
 
@@ -34,7 +28,7 @@ export default function DeletedTicketsPage() {
         ? (scopeParam as TicketScope)
         : "MINE";
 
-    const title = SCOPE_TITLES[scope];
+    const title = TICKET_SCOPE_CONFIG[scope].deletedLabel;
 
     const queryVariables = {
         first: PAGE_SIZE,

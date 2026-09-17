@@ -13,6 +13,8 @@ import {
     Typography,
 } from "@mui/material";
 import TicketDetailForm from "@/components/forms/ticket/update-ticket";
+import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
+import { Department } from "@/lib/validators/enums.schema";
 import { toDatetimeLocalValue } from "@/lib/helper/date-helper";
 
 
@@ -88,7 +90,11 @@ export default function Page() {
 
                 <TextField
                     label="Reparto (creatore)"
-                    value={ticket.sourceDepartmentForUser ?? ""}
+                    value={
+                        ticket.sourceDepartmentForUser
+                            ? (DEPARTMENT_CONFIG[ticket.sourceDepartmentForUser as Department]?.label ?? ticket.sourceDepartmentForUser)
+                            : ""
+                    }
                     fullWidth
                     disabled
                 />

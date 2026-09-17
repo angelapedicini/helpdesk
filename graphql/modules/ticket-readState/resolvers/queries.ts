@@ -2,12 +2,14 @@ import { getPrisma } from "@/lib/prisma/index";
 import { Prisma } from "@/app/generated/prisma/client";
 import { requireSession } from "@/lib/auth/session";
 import { defineAbilityForTicket } from "@/lib/casl/abilities/ticket/rules";
+import { defineAbilityForTicketNotification } from "@/lib/casl/abilities/ticket-notification/rules";
 import { accessibleBy } from "@casl/prisma";
 
 export const ticketReadStateQueries = {
     unreadTicketMessages: async () => {
         const session = await requireSession();
         const ability = defineAbilityForTicket(session);
+        const notificationAbility = defineAbilityForTicketNotification(session);
         const prisma = await getPrisma();
 
 
@@ -16,10 +18,15 @@ export const ticketReadStateQueries = {
         // - technician: ticket assegnati a lui
         // - admin: ticket del proprio reparto
         //
-        // Per admin e system admin aggiungiamo un ulteriore filtro:
-        // ricevono notifiche solo per i ticket che:
+        // Per admin e system admin (chi può ricevere notifiche) aggiungiamo
+        // un ulteriore filtro: ricevono notifiche solo per i ticket che:
         // - hanno creato loro stessi
         // - oppure per i quali hanno attivato una subscription
+        const canFilterBySubscription = notificationAbility.can(
+            "read",
+            "TicketNotification"
+        );
+
         const accessibleTickets = await prisma.ticket.findMany({
             where: {
                 // deletedAt: null,
@@ -27,7 +34,7 @@ export const ticketReadStateQueries = {
                 AND: [
                     accessibleBy(ability, "read").ofType("Ticket"),
 
-                    ...(session.role === "ADMIN" || session.role === "SYSTEM_ADMIN"
+                    ...(canFilterBySubscription
                         ? [
                             {
                                 OR: [

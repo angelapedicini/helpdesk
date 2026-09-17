@@ -23,6 +23,7 @@ function defineCategoryRules({ can }: CategoryAbilityBuilder, user: CategoryUser
   // ------------------------------------------------------------
   if (user.role === "SYSTEM_ADMIN") {
     can("manage", "TicketCategory");
+    can("manage", "TicketCategoryAccess");
     return; // le regole sotto sono ridondanti per lui, non serve valutarle
   }
 

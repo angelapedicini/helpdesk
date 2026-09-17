@@ -101,7 +101,7 @@ export function useTicketAllowedStatuses(
 /**
  * Determina come popolare il campo "Tecnico assegnato" nel form di update.
  * L'admin, quando il ticket è ancora OPEN, può scegliere tra tutti i
- * tecnici del proprio dipartimento (lista completa via usersByDepartment);
+ * tecnici del proprio dipartimento (lista completa via searchUsers);
  * negli altri casi si usa la ricerca testuale filtrata per categoria
  * (usersForCategoryId).
  *
@@ -115,20 +115,13 @@ export function useTicketAssigneeBrowseMode(
   const ability = useAbility();
   const subject = useMemo(() => toTicketSubject(ticket), [ticket]);
 
-  const { data: meData } = useQuery(ME_QUERY);
-  const role = meData?.me?.role;
-
   return useMemo(() => {
     if (!ability.can("update", subject, "assignedToId")) {
       return "search";
     }
 
-    if (role === "ADMIN" && ticket.status === "OPEN") {
-      return "list";
-    }
-
-    return "search";
-  }, [ability, subject, role, ticket.status]);
+    return ability.can("browseAssignees", subject) ? "list" : "search";
+  }, [ability, subject]);
 }
 
 /**

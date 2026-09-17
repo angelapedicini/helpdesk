@@ -3,6 +3,7 @@ import { subject } from "@casl/ability";
 import { ALLOWED_STATUS_TRANSITIONS } from "./rules";
 import type { TicketAbility } from "./types";
 import type { AccessTokenPayload } from "@/lib/auth/jwt";
+import type { Department } from "@/app/generated/prisma/enums";
 import type { Ticket, TicketMessage } from "@/app/generated/prisma/client";
 import type { Ticket as GraphQLTicket } from "@/apollo-client/queries/ticket/ticket.queries";
 import type { TicketMessage as GraphQLTicketMessage } from "@/apollo-client/queries/ticket-message/ticket-message.queries";
@@ -25,6 +26,22 @@ export function toTicketSubject(ticket: GraphQLTicket) {
     createdById: ticket.createdBy.id,
     assignedToId: ticket.assignedTo?.id ?? null,
   });
+}
+
+/**
+ * Subject "parziale" usato per la capability di presentazione in fase di
+ * creazione (non esiste ancora un ticket): contiene solo ticketDepartment,
+ * campo su cui è scritta la condizione CASL del technician.
+ * Il cast è necessario perché CASL tipizza il subject come modello completo;
+ * a runtime le condizioni mancanti non vengono valutate.
+ */
+export function toTicketDepartmentSubject(
+  department: Department
+): ReturnType<typeof toTicketSubject> {
+  return subject("Ticket", {
+    __typename: "Ticket",
+    ticketDepartment: department,
+  }) as unknown as ReturnType<typeof toTicketSubject>;
 }
 
 /**

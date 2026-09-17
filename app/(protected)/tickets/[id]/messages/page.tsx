@@ -19,6 +19,7 @@ import {
     UNSUBSCRIBE_FROM_TICKET_NOTIFICATIONS,
 } from "@/apollo-client/queries/ticket-adminNotificationSub/ticket-adminNotificationSub.mutation";
 import NotificationBell from "@/components/notification-bell";
+import { useTicketNotificationPermissions } from "@/lib/casl/abilities/ticket-notification/presentation";
 
 const PAGE_SIZE = 20;
 
@@ -36,8 +37,7 @@ export default function TicketMessagesPage() {
 
     const { data: meData } = useQuery(ME_QUERY);
     const myId = meData?.me?.id;
-    const isNotificationManager =
-        meData?.me?.role === "ADMIN" || meData?.me?.role === "SYSTEM_ADMIN";
+    const { canManageNotifications } = useTicketNotificationPermissions();
 
     // --------------------------------
     // QUERY MESSAGGI
@@ -92,7 +92,7 @@ export default function TicketMessagesPage() {
 
     const { data: notificationData } = useQuery(GET_TICKET_NOTIFICATION_SUBSCRIPTION, {
         variables: { ticketId },
-        skip: !isValidTicketId || !isNotificationManager,
+        skip: !isValidTicketId || !canManageNotifications,
     });
 
     const isSubscribed = !!notificationData?.ticketNotificationSubscription;
@@ -175,7 +175,7 @@ export default function TicketMessagesPage() {
                     Messaggi ticket #{ticketId}
                 </Typography>
 
-                {isNotificationManager && (
+                {canManageNotifications && (
                     <NotificationBell
                         isSubscribed={isSubscribed}
                         busy={notificationBusy}
