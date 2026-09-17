@@ -1,6 +1,5 @@
 import { graphql } from "@/apollo-client/gql";
 
-
 export const GET_TICKET_HISTORY_BY_TICKET_ID = graphql(`
   query TicketHistoryByTicketId(
     $ticketId: Int!
@@ -17,50 +16,7 @@ export const GET_TICKET_HISTORY_BY_TICKET_ID = graphql(`
       edges {
         cursor
         node {
-          id
-          originalTicketId
-          title
-          description
-          status
-          priority
-          dueDate
-          dueFirstResponse
-          reopenCount
-          reopenReason
-          sourceDepartmentForUser
-          category {
-            id
-            name
-          }
-          createdBy {
-            id
-            firstName
-            lastName
-          }
-          assignedTo {
-            id
-            firstName
-            lastName
-          }
-          createdAt
-          updatedAt
-          closedAt
-          dueDate
-          sourceDepartmentForUser
-          ticketDepartment
-          lastUpdatedBy {
-            id
-            firstName
-            lastName
-          }
-          closingMessage
-          ticketSpecific
-          deletedAt
-          deletedBy {
-            id
-            firstName
-            lastName
-          }
+          ...TicketHistoryFields
         }
       }
       pageInfo {
@@ -87,50 +43,7 @@ export const GET_DELETED_TICKETS = graphql(`
       edges {
         cursor
         node {
-          id
-          originalTicketId
-          title
-          description
-          status
-          priority
-          dueDate
-          dueFirstResponse
-          reopenCount
-          reopenReason
-          sourceDepartmentForUser
-          category {
-            id
-            name
-          }
-          createdBy {
-            id
-            firstName
-            lastName
-          }
-          assignedTo {
-            id
-            firstName
-            lastName
-          }
-          createdAt
-          updatedAt
-          closedAt
-          dueDate
-          sourceDepartmentForUser
-          ticketDepartment
-          lastUpdatedBy {
-            id
-            firstName
-            lastName
-          }
-          closingMessage
-          ticketSpecific
-          deletedAt
-          deletedBy {
-            id
-            firstName
-            lastName
-          }
+          ...TicketHistoryFields
         }
       }
       pageInfo {

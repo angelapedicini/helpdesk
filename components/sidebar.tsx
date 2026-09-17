@@ -9,16 +9,15 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-// components/nav-sidebar/types.ts
-import type { ReactNode } from "react";
 import { NavLinkItem } from "./types/navlink";
+import { Role } from "@/lib/validators/enums.schema";
 
 
 type NavSidebarProps = {
   open: boolean;
   onClose: () => void;
   links: NavLinkItem[];
-  userRole: "ADMIN" | "TECHNICIAN" | "EMPLOYEE";
+  userRole: Role
 };
 
 export default function NavSidebar({ open, onClose, links, userRole }: NavSidebarProps) {

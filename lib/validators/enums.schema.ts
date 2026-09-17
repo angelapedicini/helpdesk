@@ -10,7 +10,7 @@ export type TicketStatus = z.infer<typeof TicketStatusSchema>;
 
 export type TicketPriority = z.infer<typeof TicketPrioritySchema>;
 
-export const RoleEnum = z.enum(["ADMIN", "TECHNICIAN", "EMPLOYEE"]);
+export const RoleEnum = z.enum(["ADMIN", "TECHNICIAN", "EMPLOYEE", "SYSTEM_ADMIN"]);
 export type Role = z.infer<typeof RoleEnum>;
 
 export const HardwareTypeSchema = z.enum([

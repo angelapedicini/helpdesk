@@ -2,17 +2,21 @@
 
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
+import { useFragment } from "@/apollo-client/gql/fragment-masking";
 import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
 import { diffTicketHistory, type ChangedFields } from "@/lib/ticket/diff";
 import EnhancedTable from "@/components/table";
-import { GET_TICKET_HISTORY_BY_TICKET_ID } from "@/apollo-client/queries/ticket-history/ticket-history.queries";
+import {
+    GET_TICKET_HISTORY_BY_TICKET_ID,
+} from "@/apollo-client/queries/ticket-history/ticket-history.queries";
 import { createTicketHistoryHeadCells, TicketHistoryRow } from "./column.def";
 import { useModalState } from "@/components/hooks/use-modal-state";
 import Modal from "@/components/modal";
 import TicketHistoryDetailModal from "./_components/ticket-history-detail-modal";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import { TICKET_HISTORY_FIELDS } from "@/apollo-client/queries/ticket-history/ticket-history.fragment";
 
 const PAGE_SIZE = 20;
 
@@ -32,7 +36,9 @@ export default function TicketHistoryPage() {
     });
 
     const history: TicketHistoryRow[] =
-        data?.ticketHistoryByTicketId?.edges?.map((edge) => edge.node) ?? [];
+        data?.ticketHistoryByTicketId?.edges?.map((edge) =>
+            useFragment(TICKET_HISTORY_FIELDS, edge.node)
+        ) ?? [];
 
     const { hasNextPage, loadMore } = useCursorPagination(
         data?.ticketHistoryByTicketId?.pageInfo,

@@ -41,7 +41,8 @@ export const TICKET_SORT_FIELD_MAP: Record<TicketSortField, string> = {
 export type TicketScope =
   | "MINE"
   | "ASSIGNED_TO_ME"
-  | "DEPARTMENT";
+  | "DEPARTMENT"
+  | "ALL";
 
 export function buildTicketWhere(
   rawFilter: unknown
@@ -188,7 +189,6 @@ export function buildTicketWhere(
     AND: conditions,
   };
 }
-
 export function buildScopeWhere(
   scope: TicketScope,
   session: AccessTokenPayload
@@ -230,6 +230,21 @@ export function buildScopeWhere(
       return {
         ticketDepartment: session.department,
       };
+
+    case "ALL":
+      if (session.role !== "SYSTEM_ADMIN") {
+        throw new GraphQLError(
+          "View not available to role",
+          {
+            extensions: {
+              code: "FORBIDDEN",
+            },
+          }
+        );
+      }
+
+      // nessun filtro di dipartimento: SYSTEM_ADMIN vede tutti i ticket
+      return {};
 
     default: {
       const _exhaustive: never = scope;

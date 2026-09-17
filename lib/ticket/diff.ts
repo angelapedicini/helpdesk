@@ -1,11 +1,9 @@
 // lib/ticket/diff.ts
-import type { TicketHistoryByTicketIdQuery } from "@/apollo-client/gql/graphql";
+import type { TicketHistoryFieldsFragment } from "@/apollo-client/gql/graphql";
 
 export type ChangedFields = Set<string>;
 
-type TicketHistoryRow = NonNullable<
-    TicketHistoryByTicketIdQuery["ticketHistoryByTicketId"]
->["edges"][number]["node"];
+export type TicketHistoryRow = TicketHistoryFieldsFragment;
 
 const COMPARABLE_SCALAR_FIELDS = [
     "title",

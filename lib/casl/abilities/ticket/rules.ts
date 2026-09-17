@@ -38,7 +38,10 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
   // ------------------------------------------------------------
   // READ
   // ------------------------------------------------------------
-
+  // nessuna condizione = tutti i ticket, tutti i dipartimenti
+  if (user.role === "SYSTEM_ADMIN") {
+    can("read", "Ticket");
+  }
   // Ogni utente può leggere solamente i ticket che ha creato.
   can("read", "Ticket", {
     createdById: user.userId,

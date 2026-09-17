@@ -12,6 +12,7 @@ export const userTypeDefs = `#graphql
     ADMIN
     TECHNICIAN
     EMPLOYEE
+    SYSTEM_ADMIN
   }
 
   type UserSpecialization {

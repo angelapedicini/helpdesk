@@ -16,7 +16,6 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import DataObjectIcon from "@mui/icons-material/DataObject";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
 import { UNREAD_TICKET_MESSAGES } from "@/apollo-client/queries/ticket-read-state/ticket-read-state.queries";
-import NavUser from "./navuser";
 import { NavLinkItem } from "./types/navlink";
 import NavSidebar from "./sidebar";
 import { useQuery } from "@apollo/client/react";
@@ -48,6 +47,12 @@ const NAV_LINKS: NavLinkItem[] = [
     roles: ["ADMIN"],
   },
   {
+    label: "Tutti i ticket",
+    href: "/tickets?scope=all",
+    icon: <DataObjectIcon />,
+    roles: ["SYSTEM_ADMIN"],
+  },
+  {
     label: "Specializzazioni del dipartimento",
     href: "/userCategory",
     icon: <DataObjectIcon />,
@@ -74,7 +79,7 @@ const NAV_LINKS: NavLinkItem[] = [
     label: "Statistiche",
     href: "/stats",
     icon: <DataObjectIcon />,
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "SYSTEM_ADMIN"],
   },
 ];
 

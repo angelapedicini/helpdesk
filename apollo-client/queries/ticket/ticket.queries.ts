@@ -51,7 +51,7 @@ export const ticketSortFieldMap: Partial<
     dueDate: "DUE_DATE",
 };
 
-export type TicketScope = "MINE" | "ASSIGNED_TO_ME" | "DEPARTMENT";
+export type TicketScope = "MINE" | "ASSIGNED_TO_ME" | "DEPARTMENT"| "ALL";
 
 export const GET_TICKET_BY_ID = graphql(`
   query GetTicketById($id: Int!) {

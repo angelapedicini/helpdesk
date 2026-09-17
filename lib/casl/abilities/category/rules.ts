@@ -7,6 +7,7 @@ const ROLE_RANK: Record<Role, number> = {
   EMPLOYEE: 1,
   TECHNICIAN: 2,
   ADMIN: 3,
+  SYSTEM_ADMIN: 4,
 };
 
 function rolesAtOrBelow(role: Role): Role[] {
@@ -15,6 +16,20 @@ function rolesAtOrBelow(role: Role): Role[] {
 }
 
 function defineCategoryRules({ can }: CategoryAbilityBuilder, user: CategoryUser) {
+  // ------------------------------------------------------------
+  // SYSTEM_ADMIN: gestione completa (create, update, soft delete,
+  // riattivazione). Nessuna restrizione di dipartimento: la
+  // configurazione delle categorie è trasversale.
+  // ------------------------------------------------------------
+  if (user.role === "SYSTEM_ADMIN") {
+    can("manage", "TicketCategory");
+    return; // le regole sotto sono ridondanti per lui, non serve valutarle
+  }
+
+  // ------------------------------------------------------------
+  // Tutti gli altri ruoli: sola lettura, scoped per dipartimento
+  // o per accessGrant esplicito.
+  // ------------------------------------------------------------
   const eligibleMinRoles = rolesAtOrBelow(user.role);
 
   can("read", "TicketCategory", { department: user.department });
@@ -30,10 +45,6 @@ function defineCategoryRules({ can }: CategoryAbilityBuilder, user: CategoryUser
       },
     },
   });
-
-  if (user.role === "ADMIN") {
-    can("manage", "TicketCategory", { department: user.department });
-  }
 }
 
 export function defineAbilityForCategory(user: CategoryUser): CategoryAbility {

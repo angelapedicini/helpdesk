@@ -94,12 +94,12 @@ const STATUS_WEIGHTS: {
   status: "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "CLOSED" | "REFUSED";
   weight: number;
 }[] = [
-  { status: "OPEN", weight: 0.15 },
-  { status: "ASSIGNED", weight: 0.25 },
-  { status: "IN_PROGRESS", weight: 0.2 },
-  { status: "CLOSED", weight: 0.3 },
-  { status: "REFUSED", weight: 0.1 },
-];
+    { status: "OPEN", weight: 0.15 },
+    { status: "ASSIGNED", weight: 0.25 },
+    { status: "IN_PROGRESS", weight: 0.2 },
+    { status: "CLOSED", weight: 0.3 },
+    { status: "REFUSED", weight: 0.1 },
+  ];
 
 const CLOSED_DAYS_BACK = 60;
 const REFUSED_DAYS_BACK = 45;
@@ -841,6 +841,17 @@ export async function main() {
 
   const hashedPassword = await bcrypt.hash("Password123!", 10);
 
+  const systemAdmin = await prisma.user.create({
+    data: {
+      firstName: "System",
+      lastName: "Admin",
+      email: "system.admin@example.com",
+      password: hashedPassword,
+      role: "SYSTEM_ADMIN",
+      department: "FINANCE",
+    },
+  });
+
   const categoriesByDept: Record<Department, CategoryRecord[]> = {
     IT: [],
     HR: [],
@@ -1041,6 +1052,7 @@ export async function main() {
         { userId: admin.id, action: "categories.manage" },
       ],
     });
+
 
     allUsers.push({
       id: admin.id,

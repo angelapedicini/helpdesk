@@ -241,9 +241,7 @@ const PUBLIC_PATHS = [
 
 // 3. Protetti per ruolo — richiedono token + ruolo specifico
 const ROLE_PROTECTED_PATHS: { path: string; roles: string[] }[] = [
-  { path: "/stats", roles: ["ADMIN"] },
-  { path: "/api/admin", roles: ["ADMIN"] },
-  { path: "/manager", roles: ["ADMIN", "MANAGER"] },
+  { path: "/stats", roles: ["ADMIN", "SYSTEM_ADMIN"] },
 ];
 
 // path su cui la navbar non deve apparire
