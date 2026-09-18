@@ -22,7 +22,7 @@ import { DELETE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
 import { FilterTicketOutput } from "@/lib/validators/ticket-detail.schema";
 import { useFragment } from "@/graphql-generated";
-import { isTicketOverdue } from "@/lib/ticket/expired-status";
+import { getTicketOverdueTooltip, isTicketOverdue } from "@/lib/ticket/expired-status";
 import EnhancedTable from "@/components/table";
 import { createTicketHeadCells } from "@/app/(protected)/tickets/_components/column.def";
 import TicketRowActions from "@/app/(protected)/tickets/_components/actions";
@@ -166,6 +166,7 @@ export default function TicketsPage() {
                     hasNextPage={hasNextPage}
                     onLoadMore={loadMore}
                     getRowClassName={(ticket) => (isTicketOverdue(ticket) ? "error-row" : undefined)}
+                     getRowTooltip={getTicketOverdueTooltip}
                     actionsWidth="195px"
                     actions={(ticket) => (
                         <TicketRowActions

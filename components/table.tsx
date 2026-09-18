@@ -71,6 +71,14 @@ interface EnhancedTableProps<T extends RowBase> {
         headCellId: keyof T
     ) => string | undefined;
 
+    /**
+     * Tooltip opzionale a livello di riga. Se la funzione ritorna una
+     * stringa non vuota per una riga, questa viene avvolta in un
+     * MUI Tooltip che mostra il testo restituito. Se ritorna
+     * undefined/null, la riga viene renderizzata senza tooltip.
+     */
+    getRowTooltip?: (row: T) => string | undefined;
+
     /** Altezza massima oltre la quale la tabella scrolla internamente. Default: '70vh'. */
     maxHeight?: string | number;
 }
@@ -293,6 +301,7 @@ export default function EnhancedTable<
     hasNextPage = false,
     onLoadMore,
     getRowClassName,
+    getRowTooltip,
     getCellClassName,
     maxHeight = DEFAULT_MAX_HEIGHT,
 }: EnhancedTableProps<T>) {
@@ -404,87 +413,103 @@ export default function EnhancedTable<
                         />
 
                         <TableBody>
-                            {rows.map((row) => (
-                                <TableRow
-                                    hover
-                                    key={row.id}
-                                    className={getRowClassName?.(
-                                        row
-                                    )}
-                                >
-                                    {headCells.map(
-                                        (
-                                            headCell,
-                                            index
-                                        ) => (
+                            {rows.map((row) => {
+                                const rowNode = (
+                                    <TableRow
+                                        hover
+                                        className={getRowClassName?.(row)}
+                                    >
+                                        {headCells.map(
+                                            (
+                                                headCell,
+                                                index
+                                            ) => (
+                                                <TableCell
+                                                    key={String(
+                                                        headCell.id
+                                                    )}
+                                                    component={
+                                                        index ===
+                                                            0
+                                                            ? 'th'
+                                                            : undefined
+                                                    }
+                                                    scope={
+                                                        index ===
+                                                            0
+                                                            ? 'row'
+                                                            : undefined
+                                                    }
+                                                    align={
+                                                        headCell.numeric
+                                                            ? 'right'
+                                                            : 'left'
+                                                    }
+                                                    padding={
+                                                        headCell.disablePadding
+                                                            ? 'none'
+                                                            : 'normal'
+                                                    }
+                                                    className={getCellClassName?.(
+                                                        row,
+                                                        headCell.id
+                                                    )}
+                                                    sx={{
+                                                        width: columnWidths[
+                                                            index
+                                                        ],
+                                                        overflow:
+                                                            'hidden',
+                                                        textOverflow:
+                                                            'ellipsis',
+                                                        whiteSpace:
+                                                            'nowrap',
+                                                    }}
+                                                >
+                                                    {headCell.render
+                                                        ? headCell.render(
+                                                            row
+                                                        )
+                                                        : String(
+                                                            row[
+                                                            headCell
+                                                                .id
+                                                            ]
+                                                        )}
+                                                </TableCell>
+                                            )
+                                        )}
+
+                                        {actions && (
                                             <TableCell
-                                                key={String(
-                                                    headCell.id
-                                                )}
-                                                component={
-                                                    index ===
-                                                        0
-                                                        ? 'th'
-                                                        : undefined
-                                                }
-                                                scope={
-                                                    index ===
-                                                        0
-                                                        ? 'row'
-                                                        : undefined
-                                                }
-                                                align={
-                                                    headCell.numeric
-                                                        ? 'right'
-                                                        : 'left'
-                                                }
-                                                padding={
-                                                    headCell.disablePadding
-                                                        ? 'none'
-                                                        : 'normal'
-                                                }
-                                                className={getCellClassName?.(
-                                                    row,
-                                                    headCell.id
-                                                )}
+                                                align="left"
                                                 sx={{
-                                                    width: columnWidths[
-                                                        index
-                                                    ],
-                                                    overflow:
-                                                        'hidden',
-                                                    textOverflow:
-                                                        'ellipsis',
-                                                    whiteSpace:
-                                                        'nowrap',
+                                                    width: actionsWidth,
                                                 }}
                                             >
-                                                {headCell.render
-                                                    ? headCell.render(
-                                                        row
-                                                    )
-                                                    : String(
-                                                        row[
-                                                        headCell
-                                                            .id
-                                                        ]
-                                                    )}
+                                                {actions(row)}
                                             </TableCell>
-                                        )
-                                    )}
+                                        )}
+                                    </TableRow>
+                                );
 
-                                    {actions && (
-                                        <TableCell
-                                            align="left"
-                                            sx={{
-                                                width: actionsWidth,
-                                            }}
-                                        >
-                                            {actions(row)}
-                                        </TableCell>
-                                    )}
-                                </TableRow>
-                            ))}
+                                const tooltipTitle = getRowTooltip?.(row);
+
+                                return tooltipTitle ? (
+                                    <Tooltip
+                                        key={row.id}
+                                        title={tooltipTitle}
+                                        arrow
+                                        placement="top"
+                                    >
+                                        {rowNode}
+                                    </Tooltip>
+                                ) : (
+                                    <React.Fragment key={row.id}>
+                                        {rowNode}
+                                    </React.Fragment>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 </TableContainer>
