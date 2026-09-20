@@ -501,6 +501,11 @@ export default function EnhancedTable<
                                         title={tooltipTitle}
                                         arrow
                                         placement="top"
+                                        slotProps={{
+                                            tooltip: {
+                                                sx: { fontSize: "0.875rem" }, // default MUI è 0.6875rem (11px)
+                                            },
+                                        }}
                                     >
                                         {rowNode}
                                     </Tooltip>

@@ -6,10 +6,27 @@ import { HeadCell } from "@/components/table";
 import { New } from "@/lib/validators/stat.schema";
 import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
 import { Department } from "@/lib/validators/enums.schema";
+import type { TicketStatsByDepartmentQuery } from "@/graphql-generated/graphql";
 
 export type DepartmentStatsRow = New & {
-  id: string;
+    id: string;
 };
+
+export type DepartmentStatsSource =
+    TicketStatsByDepartmentQuery["ticketStatsByDepartment"];
+
+export function buildDepartmentStatsRows(
+    source: DepartmentStatsSource,
+): DepartmentStatsRow[] {
+    return source.map((item) => ({
+        ...item,
+        id: item.department,
+    }));
+}
+
+export function departmentStatsTotal(source: DepartmentStatsSource): number {
+    return source.reduce((sum, row) => sum + row.total, 0);
+}
 
 export const departmentStatsHeadCells: HeadCell<DepartmentStatsRow>[] = [
   {
@@ -58,6 +75,26 @@ export const departmentStatsHeadCells: HeadCell<DepartmentStatsRow>[] = [
   {
     id: "refused",
     label: "Rifiutati",
+    sortable: false,
+  },
+  {
+    id: "firstResponseLate",
+    label: "Prima risposta in ritardo",
+    sortable: false,
+  },
+  {
+    id: "dueDateLate",
+    label: "Chiusi oltre dueDate",
+    sortable: false,
+  },
+  {
+    id: "closedOnTime",
+    label: "Chiusi nei tempi",
+    sortable: false,
+  },
+  {
+    id: "openAssignedLate",
+    label: "Open/Assegnati oltre scadenza",
     sortable: false,
   },
   {

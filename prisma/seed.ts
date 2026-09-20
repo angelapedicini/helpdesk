@@ -749,8 +749,7 @@ async function createTicketMessages(ticket: TicketRecord) {
 // --- FUNZIONI DI CREAZIONE TICKET, UNA PER STATO ---
 
 async function createOpenTicket(
-  author: AuthorRecord,
-  adminByDept: Record<Department, { id: number }>
+  author: AuthorRecord
 ) {
   const priority = pickRandom(PRIORITIES) as TicketPriority;
   const createdAt = new Date();
@@ -764,7 +763,7 @@ async function createOpenTicket(
       priority,
       categoryId: null,
       createdById: author.id,
-      assignedToId: adminByDept[author.department].id,
+      assignedToId: null,
       lastUpdatedById: author.id,
       closingMessage: null,
       sourceDepartmentForUser: author.department,
@@ -1373,14 +1372,13 @@ async function createSpecialCases(
 async function createTicketsForAllUsers(
   allUsers: AuthorRecord[],
   categoriesByDept: Record<Department, CategoryRecord[]>,
-  techniciansByDept: Record<Department, TechnicianRecord[]>,
-  adminByDept: Record<Department, { id: number }>
+  techniciansByDept: Record<Department, TechnicianRecord[]>
 ) {
   const buckets = splitUsersByStatusWeights(allUsers);
   const specificSeedRef = { value: 0 };
 
   for (const author of buckets.OPEN) {
-    const ticket = await createOpenTicket(author, adminByDept);
+    const ticket = await createOpenTicket(author);
     await createTicketMessages(ticket);
   }
 
@@ -1594,9 +1592,7 @@ export async function main() {
     LOGISTIC: [],
   };
 
-  // Admin di ogni dipartimento: referente dei ticket OPEN.
-  const adminByDept = {} as Record<Department, { id: number }>;
-
+  // Admin di ogni dipartimento, aggiunti agli allUsers per la creazione ticket.
   const employeesByDept: Record<Department, TechnicianRecord[]> = {
     IT: [],
     HR: [],
@@ -1651,8 +1647,6 @@ export async function main() {
       lastName: admin.lastName,
       department: dept,
     });
-
-    adminByDept[dept] = { id: admin.id };
 
     const technicians: TechnicianRecord[] = [];
 
@@ -1721,7 +1715,7 @@ export async function main() {
    * Ogni funzione crea anche, subito dopo il Ticket, la relativa catena
    * di TicketHistory coerente con lo stato finale.
    */
-  await createTicketsForAllUsers(allUsers, categoriesByDept, techniciansByDept, adminByDept);
+  await createTicketsForAllUsers(allUsers, categoriesByDept, techniciansByDept);
 
   /*
    * CASI SPECIALI (SLA / scadenze)

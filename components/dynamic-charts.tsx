@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ReactECharts from "echarts-for-react";
 import { z } from "zod";
+import { useTheme } from "@mui/material/styles";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
@@ -24,6 +25,7 @@ type Props<T extends Record<string, unknown>> = {
   schema: z.ZodObject<Record<string, z.ZodType>>;
   viewLabels?: Record<string, string>; // controlla QUALI viste sono disponibili e come si chiamano
   renderLabel?: (label: string) => React.ReactNode;
+  height?: number | `${number}vh`; // altezza del grafico: px o vh
 };
 
 export default function DynamicChart<T extends Record<string, unknown>>({
@@ -31,7 +33,19 @@ export default function DynamicChart<T extends Record<string, unknown>>({
   schema,
   viewLabels = {},
   renderLabel,
+  height = 330,
 }: Props<T>) {
+  const theme = useTheme();
+
+  // Colori coerenti col tema MUI: testi chiari nel dark,
+  // linea della griglia più marcata nel light.
+  const isDark = theme.palette.mode === "dark";
+  const textColor = theme.palette.text.primary;
+  const gridLineColor = isDark
+    ? "rgba(255,255,255,0.12)"
+    : "rgba(0,0,0,0.35)";
+  const tooltipBackground = theme.palette.background.paper;
+  const tooltipBorderColor = theme.palette.divider;
   // =========================================================
   // 1. LETTURA METADATI: asse X fisso + campi Y raggruppati per vista
   // =========================================================
@@ -144,11 +158,20 @@ export default function DynamicChart<T extends Record<string, unknown>>({
     }));
 
     return {
-      tooltip: { trigger: "axis" },
+      tooltip: {
+        trigger: "axis",
+        textStyle: { color: textColor },
+        backgroundColor: tooltipBackground,
+        borderColor: tooltipBorderColor,
+      },
 
       legend:
         chartSeries.length > 1
-          ? { top: 0, data: chartSeries.map((s) => s.name) }
+          ? {
+              top: 0,
+              data: chartSeries.map((s) => s.name),
+              textStyle: { color: textColor },
+            }
           : undefined,
 
       grid: {
@@ -163,18 +186,19 @@ export default function DynamicChart<T extends Record<string, unknown>>({
         data: filtered.labels,
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { rotate: 25, fontSize: 11, interval: 0 },
+        axisLabel: { rotate: 25, fontSize: 11, interval: 0, color: textColor },
       },
 
       yAxis: {
         type: "value",
-        splitLine: { lineStyle: { opacity: 0.2 } },
+        splitLine: { lineStyle: { color: gridLineColor } },
         axisLine: { show: false },
+        axisLabel: { color: textColor },
       },
 
       series: chartSeries,
     };
-  }, [activeFields, filtered]);
+  }, [activeFields, filtered, textColor, gridLineColor, tooltipBackground, tooltipBorderColor]);
 
   // =========================================================
   // 7. EMPTY STATE
@@ -259,7 +283,7 @@ export default function DynamicChart<T extends Record<string, unknown>>({
           <ReactECharts
             option={option}
             replaceMerge={["series", "legend"]}
-            style={{ height: 330 }}
+            style={{ height }}
           />
         </Box>
       </Box>

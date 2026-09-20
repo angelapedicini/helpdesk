@@ -12,10 +12,29 @@ export const statTypeDefs = `#graphql
     inProgress: Int!
     closed: Int!
     refused: Int!
+    firstResponseLate: Int!
+    dueDateLate: Int!
+    closedOnTime: Int!
+    openAssignedLate: Int!
     average: Float!
   }
 
-  type Query {
-    ticketStatsByDepartment: [TicketStatsByDepartment!]!
+  type TicketStatsByTechnician {
+    technicianId: ID!
+    label: String!
+    total: Int!
+    open: Int!
+    assigned: Int!
+    inProgress: Int!
+    closed: Int!
+    refused: Int!
+    firstResponseLate: Int!
+    dueDateLate: Int!
+    average: Float!
+  }
+
+  extend type Query {
+    ticketStatsByDepartment(department: Department): [TicketStatsByDepartment!]!
+    ticketStatsByTechnician(department: Department): [TicketStatsByTechnician!]!
   }
 `;

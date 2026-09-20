@@ -18,7 +18,8 @@ type Documents = {
     "\n  mutation Logout {\n    logout {\n      success\n    }\n  }\n": typeof types.LogoutDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n": typeof types.CreateUserDocument,
     "\n  mutation StartDemo {\n    startDemo {\n      success\n      demoSessionId\n    }\n  }\n": typeof types.StartDemoDocument,
-    "\n  query TicketStatsByDepartment {\n    ticketStatsByDepartment {\n      department\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      average\n    }\n  }\n": typeof types.TicketStatsByDepartmentDocument,
+    "\n  query TicketStatsByDepartment {\n    ticketStatsByDepartment {\n      department\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      firstResponseLate\n      dueDateLate\n      closedOnTime\n      openAssignedLate\n      average\n    }\n  }\n": typeof types.TicketStatsByDepartmentDocument,
+    "\n  query TicketStatsByTechnician {\n    ticketStatsByTechnician {\n      technicianId\n      label\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      firstResponseLate\n      dueDateLate\n      average\n    }\n  }\n": typeof types.TicketStatsByTechnicianDocument,
     "\n  mutation CreateTicketNotificationSubscription($ticketId: Int!) {\n    createTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.CreateTicketNotificationSubscriptionDocument,
     "\n  mutation DeleteTicketNotificationSubscription($ticketId: Int!) {\n    deleteTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.DeleteTicketNotificationSubscriptionDocument,
     "\n  query TicketNotificationSubscription($ticketId: Int!) {\n    ticketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": typeof types.TicketNotificationSubscriptionDocument,
@@ -60,7 +61,8 @@ const documents: Documents = {
     "\n  mutation Logout {\n    logout {\n      success\n    }\n  }\n": types.LogoutDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      id\n      email\n    }\n  }\n": types.CreateUserDocument,
     "\n  mutation StartDemo {\n    startDemo {\n      success\n      demoSessionId\n    }\n  }\n": types.StartDemoDocument,
-    "\n  query TicketStatsByDepartment {\n    ticketStatsByDepartment {\n      department\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      average\n    }\n  }\n": types.TicketStatsByDepartmentDocument,
+    "\n  query TicketStatsByDepartment {\n    ticketStatsByDepartment {\n      department\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      firstResponseLate\n      dueDateLate\n      closedOnTime\n      openAssignedLate\n      average\n    }\n  }\n": types.TicketStatsByDepartmentDocument,
+    "\n  query TicketStatsByTechnician {\n    ticketStatsByTechnician {\n      technicianId\n      label\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      firstResponseLate\n      dueDateLate\n      average\n    }\n  }\n": types.TicketStatsByTechnicianDocument,
     "\n  mutation CreateTicketNotificationSubscription($ticketId: Int!) {\n    createTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.CreateTicketNotificationSubscriptionDocument,
     "\n  mutation DeleteTicketNotificationSubscription($ticketId: Int!) {\n    deleteTicketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.DeleteTicketNotificationSubscriptionDocument,
     "\n  query TicketNotificationSubscription($ticketId: Int!) {\n    ticketNotificationSubscription(ticketId: $ticketId) {\n      userId\n      ticketId\n    }\n  }\n": types.TicketNotificationSubscriptionDocument,
@@ -131,7 +133,11 @@ export function graphql(source: "\n  mutation StartDemo {\n    startDemo {\n    
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query TicketStatsByDepartment {\n    ticketStatsByDepartment {\n      department\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      average\n    }\n  }\n"): (typeof documents)["\n  query TicketStatsByDepartment {\n    ticketStatsByDepartment {\n      department\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      average\n    }\n  }\n"];
+export function graphql(source: "\n  query TicketStatsByDepartment {\n    ticketStatsByDepartment {\n      department\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      firstResponseLate\n      dueDateLate\n      closedOnTime\n      openAssignedLate\n      average\n    }\n  }\n"): (typeof documents)["\n  query TicketStatsByDepartment {\n    ticketStatsByDepartment {\n      department\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      firstResponseLate\n      dueDateLate\n      closedOnTime\n      openAssignedLate\n      average\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query TicketStatsByTechnician {\n    ticketStatsByTechnician {\n      technicianId\n      label\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      firstResponseLate\n      dueDateLate\n      average\n    }\n  }\n"): (typeof documents)["\n  query TicketStatsByTechnician {\n    ticketStatsByTechnician {\n      technicianId\n      label\n      total\n      open\n      assigned\n      inProgress\n      closed\n      refused\n      firstResponseLate\n      dueDateLate\n      average\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

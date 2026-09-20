@@ -247,6 +247,7 @@ export type Query = {
   ticketHistoryByTicketId: TicketHistoryConnection;
   ticketNotificationSubscription?: Maybe<TicketAdminNotificationSubscription>;
   ticketStatsByDepartment: Array<TicketStatsByDepartment>;
+  ticketStatsByTechnician: Array<TicketStatsByTechnician>;
   tickets: TicketConnection;
   unreadTicketMessages: Array<TicketUnreadCount>;
   usersByDepForLogin: Array<UserLoginInfo>;
@@ -321,6 +322,16 @@ export type QueryTicketHistoryByTicketIdArgs = {
 
 export type QueryTicketNotificationSubscriptionArgs = {
   ticketId: Scalars['Int']['input'];
+};
+
+
+export type QueryTicketStatsByDepartmentArgs = {
+  department?: InputMaybe<Department>;
+};
+
+
+export type QueryTicketStatsByTechnicianArgs = {
+  department?: InputMaybe<Department>;
 };
 
 
@@ -636,10 +647,29 @@ export type TicketStatsByDepartment = {
   assigned: Scalars['Int']['output'];
   average: Scalars['Float']['output'];
   closed: Scalars['Int']['output'];
+  closedOnTime: Scalars['Int']['output'];
   department: Department;
+  dueDateLate: Scalars['Int']['output'];
+  firstResponseLate: Scalars['Int']['output'];
   inProgress: Scalars['Int']['output'];
   open: Scalars['Int']['output'];
+  openAssignedLate: Scalars['Int']['output'];
   refused: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+};
+
+export type TicketStatsByTechnician = {
+  __typename?: 'TicketStatsByTechnician';
+  assigned: Scalars['Int']['output'];
+  average: Scalars['Float']['output'];
+  closed: Scalars['Int']['output'];
+  dueDateLate: Scalars['Int']['output'];
+  firstResponseLate: Scalars['Int']['output'];
+  inProgress: Scalars['Int']['output'];
+  label: Scalars['String']['output'];
+  open: Scalars['Int']['output'];
+  refused: Scalars['Int']['output'];
+  technicianId: Scalars['ID']['output'];
   total: Scalars['Int']['output'];
 };
 
