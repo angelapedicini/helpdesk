@@ -11,6 +11,7 @@ import {
   UpdateTicketCategorySchema,
   CreateTicketCategoryAccessSchema,
 } from "@/lib/validators/category.schema";
+import { getSpecificFieldsForDepartment } from "@/lib/config/ticket-specific-field.config";
 import { getPrisma } from "@/lib/prisma/index";
 
 export const categoryMutations = {
@@ -24,6 +25,13 @@ export const categoryMutations = {
     if (!result.success) {
       throw new GraphQLError("Invalid input", {
         extensions: { code: "BAD_USER_INPUT", issues: result.error.flatten() },
+      });
+    }
+
+    const allowedFields = getSpecificFieldsForDepartment(result.data.department);
+    if (!allowedFields.includes(result.data.specificField)) {
+      throw new GraphQLError("Specifica non valida per il dipartimento selezionato", {
+        extensions: { code: "BAD_USER_INPUT" },
       });
     }
 
@@ -53,6 +61,15 @@ export const categoryMutations = {
       throw new GraphQLError("Category not found", {
         extensions: { code: "NOT_FOUND" },
       });
+    }
+
+    if (result.data.specificField) {
+      const allowedFields = getSpecificFieldsForDepartment(existing.department);
+      if (!allowedFields.includes(result.data.specificField)) {
+        throw new GraphQLError("Specifica non valida per il dipartimento della categoria", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
     }
 
     return prisma.ticketCategory.update({

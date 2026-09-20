@@ -1,6 +1,8 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Box, Button, FormHelperText, TextField } from "@mui/material";
 import { useMutation } from "@apollo/client/react";
@@ -17,20 +19,20 @@ import {
 import { Department } from "@/lib/validators/enums.schema";
 import { TicketSpecificField } from "@/graphql-generated/graphql";
 import {
+  SPECIFIC_FIELD_LABELS,
+  SPECIFIC_FIELDS_BY_DEPARTMENT,
+} from "@/lib/config/ticket-specific-field.config";
+import {
   CREATE_TICKET_CATEGORY,
   UPDATE_TICKET_CATEGORY,
 } from "@/apollo-client/queries/ticket-category/ticket-category.mutations";
 
-const SPECIFIC_FIELD_OPTIONS: { id: TicketSpecificField; label: string }[] = [
-  { id: "HARDWARE_TYPE", label: "Tipo hardware" },
-  { id: "SOFTWARE", label: "Software" },
-  { id: "PAYROLL_REFERENCE", label: "Riferimento busta paga" },
-  { id: "EMPLOYEE_REFERENCE", label: "Riferimento dipendente" },
-  { id: "CUSTOMER", label: "Cliente" },
-  { id: "INVOICE_REFERENCE", label: "Riferimento fattura" },
-  { id: "BUDGET_TYPE", label: "Tipo di budget" },
-  { id: "SHIPMENT_REFERENCE", label: "Riferimento spedizione" },
-];
+const SPECIFIC_FIELD_OPTIONS: { id: TicketSpecificField; label: string }[] = (
+  Object.keys(SPECIFIC_FIELD_LABELS) as TicketSpecificField[]
+).map((id) => ({
+  id,
+  label: SPECIFIC_FIELD_LABELS[id],
+}));
 
 const DEPARTMENT_OPTIONS = (Object.keys(DEPARTMENT_CONFIG) as Department[]).map(
   (id) => ({
@@ -42,7 +44,12 @@ const DEPARTMENT_OPTIONS = (Object.keys(DEPARTMENT_CONFIG) as Department[]).map(
 );
 
 type CategoryFormProps = {
-  category?: { id: number; name: string; specificField: TicketSpecificField | null } | null;
+  category?: {
+    id: number;
+    name: string;
+    specificField: TicketSpecificField | null;
+    department?: Department;
+  } | null;
   defaultDepartment?: Department;
   onSubmit: () => void;
 };
@@ -85,6 +92,26 @@ export default function CategoryForm({
     formState: updateState,
   } = updateForm;
 
+const selectedDepartment = useWatch({ control: createControl, name: "department" });
+  const selectedSpecificField = useWatch({ control: createControl, name: "specificField" });
+  const updateSpecificField = useWatch({ control: updateControl, name: "specificField" });
+
+  useEffect(() => {
+    if (!selectedDepartment || !selectedSpecificField) return;
+    const allowed = SPECIFIC_FIELDS_BY_DEPARTMENT[selectedDepartment] ?? [];
+    if (!allowed.includes(selectedSpecificField)) {
+      createForm.unregister("specificField");
+    }
+  }, [selectedDepartment, selectedSpecificField, createForm]);
+
+  useEffect(() => {
+    if (!isEdit || !category?.department || !updateSpecificField) return;
+    const allowed = SPECIFIC_FIELDS_BY_DEPARTMENT[category.department] ?? [];
+    if (!allowed.includes(updateSpecificField)) {
+      updateForm.unregister("specificField");
+    }
+  }, [isEdit, category?.department, updateSpecificField, updateForm]);
+
   const [createTicketCategory] = useMutation(CREATE_TICKET_CATEGORY, {
     context: { successMessage: "Categoria creata con successo." },
     refetchQueries: ["Categories"],
@@ -100,6 +127,14 @@ export default function CategoryForm({
   if (isEdit) {
     const { errors, isSubmitting } = updateState;
     const register = updateRegister;
+
+    const categoryDepartment = category?.department;
+
+    const updateSpecificFieldOptions = categoryDepartment
+      ? SPECIFIC_FIELD_OPTIONS.filter((option) =>
+          SPECIFIC_FIELDS_BY_DEPARTMENT[categoryDepartment]?.includes(option.id)
+        )
+      : SPECIFIC_FIELD_OPTIONS;
 
     const handleEditSubmit = async (values: UpdateCategoryFormOutput) => {
       const result = await updateTicketCategory({
@@ -133,7 +168,7 @@ export default function CategoryForm({
             name="specificField"
             label="Campo specifico"
             control={updateControl}
-            options={SPECIFIC_FIELD_OPTIONS}
+            options={updateSpecificFieldOptions}
           />
 
           <Button type="submit" variant="contained" disabled={isSubmitting} sx={{ gridColumn: { md: "1 / -1" } }}>
@@ -146,6 +181,12 @@ export default function CategoryForm({
 
   const { errors, isSubmitting } = createState;
   const register = createRegister;
+
+  const filteredSpecificFieldOptions = selectedDepartment
+    ? SPECIFIC_FIELD_OPTIONS.filter((option) =>
+        SPECIFIC_FIELDS_BY_DEPARTMENT[selectedDepartment]?.includes(option.id)
+      )
+    : SPECIFIC_FIELD_OPTIONS;
 
   const handleCreateSubmit = async (values: CategoryFormOutput) => {
     const result = await createTicketCategory({
@@ -189,7 +230,7 @@ export default function CategoryForm({
           name="specificField"
           label="Campo specifico"
           control={createControl}
-          options={SPECIFIC_FIELD_OPTIONS}
+          options={filteredSpecificFieldOptions}
         />
 
         {errors.department && (

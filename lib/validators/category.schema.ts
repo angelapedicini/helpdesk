@@ -34,8 +34,14 @@ export type CreateTicketCategoryAccessOutput = z.output<typeof CreateTicketCateg
 
 export const CategoryFormSchema = z.object({
   name: z.string().min(1, "Questo campo è obbligatorio").max(120),
-  department: DepartmentEnum,
-  specificField: TicketSpecificFieldSchema,
+  department: z.enum(DepartmentEnum.options, {
+    error: (issue) =>
+      issue.input === undefined ? "Seleziona un reparto" : "Reparto non valido",
+  }),
+  specificField: z.enum(TicketSpecificFieldSchema.options, {
+    error: (issue) =>
+      issue.input === undefined ? "Seleziona un reparto" : "Reparto non valido",
+  }),
 });
 export type CategoryFormInput = z.input<typeof CategoryFormSchema>;
 export type CategoryFormOutput = z.output<typeof CategoryFormSchema>;
