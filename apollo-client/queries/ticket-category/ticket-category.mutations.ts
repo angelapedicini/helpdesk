@@ -12,9 +12,9 @@ export const CREATE_TICKET_CATEGORY = graphql(`
   }
 `);
 
-export const UPDATE_TICKET_CATEGORY = graphql(`
-  mutation UpdateTicketCategory($id: Int!, $input: UpdateTicketCategoryInput!) {
-    updateTicketCategory(id: $id, input: $input) {
+export const UPDATE_CATEGORY = graphql(`
+  mutation UpdateCategory($id: Int!, $input: UpdateCategoryInput!) {
+    updateCategory(id: $id, input: $input) {
       id
       name
       department
@@ -44,42 +44,6 @@ export const RESTORE_TICKET_CATEGORY = graphql(`
       department
       specificField
       disabled
-    }
-  }
-`);
-
-export const CREATE_TICKET_CATEGORY_ACCESS = graphql(`
-  mutation CreateTicketCategoryAccess($input: CreateTicketCategoryAccessInput!) {
-    createTicketCategoryAccess(input: $input) {
-      id
-      categoryId
-      disabled
-      requesterDepartment
-      requesterMinRole
-    }
-  }
-`);
-
-export const DELETE_TICKET_CATEGORY_ACCESS = graphql(`
-  mutation DeleteTicketCategoryAccess($id: Int!) {
-    deleteTicketCategoryAccess(id: $id) {
-      id
-      categoryId
-      disabled
-      requesterDepartment
-      requesterMinRole
-    }
-  }
-`);
-
-export const RESTORE_TICKET_CATEGORY_ACCESS = graphql(`
-  mutation RestoreTicketCategoryAccess($id: Int!) {
-    restoreTicketCategoryAccess(id: $id) {
-      id
-      categoryId
-      disabled
-      requesterDepartment
-      requesterMinRole
     }
   }
 `);

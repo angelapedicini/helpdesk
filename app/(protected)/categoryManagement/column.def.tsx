@@ -134,7 +134,7 @@ export function createCategoryHeadCells(
     const accessCells: HeadCell<CategoryManagementRowWithAccess>[] =
         ACCESS_COLUMNS.map(({ department, key }) => ({
             id: key,
-            label: `Accesso ${DEPARTMENT_CONFIG[department]?.label ?? department}`,
+            label: `${DEPARTMENT_CONFIG[department]?.label ?? department}`,
             render: renderAccessRole(key),
         }));
 

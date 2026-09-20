@@ -6,6 +6,47 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # AGENTS.md
 
+## Mandatory Reading
+
+This file MUST be read in full at the start of every session and before every task.
+
+* Treat every rule in this file as a requirement, not a suggestion.
+* Re-read the relevant sections before proposing a plan and before writing code.
+* If a request conflicts with a rule in this file, do not silently break the rule: point out the conflict and ask how to proceed.
+* If this file and the existing code disagree, follow this file and tell me about the discrepancy.
+
+---
+
+# Language
+
+I may write to you in English or in Italian, and both are equally fine.
+
+* Understand both languages and reply in the language I used in my last message.
+* Code, identifiers, comments, and commit messages are written in English.
+* User-facing UI text (labels, validation messages, errors) follows the language already used in the project (currently Italian). Follow existing patterns before choosing a language.
+
+---
+
+# Workflow Rules
+
+Before writing or modifying any code, you MUST:
+
+1. Present a short plan that lists:
+   * every file you intend to create, modify, or delete
+   * a brief summary of the changes for each file
+2. Ask for my explicit approval and wait for my answer.
+3. Only after I confirm, make the changes.
+
+Additional rules:
+
+* Do not start implementing based on a vague or implicit go-ahead. Wait for a clear confirmation.
+* If the plan changes during implementation (new files, different scope), stop and ask again.
+* Do not modify files that were not listed in the approved plan.
+* Read-only actions (reading files, searching the codebase) do not require approval.
+* If a request is ambiguous, ask a clarifying question before proposing a plan.
+
+---
+
 ## Project Overview
 
 This project is a full-stack web application built with Next.js and TypeScript.
@@ -419,6 +460,7 @@ Examples where patterns may be appropriate:
 
 Do not:
 
+* write or modify code without my explicit approval of the plan
 * add Tailwind CSS
 * introduce Redux for GraphQL data
 * put database logic inside React components

@@ -33,7 +33,7 @@ export type CreateTicketCategoryAccessInput = {
 export type CreateTicketCategoryInput = {
   department: Department;
   name: Scalars['String']['input'];
-  specificField: TicketSpecificField;
+  specificField?: InputMaybe<TicketSpecificField>;
 };
 
 export type CreateUserInput = {
@@ -118,6 +118,7 @@ export type Mutation = {
   restoreTicketCategory: TicketCategory;
   restoreTicketCategoryAccess: TicketCategoryAccess;
   startDemo: StartDemoResult;
+  updateCategory: TicketCategory;
   updateTicket: Ticket;
   updateTicketCategory: TicketCategory;
   updateUserRole: User;
@@ -209,6 +210,12 @@ export type MutationRestoreTicketCategoryAccessArgs = {
 };
 
 
+export type MutationUpdateCategoryArgs = {
+  id: Scalars['Int']['input'];
+  input: UpdateCategoryInput;
+};
+
+
 export type MutationUpdateTicketArgs = {
   id: Scalars['Int']['input'];
   input: TicketUpdateInput;
@@ -257,6 +264,7 @@ export type Query = {
 
 export type QueryCategoriesArgs = {
   department?: InputMaybe<Department>;
+  includeDisabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -704,6 +712,17 @@ export type TicketUpdateInput = {
   specificValue?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<TicketStatus>;
   title?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateCategoryAccessGrantInput = {
+  requesterDepartment?: InputMaybe<Department>;
+  requesterMinRole: Role;
+};
+
+export type UpdateCategoryInput = {
+  accessGrants?: InputMaybe<Array<UpdateCategoryAccessGrantInput>>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  specificField?: InputMaybe<TicketSpecificField>;
 };
 
 export type UpdateTicketCategoryInput = {

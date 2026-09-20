@@ -4,17 +4,15 @@ import { useMutation, useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import {
     Box,
-    Chip,
     IconButton,
     Stack,
     Typography,
 } from "@mui/material";
 import ControlPointIcon from "@mui/icons-material/ControlPoint";
-import EditIcon from "@mui/icons-material/Edit";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+// import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditSquareIcon from '@mui/icons-material/EditSquare';
 import DisabledByDefaultIcon from "@mui/icons-material/DisabledByDefault";
 import RestoreIcon from "@mui/icons-material/Restore";
-import TuneIcon from "@mui/icons-material/Tune";
 import EnhancedTable from "@/components/table";
 import Modal from "@/components/modal";
 import { useModalState } from "@/components/hooks/use-modal-state";
@@ -24,8 +22,6 @@ import { GET_CATEGORY_ACCESSES } from "@/apollo-client/queries/ticket-category/t
 import {
     DELETE_TICKET_CATEGORY,
     RESTORE_TICKET_CATEGORY,
-    DELETE_TICKET_CATEGORY_ACCESS,
-    RESTORE_TICKET_CATEGORY_ACCESS,
 } from "@/apollo-client/queries/ticket-category/ticket-category.mutations";
 import {
     createCategoryHeadCells,
@@ -34,9 +30,6 @@ import {
     CategoryManagementRowWithAccess,
 } from "./column.def";
 import CategoryForm from "@/components/forms/category/category-form";
-import CategoryAccessForm from "@/components/forms/category/category-access-form";
-import { ROLE_CONFIG } from "@/components/enums/role.config";
-import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
 import { useCategoryManagementPermissions } from "@/lib/casl/abilities/category/hook-permission";
 
 export default function CategoryManagementPage() {
@@ -45,7 +38,9 @@ export default function CategoryManagementPage() {
     const { canManageCategories, canManageCategoryAccesses } =
         useCategoryManagementPermissions();
 
-    const { data: categoriesData } = useQuery(GET_CATEGORIES);
+    const { data: categoriesData } = useQuery(GET_CATEGORIES, {
+        variables: { includeDisabled: true },
+    });
     const { data: accessesData } = useQuery(GET_CATEGORY_ACCESSES, {
         skip: !canManageCategoryAccesses,
     });
@@ -62,18 +57,6 @@ export default function CategoryManagementPage() {
     const [restoreTicketCategory] = useMutation(RESTORE_TICKET_CATEGORY, {
         context: { successMessage: "Categoria riattivata con successo." },
         refetchQueries: ["Categories", "CategoryAccesses"],
-        awaitRefetchQueries: true,
-    });
-
-    const [deleteTicketCategoryAccess] = useMutation(DELETE_TICKET_CATEGORY_ACCESS, {
-        context: { successMessage: "Accesso disabilitato con successo." },
-        refetchQueries: ["CategoryAccesses"],
-        awaitRefetchQueries: true,
-    });
-
-    const [restoreTicketCategoryAccess] = useMutation(RESTORE_TICKET_CATEGORY_ACCESS, {
-        context: { successMessage: "Accesso riattivato con successo." },
-        refetchQueries: ["CategoryAccesses"],
         awaitRefetchQueries: true,
     });
 
@@ -94,8 +77,6 @@ export default function CategoryManagementPage() {
     });
 
     const createModal = useModalState<void>();
-    const editModal = useModalState<CategoryManagementRow>();
-    const accessesModal = useModalState<CategoryManagementRow>();
 
     const handleToggleCategory = (cat: CategoryManagementRow) => {
         if (cat.disabled) {
@@ -104,17 +85,6 @@ export default function CategoryManagementPage() {
             deleteTicketCategory({ variables: { id: cat.id } });
         }
     };
-
-    const handleToggleAccess = (accessId: number, disabled: boolean | null | undefined) => {
-        if (disabled) {
-            restoreTicketCategoryAccess({ variables: { id: accessId } });
-        } else {
-            deleteTicketCategoryAccess({ variables: { id: accessId } });
-        }
-    };
-
-    const categoryAccesses = (categoryId: number) =>
-        accesses.filter((a) => a.categoryId === categoryId);
 
     return (
         <Box sx={{ mt: 3, mx: 2 }}>
@@ -131,7 +101,7 @@ export default function CategoryManagementPage() {
                 <EnhancedTable<CategoryManagementRowWithAccess>
                     rows={matrixRows}
                     headCells={headCells}
-                    actionsWidth="200px"
+                    actionsWidth="120px"
                     actions={
                         canManageCategories
                             ? (cat) => (
@@ -139,13 +109,7 @@ export default function CategoryManagementPage() {
                                     <IconButton
                                         onClick={() => router.push(`/categoryManagement/${cat.id}`)}
                                     >
-                                        <VisibilityIcon />
-                                    </IconButton>
-                                    <IconButton onClick={() => accessesModal.open(cat)}>
-                                        <TuneIcon />
-                                    </IconButton>
-                                    <IconButton onClick={() => editModal.open(cat)}>
-                                        <EditIcon />
+                                        <EditSquareIcon />
                                     </IconButton>
                                     <IconButton onClick={() => handleToggleCategory(cat)}>
                                         {cat.disabled ? <RestoreIcon /> : <DisabledByDefaultIcon />}
@@ -166,82 +130,6 @@ export default function CategoryManagementPage() {
                     defaultDepartment={meData?.me?.department}
                     onSubmit={createModal.close}
                 />
-            </Modal>
-
-            <Modal
-                title="Modifica categoria"
-                isOpen={editModal.isOpen}
-                onClose={editModal.close}
-            >
-                {editModal.value && (
-                    <CategoryForm
-                        category={editModal.value}
-                        onSubmit={editModal.close}
-                    />
-                )}
-            </Modal>
-
-            <Modal
-                title="Accessi categoria"
-                isOpen={accessesModal.isOpen}
-                onClose={accessesModal.close}
-            >
-                {accessesModal.value && (
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                            {accessesModal.value.name} ({DEPARTMENT_CONFIG[accessesModal.value.department]?.label ?? accessesModal.value.department})
-                        </Typography>
-
-                        {categoryAccesses(accessesModal.value.id).map((access) => {
-                            const dept = access.requesterDepartment;
-                            const deptConfig = dept ? DEPARTMENT_CONFIG[dept] : null;
-                            const roleConfig = ROLE_CONFIG[access.requesterMinRole];
-                            return (
-                                <Stack
-                                    key={access.id}
-                                    direction="row"
-                                    sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}
-                                >
-                                    <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", gap: 0.5 }}>
-                                        <Chip
-                                            label={deptConfig?.label ?? "Tutti i reparti"}
-                                            size="small"
-                                            color={access.disabled ? "default" : "primary"}
-                                        />
-                                        <Chip
-                                            label={`Ruolo minimo: ${roleConfig.label}`}
-                                            size="small"
-                                            color={access.disabled ? "default" : "secondary"}
-                                        />
-                                        {access.disabled && (
-                                            <Chip label="Disabilitato" color="error" size="small" />
-                                        )}
-                                    </Stack>
-                                    <IconButton onClick={() => handleToggleAccess(access.id, access.disabled)}>
-                                        {access.disabled ? <RestoreIcon /> : <DisabledByDefaultIcon />}
-                                    </IconButton>
-                                </Stack>
-                            );
-                        })}
-
-                        {categoryAccesses(accessesModal.value.id).length === 0 && (
-                            <Typography variant="body2" color="text.secondary">
-                                Nessun accesso configurato.
-                            </Typography>
-                        )}
-
-                        <Box sx={{ mt: 2, borderTop: 1, borderColor: "divider", pt: 2 }}>
-                            <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                                Aggiungi accesso
-                            </Typography>
-                            <CategoryAccessForm
-                                categoryId={accessesModal.value.id}
-                                categoryName={accessesModal.value.name}
-                                onSubmit={accessesModal.close}
-                            />
-                        </Box>
-                    </Box>
-                )}
             </Modal>
         </Box>
     );

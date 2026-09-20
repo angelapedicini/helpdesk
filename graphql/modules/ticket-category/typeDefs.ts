@@ -18,7 +18,7 @@ export const ticketCategoryTypeDefs = `#graphql
   input CreateTicketCategoryInput {
     name: String!
     department: Department!
-    specificField: TicketSpecificField!
+    specificField: TicketSpecificField
   }
 
   input UpdateTicketCategoryInput {
@@ -32,8 +32,19 @@ export const ticketCategoryTypeDefs = `#graphql
     requesterMinRole: Role!
   }
 
+  input UpdateCategoryAccessGrantInput {
+    requesterDepartment: Department
+    requesterMinRole: Role!
+  }
+
+  input UpdateCategoryInput {
+    name: String
+    specificField: TicketSpecificField
+    accessGrants: [UpdateCategoryAccessGrantInput!]
+  }
+
   extend type Query {
-    categories(department: Department): [TicketCategory!]!
+    categories(department: Department, includeDisabled: Boolean): [TicketCategory!]!
     categoryById(id: Int!): TicketCategory
     categoryAccesses(categoryId: Int): [TicketCategoryAccess!]!
   }
@@ -41,6 +52,7 @@ export const ticketCategoryTypeDefs = `#graphql
   extend type Mutation {
     createTicketCategory(input: CreateTicketCategoryInput!): TicketCategory!
     updateTicketCategory(id: Int!, input: UpdateTicketCategoryInput!): TicketCategory!
+    updateCategory(id: Int!, input: UpdateCategoryInput!): TicketCategory!
     deleteTicketCategory(id: Int!): TicketCategory!
     restoreTicketCategory(id: Int!): TicketCategory!
     createTicketCategoryAccess(input: CreateTicketCategoryAccessInput!): TicketCategoryAccess!

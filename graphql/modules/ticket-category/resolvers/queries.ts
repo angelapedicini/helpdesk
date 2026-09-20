@@ -1,20 +1,25 @@
 import { getPrisma } from "@/lib/prisma/index";
 import { getSession, requireSession } from "@/lib/auth/session";
 import { Department } from "@/app/generated/prisma/enums";
-import { getAllowedCategories, assertCanManageTicketCategoryAccess } from "@/lib/casl/abilities/category/guards";
+import { getAllowedCategories, assertCanManageTicketCategory, assertCanManageTicketCategoryAccess } from "@/lib/casl/abilities/category/guards";
 import { defineAbility } from "@/lib/casl/defineAbility";
 
 export const categoryQueries = {
   categories: async (
     _parent: unknown,
-    args: { department?: Department }
+    args: { department?: Department; includeDisabled?: boolean }
   ) => {
     const session = await getSession();
     if (!session) return [];
     const prisma = await getPrisma();
+    const ability = defineAbility(session);
 
+    const includeDisabled = args.includeDisabled === true;
+    if (includeDisabled) {
+      assertCanManageTicketCategory(ability, "manage");
+    }
 
-    const categories = await getAllowedCategories(prisma, defineAbility(session));
+    const categories = await getAllowedCategories(prisma, ability, { includeDisabled });
 
     if (args.department) {
       return categories.filter(
@@ -32,11 +37,11 @@ export const categoryQueries = {
     const session = await getSession();
     if (!session) return null;
     const prisma = await getPrisma();
+    const ability = defineAbility(session);
 
-
-    // const prisma = await getPrismaClient();
-
-    const allowed = await getAllowedCategories(prisma, defineAbility(session));
+    const allowed = await getAllowedCategories(prisma, ability, {
+      includeDisabled: ability.can("manage", "TicketCategory"),
+    });
 
     const isAllowed = allowed.some((c) => c.id === args.id);
     if (!isAllowed) return null;
@@ -65,7 +70,7 @@ export const categoryQueries = {
         requesterDepartment: true,
         requesterMinRole: true,
       },
-      orderBy: [{ categoryId: "asc" }, { id: "asc" }],
+      orderBy: [{ categoryId: "desc" }, { id: "desc" }],
     });
   },
 };

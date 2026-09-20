@@ -24,7 +24,7 @@ export default function Page() {
       const { data: loginData } = await login({
         variables: {
           input: {
-            email: "rossi@example.com",
+            email: "system.admin@example.com",
           },
         },
       });
@@ -39,7 +39,7 @@ export default function Page() {
     const { data: loginData } = await login({
       variables: {
         input: {
-          email: "rossi@example.com",
+          email: "system.admin@example.com",
         },
       },
     });

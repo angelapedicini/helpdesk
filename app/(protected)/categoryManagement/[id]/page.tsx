@@ -2,18 +2,12 @@
 
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
-import { Box, TextField, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import {
     GET_CATEGORY_BY_ID,
     GET_CATEGORY_ACCESSES,
 } from "@/apollo-client/queries/ticket-category/ticket-category.queries";
-import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
-import { ROLE_CONFIG } from "@/components/enums/role.config";
-import { SPECIFIC_FIELD_LABELS } from "@/lib/config/ticket-specific-field.config";
-import { getCategoryAccessMatrix } from "../column.def";
-import { Department } from "@/lib/validators/enums.schema";
-
-const ACCESS_DEPARTMENTS = Object.keys(DEPARTMENT_CONFIG) as Department[];
+import CategoryDetailForm from "@/components/forms/category/category-detail-form";
 
 export default function Page() {
     const { id } = useParams();
@@ -43,11 +37,6 @@ export default function Page() {
         return null;
     }
 
-    const matrix = getCategoryAccessMatrix(
-        category.id,
-        accessesData?.categoryAccesses ?? []
-    );
-
     return (
         <Box
             sx={{
@@ -60,81 +49,10 @@ export default function Page() {
                 Categoria # {category.id} — {category.name}
             </Typography>
 
-            <Box
-                sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                        xs: "1fr",
-                        md: "1fr 1fr",
-                    },
-                    gap: 3,
-                    mb: 3,
-                }}
-            >
-                <TextField
-                    label="Nome"
-                    value={category.name}
-                    fullWidth
-                    disabled
-                />
-
-                <TextField
-                    label="Dipartimento"
-                    value={
-                        DEPARTMENT_CONFIG[category.department]?.label ??
-                        category.department
-                    }
-                    fullWidth
-                    disabled
-                />
-
-                <TextField
-                    label="Campo specifico"
-                    value={
-                        category.specificField
-                            ? SPECIFIC_FIELD_LABELS[category.specificField] ??
-                              category.specificField
-                            : "—"
-                    }
-                    fullWidth
-                    disabled
-                />
-
-                <TextField
-                    label="Stato"
-                    value={category.disabled ? "Disabilitata" : "Attiva"}
-                    fullWidth
-                    disabled
-                />
-            </Box>
-
-            <Typography variant="h6" sx={{ mb: 2 }}>
-                Accessi per dipartimento
-            </Typography>
-
-            <Box
-                sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                        xs: "1fr",
-                        md: "1fr 1fr",
-                    },
-                    gap: 3,
-                }}
-            >
-                {ACCESS_DEPARTMENTS.map((department) => {
-                    const role = matrix[department];
-                    return (
-                        <TextField
-                            key={department}
-                            label={`Accesso ${DEPARTMENT_CONFIG[department]?.label ?? department}`}
-                            value={role ? (ROLE_CONFIG[role]?.label ?? role) : "—"}
-                            fullWidth
-                            disabled
-                        />
-                    );
-                })}
-            </Box>
+            <CategoryDetailForm
+                category={category}
+                accesses={accessesData?.categoryAccesses ?? []}
+            />
         </Box>
     );
 }

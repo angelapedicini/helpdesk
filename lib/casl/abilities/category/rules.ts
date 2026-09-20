@@ -28,16 +28,17 @@ function defineCategoryRules({ can }: CategoryAbilityBuilder, user: CategoryUser
   }
 
   // ------------------------------------------------------------
-  // Tutti gli altri ruoli: sola lettura, scoped per dipartimento
-  // o per accessGrant esplicito.
+  // Tutti gli altri ruoli: sola lettura, scoped SOLO sugli accessi
+  // espliciti della matrice (grant attivi con ruolo minimo compatibile).
+  // Nessuna visibilità automatica sulle categorie del proprio
+  // dipartimento: la matrice è l'unica fonte di visibilità.
   // ------------------------------------------------------------
   const eligibleMinRoles = rolesAtOrBelow(user.role);
-
-  can("read", "TicketCategory", { department: user.department });
 
   can("read", "TicketCategory", {
     accessGrants: {
       some: {
+        disabled: { not: true },
         OR: [
           { requesterDepartment: user.department },
           { requesterDepartment: null },

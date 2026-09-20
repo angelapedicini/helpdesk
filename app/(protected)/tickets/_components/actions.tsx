@@ -6,7 +6,7 @@ import Tooltip from "@mui/material/Tooltip";
 
 import DeleteIcon from "@mui/icons-material/Delete";
 import HistoryIcon from "@mui/icons-material/History";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditSquareIcon from '@mui/icons-material/EditSquare';
 import MessageIcon from '@mui/icons-material/Message';
 
 import type { TicketFieldsFragment, TicketScope } from "@/graphql-generated/graphql";
@@ -36,7 +36,7 @@ export default function TicketRowActions({
             {onOpen && (
                 <Tooltip title="Apri ticket" arrow>
                     <IconButton color="primary" onClick={() => onOpen(ticket)} aria-label="Apri ticket">
-                        <VisibilityIcon />
+                        <EditSquareIcon />
                     </IconButton>
                 </Tooltip>
             )}

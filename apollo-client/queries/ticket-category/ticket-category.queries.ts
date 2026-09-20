@@ -1,8 +1,8 @@
 import { graphql } from "@/graphql-generated";
 
 export const GET_CATEGORIES = graphql(`
-  query Categories($department: Department) {
-    categories(department: $department) {
+  query Categories($department: Department, $includeDisabled: Boolean) {
+    categories(department: $department, includeDisabled: $includeDisabled) {
       id
       name
       department
