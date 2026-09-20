@@ -4,13 +4,13 @@ export const ticketCategoryTypeDefs = `#graphql
     name: String!
     department: Department!
     specificField: TicketSpecificField
-    disabled: Boolean
+    disabled: Boolean!
   }
 
   type TicketCategoryAccess {
     id: Int!
     categoryId: Int!
-    disabled: Boolean
+    disabled: Boolean!
     requesterDepartment: Department
     requesterMinRole: Role!
   }

@@ -273,7 +273,7 @@ export type CreateTicketCategoryMutationVariables = Exact<{
 }>;
 
 
-export type CreateTicketCategoryMutation = { createTicketCategory: { id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean | null } };
+export type CreateTicketCategoryMutation = { createTicketCategory: { id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean } };
 
 export type UpdateCategoryMutationVariables = Exact<{
   id: number;
@@ -281,21 +281,21 @@ export type UpdateCategoryMutationVariables = Exact<{
 }>;
 
 
-export type UpdateCategoryMutation = { updateCategory: { id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean | null } };
+export type UpdateCategoryMutation = { updateCategory: { id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean } };
 
 export type DeleteTicketCategoryMutationVariables = Exact<{
   id: number;
 }>;
 
 
-export type DeleteTicketCategoryMutation = { deleteTicketCategory: { id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean | null } };
+export type DeleteTicketCategoryMutation = { deleteTicketCategory: { id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean } };
 
 export type RestoreTicketCategoryMutationVariables = Exact<{
   id: number;
 }>;
 
 
-export type RestoreTicketCategoryMutation = { restoreTicketCategory: { id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean | null } };
+export type RestoreTicketCategoryMutation = { restoreTicketCategory: { id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean } };
 
 export type CategoriesQueryVariables = Exact<{
   department?: Department | null | undefined;
@@ -303,21 +303,21 @@ export type CategoriesQueryVariables = Exact<{
 }>;
 
 
-export type CategoriesQuery = { categories: Array<{ id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean | null }> };
+export type CategoriesQuery = { categories: Array<{ id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean }> };
 
 export type CategoryByIdQueryVariables = Exact<{
   id: number;
 }>;
 
 
-export type CategoryByIdQuery = { categoryById: { id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean | null } | null };
+export type CategoryByIdQuery = { categoryById: { id: number, name: string, department: Department, specificField: TicketSpecificField | null, disabled: boolean } | null };
 
 export type CategoryAccessesQueryVariables = Exact<{
   categoryId?: number | null | undefined;
 }>;
 
 
-export type CategoryAccessesQuery = { categoryAccesses: Array<{ id: number, categoryId: number, disabled: boolean | null, requesterDepartment: Department | null, requesterMinRole: Role }> };
+export type CategoryAccessesQuery = { categoryAccesses: Array<{ id: number, categoryId: number, disabled: boolean, requesterDepartment: Department | null, requesterMinRole: Role }> };
 
 export type TicketHistoryFieldsFragment = { id: number, originalTicketId: number, title: string, description: string, status: TicketStatus, priority: TicketPriority, dueDate: string | null, dueFirstResponse: string | null, reopenCount: number, reopenReason: string | null, sourceDepartmentForUser: Department, createdAt: string, updatedAt: string, closedAt: string | null, ticketDepartment: Department, closingMessage: string | null, ticketSpecific: string | null, deletedAt: string | null, category: { id: number, name: string } | null, createdBy: { id: number, firstName: string, lastName: string } | null, assignedTo: { id: number, firstName: string, lastName: string } | null, lastUpdatedBy: { id: number, firstName: string, lastName: string } | null, deletedBy: { id: number, firstName: string, lastName: string } | null } & { ' $fragmentName'?: 'TicketHistoryFieldsFragment' };
 

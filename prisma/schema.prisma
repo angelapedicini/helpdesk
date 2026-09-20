@@ -68,7 +68,7 @@ model TicketCategory {
   name          String
   department    Department
   specificField TicketSpecificField? // null = nessuna specifica richiesta per questa categoria
-  disabled Boolean? @default(false)
+  disabled Boolean @default(false)
   updatedAt DateTime? 
   updatedBy Int? 
 
@@ -84,7 +84,7 @@ model TicketCategoryAccess {
   categoryId Int
   category   TicketCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  disabled Boolean? @default(false)
+  disabled Boolean @default(false)
   updatedAt DateTime? 
   updatedBy Int? 
 

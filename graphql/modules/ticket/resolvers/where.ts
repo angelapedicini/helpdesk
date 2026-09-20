@@ -92,18 +92,6 @@ export function buildTicketWhere(
     });
   }
 
-    // Solo ticket scaduti
-  if (filter.overdue === true) {
-    conditions.push({
-      dueDate: {
-        lt: new Date(),
-      },
-      status: {
-        notIn: ["CLOSED", "REFUSED"],
-      },
-    });
-  }
-
   // Solo ticket con SLA di prima risposta scaduto.
   // Assunzione: una volta che il ticket esce da OPEN/ASSIGNED (es. entra in
   // IN_PROGRESS) si considera "già risposto", quindi il filtro ha senso solo
@@ -127,13 +115,6 @@ export function buildTicketWhere(
       reopenCount: {
         gt: 0,
       },
-    });
-  }
-
-  // Solo ticket non assegnati
-  if (filter.unassigned === true) {
-    conditions.push({
-      assignedToId: null,
     });
   }
 

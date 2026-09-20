@@ -11,10 +11,19 @@ import type { CategoryActions } from "./types";
 function categoryReadWhere(ability: AppAbility, includeDisabled = false) {
   const base = accessibleBy(ability, "read").ofType("TicketCategory");
   if (includeDisabled) return base;
-  // "attiva" include explicitamente i NULL: il predicato "not: true" in SQL
-  // esclude i NULL (logica a tre valori), lasciando invisibili le categorie
-  // ripristinate prima della normalizzazione (disabled = null).
-  return { AND: [base, { OR: [{ disabled: false }, { disabled: null }] }] } as const;
+  // "attiva": disabled è non-nullable (Boolean), quindi il predicato è esplicito.
+  // La visibilità "operativa" richiede anche almeno un grant attivo: pure chi
+  // gestisce (SYSTEM_ADMIN, per cui base è senza restrizioni) vede in dashboard,
+  // form e filtri solo le categorie a cui è stata assegnata una visibilità.
+  // Il catalogo completo (incluse quelle senza grant) resta accessibile solo
+  // con includeDisabled=true, usato dalla pagina di gestione.
+  return {
+    AND: [
+      base,
+      { disabled: false },
+      { accessGrants: { some: { disabled: false } } },
+    ],
+  } as const;
 }
 
 export type CategoryReadOptions = { includeDisabled?: boolean };

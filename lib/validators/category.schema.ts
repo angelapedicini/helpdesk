@@ -14,7 +14,7 @@ export const UpdateTicketCategorySchema = z.object({
     .min(1, "Questo campo deve contenere almeno un carattere")
     .max(120)
     .optional(),
-  specificField: TicketSpecificFieldSchema.optional(),
+  specificField: TicketSpecificFieldSchema.nullish(),
 });
 
 export const CreateTicketCategoryAccessSchema = z.object({
@@ -66,7 +66,7 @@ export const CategoryDetailAccessRowSchema = RoleEnum.or(z.literal(""));
 
 export const CategoryDetailFormSchema = z.object({
   name: z.string().min(1, "Questo campo è obbligatorio").max(120),
-  specificField: TicketSpecificFieldSchema,
+  specificField: TicketSpecificFieldSchema.or(z.literal("")),
   access: z.object({
     FINANCE: CategoryDetailAccessRowSchema,
     HR: CategoryDetailAccessRowSchema,

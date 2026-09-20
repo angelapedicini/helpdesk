@@ -61,8 +61,8 @@ export const lightTheme = createTheme({
             tableRowHover: "rgba(12, 2, 2, 0.04)",
             tableBorder: "#e2e8f0",
             highlightedRow: "#fde8e8",
-            errorRow: "#fd7f7f",
-            errorRowHover: "#e96c6c",
+            errorRow: "#f8cdcd",
+            errorRowHover: "#f5bcbc",
             highlightedCell: "#fde8a3",
 
             //List item

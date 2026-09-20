@@ -150,7 +150,7 @@ export const categoryMutations = {
 
       if (!allowedFields.includes(result.data.specificField)) {
         throw new GraphQLError(
-          "Specifica non valida per il dipartimento selezionato",
+          "Specific not valid for this category",
           {
             extensions: { code: "BAD_USER_INPUT" },
           }

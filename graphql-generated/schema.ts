@@ -436,7 +436,7 @@ export type TicketAdminNotificationSubscription = {
 export type TicketCategory = {
   __typename?: 'TicketCategory';
   department: Department;
-  disabled?: Maybe<Scalars['Boolean']['output']>;
+  disabled: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   specificField?: Maybe<TicketSpecificField>;
@@ -445,7 +445,7 @@ export type TicketCategory = {
 export type TicketCategoryAccess = {
   __typename?: 'TicketCategoryAccess';
   categoryId: Scalars['Int']['output'];
-  disabled?: Maybe<Scalars['Boolean']['output']>;
+  disabled: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   requesterDepartment?: Maybe<Department>;
   requesterMinRole: Role;

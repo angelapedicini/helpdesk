@@ -22,7 +22,8 @@ This file MUST be read in full at the start of every session and before every ta
 I may write to you in English or in Italian, and both are equally fine.
 
 * Understand both languages and reply in the language I used in my last message.
-* Code, identifiers, comments, and commit messages are written in English.
+* Code identifiers and commit messages are written in English.
+* Code comments are written in Italian, following the existing project style.
 * User-facing UI text (labels, validation messages, errors) follows the language already used in the project (currently Italian). Follow existing patterns before choosing a language.
 
 ---
@@ -263,6 +264,91 @@ Examples of server state:
 
 ---
 
+# Error Handling, Notifications and Loading
+
+Errors have two audiences and are written in two different places:
+
+* **Developers** get English messages, written in the backend.
+* **Users** get Italian messages, written only in the Apollo link.
+
+## Error flow
+
+```
+Service / Resolver
+    throws GraphQLError (English message + extensions.code)
+        |
+        ↓
+Apollo notificationLink
+    maps extensions.code to an Italian message (graphqlErrorMessages)
+        |
+        ↓
+notify(message, "error")  →  notificationVar  →  notification UI
+```
+
+## Backend rules
+
+* Throw `GraphQLError` with an English message meant for developers (debugging, logs).
+* Always set `extensions.code`, in `UPPER_SNAKE_CASE`, one per distinct failure cause.
+* Reuse existing codes when they fit (`UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `BAD_USER_INPUT`, `INTERNAL_SERVER_ERROR`). Create a new code only when the user needs a specific message.
+* Never write Italian or user-facing text in the backend.
+
+Example:
+
+```ts
+throw new GraphQLError("User cannot be assigned to this ticket", {
+  extensions: { code: "ASSIGNED_TO_ERROR" },
+});
+```
+
+## Frontend rules
+
+* Every new `extensions.code` MUST get an Italian entry in `graphqlErrorMessages` in `lib/apollo-client/notification-link.ts`. Adding the backend error and its Italian message is one single change, and both files must appear in the plan.
+* Without a mapping, the user would see the English developer message. Treat a missing mapping as a bug.
+* Message fallback order: mapped Italian message, then the error's own message, then the generic "Si è verificato un errore.".
+* HTTP errors (network/server) are mapped by status code in `httpErrorMessages`.
+* Do not show error notifications for GraphQL or HTTP errors from components or hooks, and do not write `try/catch` + `notify` for them. `notificationLink` already does it. Components only handle UI-specific reactions.
+* Zod validation messages on forms are Italian and belong to the form schema. They are separate from this flow.
+
+## Automatic side effects
+
+* `FORBIDDEN` (and HTTP 403) triggers `redirectToDashboard()` from `lib/apollo-client/navigation.ts`.
+* `UNAUTHENTICATED` is handled by `authRefreshLink`: it calls the `RefreshToken` mutation, retries the original operation if the refresh succeeds, and redirects to `/` if it fails.
+* `RefreshToken`, `Login` and `Register` are excluded from the refresh logic. Keep them excluded.
+* Do not duplicate this behavior in components or add other links for the same purpose.
+
+## Success notifications
+
+Every mutation shows a success notification automatically. Control it through the Apollo `context`:
+
+* `successMessage`: custom Italian message. `{field}` placeholders are replaced with values from the mutation's returned payload, so the mutation must select those fields.
+* `silent: true`: suppresses the success notification only. Errors are always shown.
+
+```ts
+const [createTicket] = useMutation(CREATE_TICKET, {
+  context: { successMessage: 'Ticket "{title}" creato con successo.' },
+});
+```
+
+Manual notifications, when really needed, use `notify(message, severity)` from `lib/apollo-client/notification.ts`.
+
+## Loading
+
+* `loadingLink` increments the global `loadingVar` counter for every in-flight GraphQL operation and decrements it when the operation ends. A value greater than 0 means something is loading.
+* Global loading indicators must read `loadingVar` (e.g. `useReactiveVar`). Do not create separate global loading state or duplicate counters.
+* The local `loading` flag from Apollo hooks may still be used for local UI, for example disabling a submit button.
+
+## Related files
+
+All files are in `lib/apollo-client/`:
+
+* `notification-link.ts`: error and success notifications, error code to message maps
+* `auth-refresh-link.ts`: token refresh and redirect to login
+* `navigation.ts`: `redirectToDashboard`
+* `notification.ts`: `notify` and `notificationVar`
+* `loadingLink` and `loadingVar`: global loading counter, exported from the loading link module
+
+---
+
 # Backend Architecture Rules
 
 ## GraphQL Resolvers
@@ -468,6 +554,8 @@ Do not:
 * duplicate API response types manually
 * bypass GraphQL using direct frontend database calls
 * add dependencies without justification
+* show error notifications from components for errors already handled by `notificationLink`
+* write Italian user-facing messages in the backend
 
 ---
 

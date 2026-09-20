@@ -1584,6 +1584,45 @@ export async function main() {
     });
   }
 
+  /*
+   * Normalizzazione: auto-visibilità del reparto proprietario.
+   *
+   * Se una categoria NON ha visibilità totale (nessun grant wildcard con
+   * requesterDepartment = null, quindi non tutti i reparti la vedono),
+   * il reparto proprietario deve comunque potersi auto-visualizzare con
+   * ruolo EMPLOYEE. Se il reparto proprietario ha già un grant (qualsiasi
+   * ruolo) la categoria resta com'è.
+   *
+   * Le categorie con wildcard vengono saltate: essendo visibili a tutti,
+   * il proprietario è già coperto. Es. "Budget" (FINANCE, wildcard ADMIN)
+   * non riceve alcun grant EMPLOYEE e resta disponibile solo per gli ADMIN.
+   */
+  for (const dept of DEPARTMENTS) {
+    for (const category of categoriesByDept[dept]) {
+      const grants = await prisma.ticketCategoryAccess.findMany({
+        where: { categoryId: category.id },
+      });
+
+      const hasWildcard = grants.some(
+        (grant) => grant.requesterDepartment === null
+      );
+      if (hasWildcard) continue;
+
+      const hasSelfGrant = grants.some(
+        (grant) => grant.requesterDepartment === dept
+      );
+      if (!hasSelfGrant) {
+        await prisma.ticketCategoryAccess.create({
+          data: {
+            categoryId: category.id,
+            requesterDepartment: dept,
+            requesterMinRole: "EMPLOYEE",
+          },
+        });
+      }
+    }
+  }
+
   const techniciansByDept: Record<Department, TechnicianRecord[]> = {
     IT: [],
     HR: [],

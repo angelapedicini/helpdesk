@@ -57,12 +57,12 @@ type CategoryDetailFormProps = {
         name: string;
         department: Department;
         specificField: TicketSpecificField | null;
-        disabled: boolean | null;
+        disabled: boolean;
     };
     accesses: Array<{
         requesterDepartment: Department | null;
         requesterMinRole: Role;
-        disabled: boolean | null;
+        disabled: boolean;
     }>;
 };
 
@@ -87,9 +87,7 @@ export default function CategoryDetailForm({
 
         return {
             name: category.name,
-            specificField:
-                category.specificField ??
-                getSpecificFieldsForDepartment(category.department)[0],
+            specificField: category.specificField ?? "",
             access,
         };
     }, [category, accesses]);
@@ -134,10 +132,13 @@ export default function CategoryDetailForm({
 
     const specificFieldOptions = useMemo(() => {
         const allowed = getSpecificFieldsForDepartment(category.department);
-        const options: SelectOption<TicketSpecificField>[] = allowed.map((sf) => ({
-            id: sf,
-            label: SPECIFIC_FIELD_LABELS[sf],
-        }));
+        const options: SelectOption<TicketSpecificField | "">[] = [
+            { id: "", label: "Nessuno" },
+            ...allowed.map((sf) => ({
+                id: sf,
+                label: SPECIFIC_FIELD_LABELS[sf],
+            })),
+        ];
 
         if (category.specificField && !allowed.includes(category.specificField)) {
             options.unshift({
@@ -210,7 +211,8 @@ export default function CategoryDetailForm({
                 id: category.id,
                 input: {
                     name: values.name,
-                    specificField: values.specificField,
+                    specificField:
+                        values.specificField === "" ? null : values.specificField,
                     accessGrants,
                 },
             },
@@ -251,13 +253,6 @@ export default function CategoryDetailForm({
                     helperText={errors.name?.message}
                 />
 
-                <AppSelect
-                    name="specificField"
-                    label="Campo specifico"
-                    control={control}
-                    options={specificFieldOptions}
-                />
-
                 <TextField
                     label="Dipartimento"
                     value={
@@ -266,6 +261,13 @@ export default function CategoryDetailForm({
                     }
                     fullWidth
                     disabled
+                />
+
+                <AppSelect
+                    name="specificField"
+                    label="Campo specifico"
+                    control={control}
+                    options={specificFieldOptions}
                 />
 
                 <TextField
