@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client/react";
+import { useRouter } from "next/navigation";
 import {
     Box,
     Chip,
@@ -10,6 +11,7 @@ import {
 } from "@mui/material";
 import ControlPointIcon from "@mui/icons-material/ControlPoint";
 import EditIcon from "@mui/icons-material/Edit";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import DisabledByDefaultIcon from "@mui/icons-material/DisabledByDefault";
 import RestoreIcon from "@mui/icons-material/Restore";
 import TuneIcon from "@mui/icons-material/Tune";
@@ -25,7 +27,12 @@ import {
     DELETE_TICKET_CATEGORY_ACCESS,
     RESTORE_TICKET_CATEGORY_ACCESS,
 } from "@/apollo-client/queries/ticket-category/ticket-category.mutations";
-import { createCategoryHeadCells, CategoryManagementRow } from "./column.def";
+import {
+    createCategoryHeadCells,
+    getCategoryAccessMatrix,
+    CategoryManagementRow,
+    CategoryManagementRowWithAccess,
+} from "./column.def";
 import CategoryForm from "@/components/forms/category/category-form";
 import CategoryAccessForm from "@/components/forms/category/category-access-form";
 import { ROLE_CONFIG } from "@/components/enums/role.config";
@@ -33,6 +40,7 @@ import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
 import { useCategoryManagementPermissions } from "@/lib/casl/abilities/category/hook-permission";
 
 export default function CategoryManagementPage() {
+    const router = useRouter();
     const { data: meData } = useQuery(ME_QUERY);
     const { canManageCategories, canManageCategoryAccesses } =
         useCategoryManagementPermissions();
@@ -69,7 +77,21 @@ export default function CategoryManagementPage() {
         awaitRefetchQueries: true,
     });
 
-    const headCells = createCategoryHeadCells();
+    const headCells = createCategoryHeadCells(accesses, {
+        includeAccessColumns: canManageCategoryAccesses,
+    });
+
+    const matrixRows: CategoryManagementRowWithAccess[] = categories.map((category) => {
+        const matrix = getCategoryAccessMatrix(category.id, accesses);
+        return {
+            ...category,
+            accessFinance: matrix.FINANCE ?? null,
+            accessHr: matrix.HR ?? null,
+            accessIt: matrix.IT ?? null,
+            accessLogistic: matrix.LOGISTIC ?? null,
+            accessSupport: matrix.SUPPORT ?? null,
+        };
+    });
 
     const createModal = useModalState<void>();
     const editModal = useModalState<CategoryManagementRow>();
@@ -106,14 +128,19 @@ export default function CategoryManagementPage() {
             </Stack>
 
             <Box sx={{ height: "78vh" }}>
-                <EnhancedTable<CategoryManagementRow>
-                    rows={categories}
+                <EnhancedTable<CategoryManagementRowWithAccess>
+                    rows={matrixRows}
                     headCells={headCells}
-                    actionsWidth="152px"
+                    actionsWidth="200px"
                     actions={
                         canManageCategories
                             ? (cat) => (
                                 <>
+                                    <IconButton
+                                        onClick={() => router.push(`/categoryManagement/${cat.id}`)}
+                                    >
+                                        <VisibilityIcon />
+                                    </IconButton>
                                     <IconButton onClick={() => accessesModal.open(cat)}>
                                         <TuneIcon />
                                     </IconButton>
