@@ -87,5 +87,27 @@ export function defineAbility(user: AccessTokenPayload): AppAbility {
     ...defineAbilityForTicketScope(user).rules,
   ] as unknown as RawRuleOf<AppAbility>[];
 
-  return createPrismaAbility<AppAbility>(rules);
+  // Rilevamento del subject type: in ordine,
+  // 1. il tag "__caslSubjectType__" posto da subject(...) nei guard lato server;
+  // 2. "__typename" degli oggetti GraphQL lato frontend;
+  // 3. il nome del costruttore come fallback.
+  // I check con subject stringa (regole incondizionate, accessibleBy) non
+  // passano da qui.
+  return createPrismaAbility<AppAbility>(rules, {
+    detectSubjectType: ((subject) => {
+      if (
+        subject &&
+        typeof subject === "object" &&
+        "__caslSubjectType__" in subject &&
+        typeof (subject as { __caslSubjectType__?: unknown }).__caslSubjectType__ ===
+          "string"
+      ) {
+        return (subject as { __caslSubjectType__: string }).__caslSubjectType__;
+      }
+      return (
+        (subject as { __typename?: string })?.__typename ??
+        (subject as object)?.constructor?.name
+      );
+    }) as AppAbility["detectSubjectType"],
+  });
 }

@@ -10,6 +10,7 @@ import { SOFTWARE_CONFIG } from "@/components/enums/software.config";
 import { CUSTOMER_CONFIG } from "@/components/enums/customer.config";
 import { BUDGET_TYPE_CONFIG } from "@/components/enums/budget-type.config";
 import { AppSelect, type SelectOption } from "@/components/forms/inputs/select-input";
+import { getSpecificReferencePreview } from "@/lib/validators/specific-value.schema";
 
 const FIELD_UI_CONFIG: Record<
     TicketSpecificField,
@@ -23,7 +24,6 @@ const FIELD_UI_CONFIG: Record<
     HARDWARE_TYPE: { label: "Tipo hardware", kind: "enum", config: HARDWARE_TYPE_CONFIG },
     SOFTWARE: { label: "Software", kind: "enum", config: SOFTWARE_CONFIG },
     PAYROLL_REFERENCE: { label: "Riferimento busta paga", kind: "text" },
-    EMPLOYEE_REFERENCE: { label: "Riferimento dipendente", kind: "text" },
     CUSTOMER: { label: "Cliente", kind: "enum", config: CUSTOMER_CONFIG },
     INVOICE_REFERENCE: { label: "Riferimento fattura", kind: "text" },
     BUDGET_TYPE: { label: "Tipo di budget", kind: "enum", config: BUDGET_TYPE_CONFIG },
@@ -46,6 +46,7 @@ export function SpecificFieldInput<T extends FieldValues & { specificValue?: str
     if (!specificField) return null;
 
     const fieldConfig = FIELD_UI_CONFIG[specificField];
+    const formatPreview = getSpecificReferencePreview(specificField);
     const name = "specificValue" as Path<T>;
 
     if (fieldConfig.kind === "enum") {
@@ -81,6 +82,7 @@ export function SpecificFieldInput<T extends FieldValues & { specificValue?: str
                     fullWidth
                     error={!!error}
                     helperText={error}
+                    placeholder={formatPreview ?? undefined}
                     disabled={disabled}
                 />
             )}

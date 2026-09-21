@@ -36,6 +36,7 @@ const graphqlErrorMessages: Record<string, string> = {
   WRONG_SPECIFIC: "Il valore della specifica non è corretto per la categoria",
   EMPTY_MESSAGE: "Il messaggio non può essere vuoto",
   DUE_DATE_NOT_ALLOWED: "Impossibile cambiare la data di scadenza senza lo stato in lavorazione",
+  REOPEN_REASON_REQUIRED: "Il motivo della riapertura è obbligatorio.",
 };
 
 const httpErrorMessages: Record<number, string> = {

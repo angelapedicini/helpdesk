@@ -7,7 +7,7 @@ import { Alert, Box, Button, TextField } from "@mui/material";
 import {
     CreateTicketFormOutput,
     CreateTicketFormValues,
-    CreateTicketSchema,
+    createCreateTicketSchema,
 } from "@/lib/validators/ticket-detail.schema";
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { CategoryByIdQuery, Role, type Department } from "@/graphql-generated/graphql";
@@ -40,7 +40,9 @@ export default function CreateTicket({ category, department, onSubmit }: TicketD
         watch,
         formState: { errors, isSubmitting },
     } = useForm<CreateTicketFormValues, unknown, CreateTicketFormOutput>({
-        resolver: zodResolver(CreateTicketSchema),
+        resolver: zodResolver(
+            createCreateTicketSchema(category?.specificField)
+        ),
         mode: "onChange",
         defaultValues: {
             department,

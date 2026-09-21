@@ -4,6 +4,7 @@ import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+import ReplayIcon from "@mui/icons-material/Replay";
 import { ComponentType } from "react";
 import { TicketStatus } from "@/lib/validators/enums.schema";
 
@@ -38,5 +39,10 @@ export const TICKET_STATUS_CONFIG = {
     label: "Rifiutato",
     icon: CancelIcon,
     color: "error.main",
+  },
+  REOPENED: {
+    label: "Riaperto",
+    icon: ReplayIcon,
+    color: "secondary.main",
   },
 } satisfies Record<TicketStatus, TicketStatusConfig>;

@@ -4,7 +4,7 @@ import { GraphQLError } from "graphql/error";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import {
   assertCanManageTicketCategory,
-  assertCanManageTicketCategoryAccess,
+  isUnrestrictedCategoryManager,
 } from "@/lib/casl/abilities/category/guards";
 import {
   CreateTicketCategorySchema,
@@ -128,8 +128,6 @@ export const categoryMutations = {
     const session = await requireSession();
     const ability = defineAbility(session);
 
-    assertCanManageTicketCategory(ability, "create");
-
     const prisma = await getPrisma();
 
     const result = CreateTicketCategorySchema.safeParse(args.input);
@@ -143,10 +141,19 @@ export const categoryMutations = {
       });
     }
 
+    // Il department è imposto dal resolver. SYSTEM_ADMIN può scegliere il
+    // reparto dall'input; l'ADMIN può creare solo nel proprio dipartimento,
+    // quindi il valore della sessione sovrascrive qualunque input.
+    const department = isUnrestrictedCategoryManager(ability)
+      ? result.data.department
+      : session.department;
+
+    assertCanManageTicketCategory(ability, "create", { department });
+
     if (result.data.specificField) {
-      const allowedFields = getSpecificFieldsForDepartment(
-        result.data.department
-      );
+      // Valida il campo specifico sullo scope di gestione effettivo,
+      // non su quello (eventualmente diverso) inviato dal client.
+      const allowedFields = getSpecificFieldsForDepartment(department);
 
       if (!allowedFields.includes(result.data.specificField)) {
         throw new GraphQLError(
@@ -159,7 +166,7 @@ export const categoryMutations = {
     }
 
     return prisma.ticketCategory.create({
-      data: result.data,
+      data: { ...result.data, department },
     });
   },
 
@@ -169,7 +176,6 @@ export const categoryMutations = {
   ) => {
     const session = await requireSession();
     const ability = defineAbility(session);
-    assertCanManageTicketCategory(ability, "update");
     const prisma = await getPrisma();
 
     const result = UpdateTicketCategorySchema.safeParse(args.input);
@@ -187,6 +193,10 @@ export const categoryMutations = {
         extensions: { code: "NOT_FOUND" },
       });
     }
+
+    // Enforcement per-oggetto via CASL: l'ADMIN aggiorna solo le categorie
+    // del proprio reparto, SYSTEM_ADMIN tutte.
+    assertCanManageTicketCategory(ability, "update", existing);
 
     if (result.data.specificField) {
       const allowedFields = getSpecificFieldsForDepartment(existing.department);
@@ -213,7 +223,6 @@ export const categoryMutations = {
   ) => {
     const session = await requireSession();
     const ability = defineAbility(session);
-    assertCanManageTicketCategory(ability, "update");
     const prisma = await getPrisma();
 
     const result = UpdateCategorySchema.safeParse(args.input);
@@ -226,10 +235,6 @@ export const categoryMutations = {
     const { accessGrants, ...patch } = result.data;
     const hasAccessGrants = accessGrants !== undefined;
 
-    if (hasAccessGrants) {
-      assertCanManageTicketCategoryAccess(ability, "update");
-    }
-
     const existing = await prisma.ticketCategory.findUnique({
       where: { id: args.id },
     });
@@ -238,6 +243,10 @@ export const categoryMutations = {
         extensions: { code: "NOT_FOUND" },
       });
     }
+
+    // Gestire la matrice = gestire la categoria: un unico check per-oggetto
+    // copre sia i campi del catalogo sia i grant degli accessi.
+    assertCanManageTicketCategory(ability, "update", existing);
 
     if (patch.specificField) {
       const allowedFields = getSpecificFieldsForDepartment(existing.department);
@@ -280,7 +289,6 @@ export const categoryMutations = {
   deleteTicketCategory: async (_parent: unknown, args: { id: number }) => {
     const session = await requireSession();
     const ability = defineAbility(session);
-    assertCanManageTicketCategory(ability, "delete");
     const prisma = await getPrisma();
 
     const existing = await prisma.ticketCategory.findUnique({
@@ -291,6 +299,8 @@ export const categoryMutations = {
         extensions: { code: "NOT_FOUND" },
       });
     }
+
+    assertCanManageTicketCategory(ability, "delete", existing);
 
     return prisma.ticketCategory.update({
       where: { id: args.id },
@@ -301,7 +311,6 @@ export const categoryMutations = {
   restoreTicketCategory: async (_parent: unknown, args: { id: number }) => {
     const session = await requireSession();
     const ability = defineAbility(session);
-    assertCanManageTicketCategory(ability, "restore");
     const prisma = await getPrisma();
 
     const existing = await prisma.ticketCategory.findUnique({
@@ -313,6 +322,8 @@ export const categoryMutations = {
       });
     }
 
+    assertCanManageTicketCategory(ability, "restore", existing);
+
     return prisma.ticketCategory.update({
       where: { id: args.id },
       data: { disabled: false, updatedAt: new Date(), updatedBy: session.userId },
@@ -322,7 +333,6 @@ export const categoryMutations = {
   createTicketCategoryAccess: async (_parent: unknown, args: { input: unknown }) => {
     const session = await requireSession();
     const ability = defineAbility(session);
-    assertCanManageTicketCategoryAccess(ability, "create");
     const prisma = await getPrisma();
 
     const result = CreateTicketCategoryAccessSchema.safeParse(args.input);
@@ -342,6 +352,9 @@ export const categoryMutations = {
       });
     }
 
+    // Gestire la matrice = gestire la categoria (per-oggetto, CASL).
+    assertCanManageTicketCategory(ability, "update", category);
+
     await disableOppositeCategoryAccessGrants(
       prisma,
       session.userId,
@@ -359,7 +372,6 @@ export const categoryMutations = {
   deleteTicketCategoryAccess: async (_parent: unknown, args: { id: number }) => {
     const session = await requireSession();
     const ability = defineAbility(session);
-    assertCanManageTicketCategoryAccess(ability, "delete");
     const prisma = await getPrisma();
 
     const existing = await prisma.ticketCategoryAccess.findUnique({
@@ -370,6 +382,17 @@ export const categoryMutations = {
         extensions: { code: "NOT_FOUND" },
       });
     }
+
+    const category = await prisma.ticketCategory.findUnique({
+      where: { id: existing.categoryId },
+    });
+    if (!category) {
+      throw new GraphQLError("Category not found", {
+        extensions: { code: "NOT_FOUND" },
+      });
+    }
+
+    assertCanManageTicketCategory(ability, "update", category);
 
     return prisma.ticketCategoryAccess.update({
       where: { id: args.id },
@@ -380,7 +403,6 @@ export const categoryMutations = {
   restoreTicketCategoryAccess: async (_parent: unknown, args: { id: number }) => {
     const session = await requireSession();
     const ability = defineAbility(session);
-    assertCanManageTicketCategoryAccess(ability, "restore");
     const prisma = await getPrisma();
 
     const existing = await prisma.ticketCategoryAccess.findUnique({
@@ -391,6 +413,17 @@ export const categoryMutations = {
         extensions: { code: "NOT_FOUND" },
       });
     }
+
+    const category = await prisma.ticketCategory.findUnique({
+      where: { id: existing.categoryId },
+    });
+    if (!category) {
+      throw new GraphQLError("Category not found", {
+        extensions: { code: "NOT_FOUND" },
+      });
+    }
+
+    assertCanManageTicketCategory(ability, "update", category);
 
     await disableOppositeCategoryAccessGrants(
       prisma,

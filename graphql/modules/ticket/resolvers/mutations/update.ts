@@ -4,6 +4,7 @@ import { buildTicketHistoryData } from "@/lib/ticket/history";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
 import { UpdateTicketSchema } from "@/lib/validators/ticket-detail.schema";
+import { validateSpecificValueFormat } from "@/lib/validators/specific-value.schema";
 import { computeDueDate, computeDueWorkDate } from "@/lib/ticket/dueDate";
 import { autoAssign } from "@/lib/ticket/autoAssign";
 import { assertCanUpdateTicket } from "@/lib/casl/abilities/ticket/guards";
@@ -70,7 +71,8 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   // se calcolare un default automatico per la dueDate.
   const isAlreadyInProgress = existing.status === "IN_PROGRESS";
   const isTransitioningToInProgress =
-    existing.status === "ASSIGNED" && input.status === "IN_PROGRESS";
+    (existing.status === "ASSIGNED" || existing.status === "REOPENED") &&
+    input.status === "IN_PROGRESS";
 
   if (input.dueDate !== undefined && !isAlreadyInProgress && !isTransitioningToInProgress) {
     throw new GraphQLError(
@@ -156,24 +158,14 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   // ============================================================
   // 7. STATUS TRANSITIONS (closing / reopening)
   // ============================================================
-  let closedAt: Date | undefined = undefined;
-
-  if (input.status === "CLOSED") {
-    closedAt = new Date();
-  }
-
-  // closingMessage arriva già validato come obbligatorio quando status è
-  // CLOSED/REFUSED (vedi superRefine nello schema). Lo salvo sia sul Ticket
-  // (cache per lettura rapida) sia come TicketMessage dedicato.
-  const isClosingTransition = status === "CLOSED" || status === "REFUSED";
-  const closingMessage = isClosingTransition ? input.closingMessage : undefined;
-
-  // Un ticket è "riaperto" quando ERA chiuso/rifiutato ed esce da quello
-  // stato verso un altro. Va distinto da:
+  // Un ticket è "riaperto" quando ERA chiuso ed esce da quello stato verso
+  // un altro. Va distinto da:
   // - status non toccato in questo update (input.status === undefined)
   // - il ticket resta in uno stato chiuso (es. CLOSED -> REFUSED), che è
   //   una closing transition, non una reopen transition.
-  const wasClosed = existing.status === "CLOSED" || existing.status === "REFUSED";
+  const isClosingTransition = status === "CLOSED" || status === "REFUSED";
+
+  const wasClosed = existing.status === "CLOSED";
   const isReopenTransition =
     wasClosed && input.status !== undefined && !isClosingTransition;
 
@@ -184,12 +176,37 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
     );
   }
 
+  let closedAt: Date | null | undefined = undefined;
+
+  if (input.status === "CLOSED") {
+    closedAt = new Date();
+  } else if (isReopenTransition) {
+    // riapertura: il closedAt apparteneva alla chiusura precedente, lo azzeriamo.
+    closedAt = null;
+  }
+
+  // closingMessage arriva già validato come obbligatorio quando status è
+  // CLOSED/REFUSED (vedi superRefine nello schema). Lo salvo sia sul Ticket
+  // (cache per lettura rapida) sia come TicketMessage dedicato.
+  // Alla riapertura lo azzero: è un residuo della vita precedente e alla
+  // prossima chiusura verrà riscritto ex-novo.
+  const closingMessage = isClosingTransition
+    ? input.closingMessage
+    : isReopenTransition
+      ? null
+      : undefined;
+
   // ============================================================
   // 8. DUE DATE COMPUTATION
   // ============================================================
-  let dueDate: Date | undefined = undefined;
+  let dueDate: Date | null | undefined = undefined;
 
-  if (input.dueDate !== undefined) {
+  if (isReopenTransition) {
+    // Riapertura: la dueDate era quella della vita precedente del ticket,
+    // ormai inutilizzabile. La azzeriamo: sarà il tecnico a rimetterla
+    // quando il ticket rientrerà in IN_PROGRESS.
+    dueDate = null;
+  } else if (input.dueDate !== undefined) {
     // Il tecnico ha specificato esplicitamente una data: rispettala sempre,
     // sia in transizione a IN_PROGRESS sia in una correzione/estensione
     // successiva (il campo resta sempre modificabile).
@@ -213,7 +230,12 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   // ============================================================
   let dueFirstResponse: Date | undefined = undefined;
 
-  if (input.priority !== undefined && input.priority !== existing.priority) {
+  if (isReopenTransition) {
+    // Alla riapertura lo SLA della prima risposta riparte da oggi,
+    // calcolato sulla priorità effettiva (payload se diversa, altrimenti
+    // quella attuale del ticket).
+    dueFirstResponse = computeDueDate(input.priority ?? existing.priority);
+  } else if (input.priority !== undefined && input.priority !== existing.priority) {
     dueFirstResponse = computeDueDate(input.priority);
   }
 
@@ -269,6 +291,22 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   ) {
     throw new GraphQLError(
       `This value is not valid for this category, ${newMapping.field}`,
+      { extensions: { code: "WRONG_SPECIFIC" } }
+    );
+  }
+
+  // 9.4 Formato del riferimento per i campi testo libero
+  //     (es. INVOICE_REFERENCE): controllato sulla specifica della categoria
+  //     di destinazione. Messaggio inglese per lo sviluppatore; l'utente vede
+  //     quello mappato da "WRONG_SPECIFIC" nel notificationLink.
+  if (
+    newMapping &&
+    input.specificValue != null &&
+    targetCategory?.specificField &&
+    validateSpecificValueFormat(targetCategory.specificField, input.specificValue)
+  ) {
+    throw new GraphQLError(
+      `Invalid format for ${targetCategory.specificField} reference`,
       { extensions: { code: "WRONG_SPECIFIC" } }
     );
   }

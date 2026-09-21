@@ -30,19 +30,19 @@ import {
     CategoryManagementRowWithAccess,
 } from "./column.def";
 import CategoryForm from "@/components/forms/category/category-form";
-import { useCategoryManagementPermissions } from "@/lib/casl/abilities/category/hook-permission";
+// import { useCategoryManagementPermissions } from "@/lib/casl/abilities/category/hook-permission";
 
 export default function CategoryManagementPage() {
     const router = useRouter();
     const { data: meData } = useQuery(ME_QUERY);
-    const { canManageCategories, canManageCategoryAccesses } =
-        useCategoryManagementPermissions();
+    // const { canManageCategories, canManageCategoryAccesses } =
+    //     useCategoryManagementPermissions();
 
     const { data: categoriesData } = useQuery(GET_CATEGORIES, {
         variables: { includeDisabled: true },
     });
     const { data: accessesData } = useQuery(GET_CATEGORY_ACCESSES, {
-        skip: !canManageCategoryAccesses,
+        // skip: !canManageCategoryAccesses,
     });
 
     const categories = categoriesData?.categories ?? [];
@@ -60,9 +60,11 @@ export default function CategoryManagementPage() {
         awaitRefetchQueries: true,
     });
 
-    const headCells = createCategoryHeadCells(accesses, {
-        includeAccessColumns: canManageCategoryAccesses,
-    });
+    const headCells = createCategoryHeadCells(accesses,
+        //     {
+        //     includeAccessColumns: canManageCategoryAccesses,
+        // }
+    );
 
     const matrixRows: CategoryManagementRowWithAccess[] = categories.map((category) => {
         const matrix = getCategoryAccessMatrix(category.id, accesses);
@@ -90,11 +92,11 @@ export default function CategoryManagementPage() {
         <Box sx={{ mt: 3, mx: 2 }}>
             <Stack direction="row" sx={{ alignItems: "center", mb: 3 }}>
                 <Typography variant="h5">Gestione categorie e accessi</Typography>
-                {canManageCategories && (
-                    <IconButton onClick={createModal.openEmpty} aria-label="Nuova categoria" sx={{ ml: 1 }}>
-                        <ControlPointIcon />
-                    </IconButton>
-                )}
+                {/* {canManageCategories && ( */}
+                <IconButton onClick={createModal.openEmpty} aria-label="Nuova categoria" sx={{ ml: 1 }}>
+                    <ControlPointIcon />
+                </IconButton>
+                {/* )} */}
             </Stack>
 
             <Box sx={{ height: "78vh" }}>
@@ -103,20 +105,21 @@ export default function CategoryManagementPage() {
                     headCells={headCells}
                     actionsWidth="120px"
                     actions={
-                        canManageCategories
-                            ? (cat) => (
-                                <>
-                                    <IconButton
-                                        onClick={() => router.push(`/categoryManagement/${cat.id}`)}
-                                    >
-                                        <EditSquareIcon />
-                                    </IconButton>
-                                    <IconButton onClick={() => handleToggleCategory(cat)}>
-                                        {cat.disabled ? <RestoreIcon /> : <DisabledByDefaultIcon />}
-                                    </IconButton>
-                                </>
-                            )
-                            : undefined
+                        // canManageCategories
+                        //     ? 
+                        (cat) => (
+                            <>
+                                <IconButton
+                                    onClick={() => router.push(`/categoryManagement/${cat.id}`)}
+                                >
+                                    <EditSquareIcon />
+                                </IconButton>
+                                <IconButton onClick={() => handleToggleCategory(cat)}>
+                                    {cat.disabled ? <RestoreIcon /> : <DisabledByDefaultIcon />}
+                                </IconButton>
+                            </>
+                        )
+                            // : undefined
                     }
                 />
             </Box>

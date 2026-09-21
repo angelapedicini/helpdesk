@@ -104,6 +104,15 @@ export function createTicketHeadCells({
                     : "-",
         },
         {
+            id: "updatedAt",
+            label: "Ultimo aggiornament",
+            sortable: true,
+            render: (ticket) =>
+                ticket.updatedAt
+                    ? new Date(ticket.updatedAt).toLocaleDateString("it-IT")
+                    : "-",
+        },
+        {
             id: "dueDate",
             label: "Entro",
             sortable: true,

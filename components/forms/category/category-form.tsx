@@ -20,6 +20,7 @@ import {
   SPECIFIC_FIELDS_BY_DEPARTMENT,
 } from "@/lib/config/ticket-specific-field.config";
 import { CREATE_TICKET_CATEGORY } from "@/apollo-client/queries/ticket-category/ticket-category.mutations";
+import { useCategoryCreateFieldPermissions } from "@/lib/casl/abilities/category/hook-permission";
 
 const SPECIFIC_FIELD_OPTIONS: { id: TicketSpecificField; label: string }[] = (
   Object.keys(SPECIFIC_FIELD_LABELS) as TicketSpecificField[]
@@ -64,6 +65,8 @@ export default function CategoryForm({
 
   const selectedDepartment = useWatch({ control, name: "department" });
   const selectedSpecificField = useWatch({ control, name: "specificField" });
+
+  const { department: departmentEditable } = useCategoryCreateFieldPermissions();
 
   useEffect(() => {
     if (!selectedDepartment || !selectedSpecificField) return;
@@ -121,6 +124,7 @@ export default function CategoryForm({
           label="Dipartimento"
           control={control}
           options={DEPARTMENT_OPTIONS}
+          disabled={!departmentEditable}
         />
 
         <AppSelect

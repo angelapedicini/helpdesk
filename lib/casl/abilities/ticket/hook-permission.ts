@@ -128,18 +128,3 @@ export function useTicketAssigneeBrowseMode(
     return ability.can("browseAssignees", subject) ? "list" : "search";
   }, [ability, subject]);
 }
-
-/**
- * Determina se l'utente attuale può riaprire il ticket dal form.
- * Verifica che il ticket sia CLOSED o REFUSED e che l'utente abbia
- * il permesso CASL di aggiornarne il motivo di riapertura (reopenReason).
- */
-export function useTicketCanReopen(ticket: TicketFieldsFragment): boolean {
-  const ability = useAbility();
-  const subject = useMemo(() => toTicketSubject(ticket), [ticket]);
-
-  return useMemo(() => {
-    const isClosedOrRefused = ticket.status === "CLOSED" || ticket.status === "REFUSED";
-    return isClosedOrRefused && ability.can("update", subject, "reopenReason");
-  }, [ability, subject, ticket.status]);
-}

@@ -50,13 +50,13 @@ enum TicketStatus {
   IN_PROGRESS
   CLOSED
   REFUSED
+  REOPENED
 }
 
 enum TicketSpecificField {
   HARDWARE_TYPE // IT.itSpecific.hardwareType
   SOFTWARE // IT.itSpecific.software
   PAYROLL_REFERENCE // HR.hrSpecific.payrollReference
-  EMPLOYEE_REFERENCE // HR.hrSpecific.employeeReference
   CUSTOMER // FINANCE/SUPPORT/LOGISTIC .customer
   INVOICE_REFERENCE // FINANCE.financeSpecific.invoiceReference
   BUDGET_TYPE // FINANCE.financeSpecific.budgetType
@@ -300,7 +300,6 @@ model TicketHRSpecific {
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   payrollReference  String?
-  employeeReference String?
 }
 
 model TicketFinanceSpecific {

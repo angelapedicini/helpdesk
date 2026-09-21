@@ -1,8 +1,8 @@
 // components/forms/ticket/ticket.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Controller, type Resolver, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
     Alert,
@@ -28,7 +28,7 @@ import {
 import {
     UpdateTicketInput,
     UpdateTicketOutput,
-    UpdateTicketSchema,
+    createUpdateTicketSchema,
 } from "@/lib/validators/ticket-detail.schema";
 
 import { UPDATE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
@@ -39,7 +39,7 @@ import { SearchInput, SearchResult } from "../inputs/search-input";
 import { SpecificFieldInput } from "../inputs/specific-field-input";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
-import { useTicketAllowedStatuses, useTicketAssigneeBrowseMode, useTicketCanReopen, useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/hook-permission";
+import { useTicketAllowedStatuses, useTicketAssigneeBrowseMode, useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/hook-permission";
 import { SOLE_SPECIALIST_CATEGORY_IDS, USERS_SPEC_BY_CATID } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
 import { computeDueDate, computeDueWorkDate } from "@/lib/ticket/dueDate";
 
@@ -80,6 +80,7 @@ function mapTicketToFormValues(
         closingMessage: ticket.closingMessage ?? undefined,
         dueDate: ticket.dueDate ?? undefined,
         specificValue,
+        reopenReason: ticket.reopenReason ?? undefined,
     };
 }
 
@@ -102,6 +103,43 @@ export default function TicketDetailForm({
         ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
         : undefined;
 
+    const { data: categoriesData } = useQuery(GET_CATEGORIES, {
+        variables: {
+            department: ticket.ticketDepartment,
+        },
+        skip: !ticket.ticketDepartment,
+    });
+
+    // Lista "ricca" delle categorie disponibili, con specificField incluso,
+    // usata solo per derivare quale campo dinamico mostrare in base alla
+    // categoria correntemente selezionata nel form (non quella originale
+    // del ticket). categoryOptions più sotto resta quella "leggera" per l'AppSelect.
+    const categoriesWithSpecificField = useMemo(() => {
+        const list = categoriesData?.categories ?? [];
+
+        if (ticket.category && !list.some((c) => c.id === ticket.category!.id)) {
+            return [...list, ticket.category];
+        }
+
+        return list;
+    }, [categoriesData, ticket.category]);
+
+    // Resolver stabile: deriva lo schema dal categoryId dei values correnti,
+    // così il formato della specifica segue la categoria selezionata senza
+    // dover ricreare il resolver all'interno di useForm.
+    const resolver: Resolver<UpdateTicketInput, undefined, UpdateTicketOutput> =
+        useCallback(
+            (values, _ctx, options) =>
+                zodResolver(
+                    createUpdateTicketSchema(
+                        categoriesWithSpecificField.find(
+                            (c) => c.id === Number(values.categoryId)
+                        )?.specificField
+                    )
+                )(values, _ctx, options),
+            [categoriesWithSpecificField]
+        );
+
     const {
         register,
         control,
@@ -111,7 +149,7 @@ export default function TicketDetailForm({
         watch,
         formState: { errors, isSubmitting, isDirty },
     } = useForm<UpdateTicketInput, undefined, UpdateTicketOutput>({
-        resolver: zodResolver(UpdateTicketSchema),
+        resolver,
         defaultValues,
         mode: "onChange",
     });
@@ -144,6 +182,10 @@ export default function TicketDetailForm({
     const selectedStatus = watch("status");
     const showClosingMessage =
         selectedStatus === "CLOSED" || selectedStatus === "REFUSED";
+
+    // Il motivo della riapertura va mostrato solo quando lo stato selezionato
+    // nel form è REOPENED (coerente con la regola in UpdateTicketSchema).
+    const showReopenReason = selectedStatus === "REOPENED";
 
     const assigneeBrowseMode = useTicketAssigneeBrowseMode(ticket);
 
@@ -188,13 +230,6 @@ export default function TicketDetailForm({
         }));
     }
 
-    const { data: categoriesData } = useQuery(GET_CATEGORIES, {
-        variables: {
-            department: ticket.ticketDepartment,
-        },
-        skip: !ticket.ticketDepartment,
-    });
-
     const categoryOptions = useMemo(() => {
         const options = (categoriesData?.categories ?? []).map((c) => ({
             id: c.id,
@@ -212,20 +247,6 @@ export default function TicketDetailForm({
         }
 
         return options;
-    }, [categoriesData, ticket.category]);
-
-    // Lista "ricca" delle categorie disponibili, con specificField incluso,
-    // usata solo per derivare quale campo dinamico mostrare in base alla
-    // categoria correntemente selezionata nel form (non quella originale
-    // del ticket). categoryOptions sopra resta quella "leggera" per l'AppSelect.
-    const categoriesWithSpecificField = useMemo(() => {
-        const list = categoriesData?.categories ?? [];
-
-        if (ticket.category && !list.some((c) => c.id === ticket.category!.id)) {
-            return [...list, ticket.category];
-        }
-
-        return list;
     }, [categoriesData, ticket.category]);
 
     const selectedCategory = useMemo(
@@ -312,15 +333,27 @@ export default function TicketDetailForm({
     const isTransitioningToInProgress =
         ticket.status === "ASSIGNED" && selectedStatus === "IN_PROGRESS";
 
-    // sezione 8b update.ts: dueFirstResponse non è mai editabile da FE,
-    // si ricalcola SOLO se la priority selezionata differisce da quella
-    // attuale del ticket (altrimenti il BE non la tocca e resta quella esistente).
+    // sezione 8b update.ts: dueFirstResponse non è mai editabile da FE, si
+    // ricalcola solo quando (a) la priority selezionata differisce da quella
+    // attuale, o (b) il form sta riaprendo il ticket (CLOSED -> REOPENED),
+    // caso in cui il BE azzera la scadenza precedente e ricalcola da oggi.
+    const isReopenTransition =
+        ticket.status === "CLOSED" && selectedStatus === "REOPENED";
+
     const previewDueFirstResponse = useMemo(() => {
         if (selectedPriority && selectedPriority !== ticket.priority) {
             return computeDueDate(selectedPriority);
         }
+        if (isReopenTransition) {
+            return computeDueDate(selectedPriority ?? ticket.priority);
+        }
         return ticket.dueFirstResponse ? new Date(ticket.dueFirstResponse) : undefined;
-    }, [selectedPriority, ticket.priority, ticket.dueFirstResponse]);
+    }, [
+        selectedPriority,
+        ticket.priority,
+        ticket.dueFirstResponse,
+        isReopenTransition,
+    ]);
 
     // sezione 8 update.ts: il default per dueDate viene calcolato SOLO
     // nella transizione ASSIGNED -> IN_PROGRESS, usando la priority
@@ -436,6 +469,10 @@ export default function TicketDetailForm({
             changedValues.specificValue = values.specificValue;
         }
 
+        if (values.reopenReason !== defaultValuesOutput.reopenReason) {
+            changedValues.reopenReason = values.reopenReason;
+        }
+
         /*
          * Nessuna modifica reale.
          * Evitiamo completamente la mutation GraphQL.
@@ -467,8 +504,6 @@ export default function TicketDetailForm({
         resetAll();           // testo visualizzato nei campi search → torna a initialLabel
         dueDateManuallyEditedRef.current = false;
     };
-
-    const canReopen = useTicketCanReopen(ticket);
 
     return (
         <Box
@@ -632,7 +667,7 @@ export default function TicketDetailForm({
                     />
                 )}
 
-                {canReopen && (
+                {showReopenReason && (
                     <TextField
                         {...register("reopenReason")}
                         label="Motivo della riapertura"

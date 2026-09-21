@@ -47,7 +47,6 @@ const CATEGORY_SPECIFIC_FIELD: Record<
   },
   HR: {
     "Buste paga": TicketSpecificField.PAYROLL_REFERENCE,
-    "Dati del dipendente": TicketSpecificField.EMPLOYEE_REFERENCE,
   },
   FINANCE: {
     "Sconti per cliente": TicketSpecificField.CUSTOMER,
@@ -215,7 +214,7 @@ function humanizeEnum(value: string): string {
 /*
  * Costruisce il nested-create Prisma per il "ticket specific" coerente
  * con il campo specifico richiesto dalla categoria, più un'etichetta
- * leggibile per la history: SOLO il valore (es. "Jira", "PR-0001"),
+ * leggibile per la history: SOLO il valore (es. "Jira", "PAY-0001"),
  * senza prefisso "Software:"/"Hardware:" — la categoria è già mostrata
  * a fianco, il prefisso sarebbe ridondante.
  *
@@ -253,20 +252,11 @@ function buildSpecificData(
     }
 
     case TicketSpecificField.PAYROLL_REFERENCE: {
-      const payrollReference = `PR-${String(seedIndex + 1).padStart(4, "0")}`;
+      const payrollReference = `PAY-${String(seedIndex + 1).padStart(4, "0")}`;
 
       return {
         data: { hrSpecific: { create: { payrollReference } } },
         label: payrollReference,
-      };
-    }
-
-    case TicketSpecificField.EMPLOYEE_REFERENCE: {
-      const employeeReference = `EMP-${String(seedIndex + 1).padStart(4, "0")}`;
-
-      return {
-        data: { hrSpecific: { create: { employeeReference } } },
-        label: employeeReference,
       };
     }
 
@@ -297,7 +287,7 @@ function buildSpecificData(
     }
 
     case TicketSpecificField.INVOICE_REFERENCE: {
-      const invoiceReference = `INV-${String(seedIndex + 1).padStart(5, "0")}`;
+      const invoiceReference = `INV-${String(seedIndex + 1).padStart(4, "0")}`;
 
       return {
         data: { financeSpecific: { create: { invoiceReference } } },
@@ -316,7 +306,7 @@ function buildSpecificData(
     }
 
     case TicketSpecificField.SHIPMENT_REFERENCE: {
-      const shipmentReference = `SHP-${String(seedIndex + 1).padStart(6, "0")}`;
+      const shipmentReference = `SHP-2026-${String(seedIndex + 1).padStart(2, "0")}`;
 
       return {
         data: { logisticSpecific: { create: { shipmentReference } } },

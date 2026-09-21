@@ -44,7 +44,7 @@ const chartHeigth = "65vh";
 export const STATS_VIEWS: StatsViewConfig[] = [
     {
         id: "departments",
-        label: "Totali query",
+        label: "Totali ticket",
         query: TICKET_STATS_BY_DEPARTMENT_QUERY,
         select: (data) => data?.ticketStatsByDepartment ?? [],
         headCells: departmentStatsHeadCells,

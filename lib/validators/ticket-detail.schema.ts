@@ -1,9 +1,11 @@
 // lib/validators/ticket-detail.schema.ts
 import { z } from "zod";
 import { DepartmentEnum, TicketPrioritySchema, TicketStatusSchema } from "./enums.schema";
+import type { TicketSpecificField } from "./enums.schema";
+import { createSpecificValueField } from "./specific-value.schema";
 
-export const UpdateTicketSchema = z
-  .object({
+function updateTicketBase(specificField?: TicketSpecificField | null) {
+  return z.object({
     title: z.string().min(1, "Questo campo deve contenere almeno un carattere").max(200).optional(),
     description: z.string().min(1, "Questo campo deve contenere almeno un carattere").optional(),
     status: TicketStatusSchema.optional(),
@@ -12,47 +14,71 @@ export const UpdateTicketSchema = z
     assignedToId: z.coerce.number().int().positive().nullable().optional(),
     closingMessage: z.string().min(1, "Questo campo deve contenere almeno un carattere").optional(),
     dueDate: z.coerce.date().optional(),
-    specificValue: z.string().min(1).optional(),
+    specificValue: createSpecificValueField(specificField),
     reopenReason: z.string().min(1, "Questo campo deve contenere almeno un carattere").optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (
-      (data.status === "CLOSED" || data.status === "REFUSED") &&
-      !data.closingMessage
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Il messaggio di chiusura è obbligatorio quando il ticket viene chiuso o rifiutato",
-        path: ["closingMessage"],
-      });
-    }
+  });
+}
 
-    if (data.dueDate !== undefined) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (data.dueDate < today) {
+function withUpdateTicketRefinements<T extends ReturnType<typeof updateTicketBase>>(schema: T) {
+  return schema
+    .superRefine((data, ctx) => {
+      if (
+        (data.status === "CLOSED" || data.status === "REFUSED") &&
+        !data.closingMessage
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "La scadenza non può essere nel passato",
-          path: ["dueDate"],
+          message: "Il messaggio di chiusura è obbligatorio quando il ticket viene chiuso o rifiutato",
+          path: ["closingMessage"],
         });
       }
-    }
 
-    if (data.categoryId === null && data.specificValue !== undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Non è possibile specificare un valore senza una categoria",
-        path: ["specificValue"],
-      });
-    }
+      // La riapertura (CLOSED -> REOPENED) richiede sempre un motivo.
+      // Il resolver ricontrolla comunque (REOPEN_REASON_REQUIRED) come difesa
+      // in profondità, perché qui vediamo solo l'input e non lo status a DB.
+      if (data.status === "REOPENED" && !data.reopenReason) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Il motivo della riapertura è obbligatorio quando il ticket viene riaperto",
+          path: ["reopenReason"],
+        });
+      }
 
-    // Nota: NON possiamo validare qui "reopenReason obbligatorio se si sta
-    // riaprendo" perché servirebbe sapere lo status ATTUALE del ticket nel DB
-    // (existing.status), che questo schema non conosce - vede solo l'input.
-    // Quella validazione resta nel resolver.
-  });
+      // Durante la riapertura (CLOSED -> REOPENED) la dueDate può essere già
+      // scaduta: è quella della vita precedente del ticket, e verrà ricalcolata
+      // dal backend quando il tecnico passerà a IN_PROGRESS.
+      if (data.dueDate !== undefined && data.status !== "REOPENED") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (data.dueDate < today) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "La scadenza non può essere nel passato",
+            path: ["dueDate"],
+          });
+        }
+      }
+
+      if (data.categoryId === null && data.specificValue !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Non è possibile specificare un valore senza una categoria",
+          path: ["specificValue"],
+        });
+      }
+    });
+}
+
+// Schema generico (nessun formato specifico), usato dal backend per il
+// parse iniziale dell'input: il formato viene controllato dopo il lookup
+// della categoria. Nei form del frontend si usa createUpdateTicketSchema,
+// che conosce lo specificField della categoria selezionata.
+export const UpdateTicketSchema = withUpdateTicketRefinements(updateTicketBase());
+
+export function createUpdateTicketSchema(specificField?: TicketSpecificField | null) {
+  return withUpdateTicketRefinements(updateTicketBase(specificField));
+}
 
 export type UpdateTicketInput = z.input<typeof UpdateTicketSchema>;
 export type UpdateTicketOutput = z.output<typeof UpdateTicketSchema>;
@@ -67,6 +93,14 @@ export const CreateTicketSchema = z.object({
   department: DepartmentEnum,
   specificValue: z.string().min(1).optional(),
 });
+
+// Come CreateTicketSchema ma con il formato della specifica applicato
+// quando il campo della categoria lo prevede (usato dal form di creazione).
+export function createCreateTicketSchema(specificField?: TicketSpecificField | null) {
+  return CreateTicketSchema.extend({
+    specificValue: createSpecificValueField(specificField),
+  });
+}
 
 // lib/validators/ticket-detail.schema.ts — invariato lo schema, cambia solo l'export del tipo
 export type CreateTicketFormValues = z.input<typeof CreateTicketSchema>; // era z.infer

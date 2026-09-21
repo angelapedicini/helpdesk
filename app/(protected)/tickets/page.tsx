@@ -54,7 +54,7 @@ export default function TicketsPage() {
     // --------------------------------
 
     const { order, orderBy, onRequestSort, sortDirection } =
-        useSortState<keyof TicketFieldsFragment>("id");
+        useSortState<keyof TicketFieldsFragment>("updatedAt");
 
     // --------------------------------
     // QUERY

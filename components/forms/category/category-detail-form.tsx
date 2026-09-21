@@ -285,7 +285,7 @@ export default function CategoryDetailForm({
             {allAccessSelected && (
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                     “Tutti i reparti” ha la precedenza sugli accessi specifici,
-                    che verranno scartati al salvataggio.
+                    che verranno scartati al salvataggio. Per impostare un solo dipartimento seleziona prima nessun accesso nella casella tutti i reparti
                 </Typography>
             )}
 

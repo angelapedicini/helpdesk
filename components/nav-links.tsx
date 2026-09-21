@@ -4,6 +4,10 @@ import type { NavLinkItem } from "./types/navlink";
 import type { AccessTokenPayload } from "@/lib/auth/jwt";
 import type { TicketScope } from "@/graphql-generated/schema";
 import { toTicketScopeSubject } from "@/lib/casl/abilities/ticket-scope/guards";
+import {
+  isUnrestrictedCategoryManager,
+  isDepartmentCategoryManager,
+} from "@/lib/casl/abilities/category/guards";
 import { defineAbility } from "@/lib/casl/defineAbility";
 
 /**
@@ -59,7 +63,10 @@ export function buildNavLinks(session: AccessTokenPayload): NavLinkItem[] {
     });
   }
 
-  if (ability.can("manage", "TicketCategory")) {
+  if (
+    isUnrestrictedCategoryManager(ability) ||
+    isDepartmentCategoryManager(ability, session.department)
+  ) {
     links.push({
       label: "Categorie e accessi",
       href: "/categoryManagement",

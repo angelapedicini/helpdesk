@@ -8,6 +8,7 @@ import { accessibleBy } from "@casl/prisma";
 import { TICKET_SORT_FIELD_MAP, buildTicketWhere, buildScopeWhere } from "./where";
 import type { TicketScope, TicketSortField } from "@/graphql-generated/schema";
 import { defineAbility } from "@/lib/casl/defineAbility";
+import { assertCanReadTicket } from "@/lib/casl/abilities/ticket/guards";
 
 export const ticketQueries = {
   tickets: async (
@@ -28,7 +29,7 @@ export const ticketQueries = {
     const orderBy = toPrismaOrderBy<TicketSortField, Prisma.TicketOrderByWithRelationInput>(
       args.orderBy,
       TICKET_SORT_FIELD_MAP,
-      { id: "desc" }
+      { updatedAt: "desc" }
     );
 
     const scope: TicketScope = args.scope ?? "MINE";
@@ -70,12 +71,8 @@ export const ticketQueries = {
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
-
-    return prisma.ticket.findFirst({
-      where: {
-        id: args.id,
-        AND: [accessibleBy(ability, "read").ofType("Ticket")],
-      },
+    const existing = await prisma.ticket.findUnique({
+      where: { id: args.id },
       include: {
         category: true,
         createdBy: true,
@@ -89,5 +86,16 @@ export const ticketQueries = {
         logisticSpecific: true,
       },
     });
+
+    // Ticket inesistente: nessuna informazione sul motivo (stesso comportamento
+    // di prima del check). Solo se il ticket esiste viene applicato il controllo
+    // di autorizzazione alla lettura.
+    if (!existing) {
+      return null;
+    }
+
+    assertCanReadTicket(ability, existing);
+
+    return existing;
   },
 };

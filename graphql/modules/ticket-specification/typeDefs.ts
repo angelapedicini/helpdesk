@@ -7,7 +7,6 @@ type TicketITSpecific {
 
 type TicketHRSpecific {
     payrollReference: String
-    employeeReference: String
 }
 
 type TicketFinanceSpecific {
@@ -83,7 +82,6 @@ enum TicketSpecificField {
     HARDWARE_TYPE
     SOFTWARE
     PAYROLL_REFERENCE
-    EMPLOYEE_REFERENCE
     CUSTOMER
     INVOICE_REFERENCE
     BUDGET_TYPE

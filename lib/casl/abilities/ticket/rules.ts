@@ -81,11 +81,17 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     status: { in: ["OPEN", "ASSIGNED"] },
   });
 
-  // Il creatore può specificare il motivo della riapertura
-  // quando il ticket è CLOSED o REFUSED.
-  can("update", "Ticket", ["reopenReason"], {
+  // Il creatore può riaprire un ticket CLOSED (status -> REOPENED),
+  // indicando il motivo della riapertura.
+  can("update", "Ticket", ["status", "reopenReason", "closedAt"], {
     createdById: user.userId,
-    status: { in: ["CLOSED", "REFUSED"] },
+    status: "CLOSED",
+  });
+
+  // Anche l'assegnatario può riaprire un ticket CLOSED.
+  can("update", "Ticket", ["status", "reopenReason", "closedAt"], {
+    assignedToId: user.userId,
+    status: "CLOSED",
   });
 
   // ------------------------------------------------------------
@@ -94,14 +100,15 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
 
   if (user.role === "TECHNICIAN") {
     // Il technician assegnatario può prendere in carico il ticket
-    // passando da ASSIGNED a IN_PROGRESS oppure REFUSED.
+    // passando da ASSIGNED (o REOPENED, un ticket riaperto resta
+    // assegnato) a IN_PROGRESS oppure REFUSED.
     can(
       "update",
       "Ticket",
       ["status", "closingMessage"],
       {
         assignedToId: user.userId,
-        status: "ASSIGNED",
+        status: { in: ["ASSIGNED", "REOPENED"] },
       },
     );
 
@@ -275,16 +282,28 @@ export const ALLOWED_STATUS_TRANSITIONS: Partial<
     Partial<Record<string, string[]>>
   >
 > = {
-  // Il technician può prendere in carico o rifiutare
-  // un ticket ASSIGNED.
+  // Qualsiasi ruolo può essere creatore o assegnatario di un ticket:
+  // chi di loro può riaprire un ticket CLOSED portandolo a REOPENED.
+  EMPLOYEE: {
+    CLOSED: ["REOPENED"],
+  },
+  SYSTEM_ADMIN: {
+    CLOSED: ["REOPENED"],
+  },
+
+  // Il technician può prendere in carico o rifiutare un ticket
+  // ASSIGNED o REOPENED (un ticket riaperto resta assegnato).
   // Un ticket IN_PROGRESS può invece essere chiuso.
   TECHNICIAN: {
     ASSIGNED: ["IN_PROGRESS", "REFUSED"],
+    REOPENED: ["IN_PROGRESS", "REFUSED"],
     IN_PROGRESS: ["CLOSED"],
+    CLOSED: ["REOPENED"],
   },
 
   // L'admin può assegnare o rifiutare un ticket OPEN.
   ADMIN: {
     OPEN: ["ASSIGNED", "REFUSED"],
+    CLOSED: ["REOPENED"],
   },
 };

@@ -28,8 +28,26 @@ function defineCategoryRules({ can }: CategoryAbilityBuilder, user: CategoryUser
   }
 
   // ------------------------------------------------------------
-  // Tutti gli altri ruoli: sola lettura, scoped SOLO sugli accessi
-  // espliciti della matrice (grant attivi con ruolo minimo compatibile).
+  // ADMIN: gestione completa SOLO delle categorie del proprio
+  // dipartimento (create, update, soft delete, riattivazione e
+  // relativa matrice di accessi). Vengono usate azioni esplicite
+  // e non "manage", così la lettura operativa resta governata
+  // esclusivamente dalla matrice e la gestione dallo scope "update".
+  // ------------------------------------------------------------
+  if (user.role === "ADMIN") {
+    can("create", "TicketCategory", { department: user.department });
+    can("update", "TicketCategory", { department: user.department });
+    can("delete", "TicketCategory", { department: user.department });
+    can("restore", "TicketCategory", { department: user.department });
+    can("read", "TicketCategoryAccess", {
+      category: { department: user.department },
+    });
+  }
+
+  // ------------------------------------------------------------
+  // Tutti gli altri ruoli (e lo stesso ADMIN oltre alla gestione):
+  // sola lettura, scoped SOLO sugli accessi espliciti della matrice
+  // (grant attivi con ruolo minimo compatibile).
   // Nessuna visibilità automatica sulle categorie del proprio
   // dipartimento: la matrice è l'unica fonte di visibilità.
   // ------------------------------------------------------------

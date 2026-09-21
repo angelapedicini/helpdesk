@@ -16,6 +16,7 @@ export const ticketTypeDefs = `#graphql
     IN_PROGRESS 
     CLOSED 
     REFUSED
+    REOPENED
   }
 
   enum TicketPriority {

@@ -22,7 +22,6 @@ const SPECIFIC_FIELD_MAP: SpecificMappingRow[] = [
     values: Object.values(Software) },
 
   { department: "HR", specific: "PAYROLL_REFERENCE", tb: "hrSpecific", field: "payrollReference" },
-  { department: "HR", specific: "EMPLOYEE_REFERENCE", tb: "hrSpecific", field: "employeeReference" },
 
   { department: "FINANCE", specific: "CUSTOMER", tb: "financeSpecific", field: "customer",
     values: Object.values(Customer) },

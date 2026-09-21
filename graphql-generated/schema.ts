@@ -486,7 +486,6 @@ export type TicketFinanceSpecific = {
 
 export type TicketHrSpecific = {
   __typename?: 'TicketHRSpecific';
-  employeeReference?: Maybe<Scalars['String']['output']>;
   payrollReference?: Maybe<Scalars['String']['output']>;
 };
 
@@ -641,7 +640,6 @@ export type TicketSpecific = TicketFinanceSpecific | TicketHrSpecific | TicketIt
 export const TicketSpecificField = {
   BudgetType: 'BUDGET_TYPE',
   Customer: 'CUSTOMER',
-  EmployeeReference: 'EMPLOYEE_REFERENCE',
   HardwareType: 'HARDWARE_TYPE',
   InvoiceReference: 'INVOICE_REFERENCE',
   PayrollReference: 'PAYROLL_REFERENCE',
@@ -686,7 +684,8 @@ export const TicketStatus = {
   Closed: 'CLOSED',
   InProgress: 'IN_PROGRESS',
   Open: 'OPEN',
-  Refused: 'REFUSED'
+  Refused: 'REFUSED',
+  Reopened: 'REOPENED'
 } as const;
 
 export type TicketStatus = typeof TicketStatus[keyof typeof TicketStatus];

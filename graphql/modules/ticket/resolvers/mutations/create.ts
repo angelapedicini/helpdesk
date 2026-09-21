@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
 import { autoAssign } from "@/lib/ticket/autoAssign";
 import { CreateTicketSchema } from "@/lib/validators/ticket-detail.schema";
+import { validateSpecificValueFormat } from "@/lib/validators/specific-value.schema";
 import { computeDueDate } from "@/lib/ticket/dueDate";
 import { assertCanCreateTicket } from "@/lib/casl/abilities/ticket/guards";
 import { defineAbility } from "@/lib/casl/defineAbility";
@@ -68,6 +69,16 @@ export async function createTicket(_parent: unknown, args: { input: unknown }) {
       throw new GraphQLError(
         `Value not valid for ${category.specificField}`,
         { extensions: { code: "BAD_USER_INPUT" } }
+      );
+    }
+
+    // Formato del riferimento per i campi testo libero (es. INVOICE_REFERENCE).
+    // Messaggio inglese per lo sviluppatore; l'utente vede quello mappato
+    // da "WRONG_SPECIFIC" nel notificationLink.
+    if (validateSpecificValueFormat(category.specificField, input.specificValue)) {
+      throw new GraphQLError(
+        `Invalid format for ${category.specificField} reference`,
+        { extensions: { code: "WRONG_SPECIFIC" } }
       );
     }
 
