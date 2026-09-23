@@ -200,6 +200,14 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
       status: "OPEN",
     });
 
+    // L'admin può modificare categoria e valore specifico anche quando
+    // è lui l'ultimo aggiornatore del ticket (es. subito dopo averlo
+    // assegnato), a prescindere dallo stato corrente.
+    can("update", "Ticket", ["categoryId", "specificValue"], {
+      ticketDepartment: user.department,
+      "lastUpdatedBy.role": "ADMIN",
+    });
+
     // L'admin può modificare la priorità dei ticket
     // del proprio dipartimento, finché sono OPEN o ASSIGNED.
     can("update", "Ticket", ["priority"], {
@@ -218,6 +226,32 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     createdById: user.userId,
     status: { in: ["OPEN", "ASSIGNED"] },
   });
+
+  // ------------------------------------------------------------
+  // UPDATE - Lock da ultimo aggiornamento admin
+  // ------------------------------------------------------------
+
+  // Quando l'ultimo aggiornamento del ticket è opera di un admin,
+  // tutte le modifiche sono bloccate tranne lo stato: il tecnico
+  // assegnatario deve poter ancora prendere in carico (IN_PROGRESS)
+  // o rifiutare. Appena il tecnico aggiorna, lastUpdatedBy cambia
+  // e si torna alle regole normali. Il lock non vale per l'admin
+  // stesso: può continuare a intervenire sul ticket.
+  if (user.role !== "ADMIN") {
+    cannot("update", "Ticket", {
+      "lastUpdatedBy.role": "ADMIN",
+    });
+
+    // L'eccezione sullo stato vale solo per il tecnico assegnatario:
+    // deve poter ancora prendere in carico o rifiutare. Per il creatore
+    // ogni campo (stato incluso) resta bloccato quando l'ultimo
+    // aggiornatore è un admin.
+    if (user.role === "TECHNICIAN") {
+      can("update", "Ticket", ["status"], {
+        "lastUpdatedBy.role": "ADMIN",
+      });
+    }
+  }
 
   // ============================================================
   // TicketMessage

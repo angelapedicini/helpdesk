@@ -63,6 +63,7 @@ export const TICKET_FIELDS = graphql(`
       id
       firstName
       lastName
+      role
     }
     closingMessage
 }
