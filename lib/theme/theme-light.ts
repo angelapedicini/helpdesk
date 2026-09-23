@@ -41,18 +41,18 @@ export const lightTheme = createTheme({
 
         ui: {
             // Standard inputs
-            inputBorder: "#1d1d1d",
+            inputBorder: "#000000",
             inputBorderHover: "#000000",
-            inputBorderDisabled: "#858585",
-            inputTextDisabled: "#646464",
+            inputBorderDisabled: "#dad9d9",
+            inputTextDisabled: "#000000",
 
 
 
             // Date pickers
-            pickerBorder: "#8c8f96",
-            pickerBorderHover: "#0a0a0a",
-            pickerBorderDisabled: "#727272",
-            pickerTextDisabled: "#585858",
+            pickerBorder: "#000000",
+            pickerBorderHover: "#000000",
+            pickerBorderDisabled: "#dad9d9",
+            pickerTextDisabled: "#000000",
 
             // Tables
             tableHeaderText: "#374151",

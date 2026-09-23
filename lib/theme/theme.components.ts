@@ -271,13 +271,18 @@ export const sharedComponents: Components<Theme> = {
             root: ({ theme }) => ({
                 "& .MuiOutlinedInput-notchedOutline": {
                     borderColor: theme.palette.ui.inputBorder,
+                    borderWidth: "clamp(1px, 0.2vmin, 1.5px)",
                 },
 
                 "&:hover:not(.Mui-disabled) .MuiOutlinedInput-notchedOutline": {
                     borderColor: theme.palette.ui.inputBorderHover,
-                    borderWidth: "1.7px",
+                    borderWidth: "clamp(1.5px, 0.3vmin, 2.5px)",
                 },
 
+
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderWidth: "clamp(1.5px, 0.3vmin, 2.5px)",
+                },
 
                 "&.Mui-disabled .MuiOutlinedInput-notchedOutline": {
                     borderColor: theme.palette.ui.inputBorderDisabled,
@@ -325,13 +330,18 @@ export const sharedComponents: Components<Theme> = {
             root: ({ theme }) => ({
                 "& .MuiPickersOutlinedInput-notchedOutline": {
                     borderColor: theme.palette.ui.pickerBorder,
+                    borderWidth: "clamp(1px, 0.2vmin, 1.5px)",
                 },
 
                 "&:hover:not(.Mui-disabled) .MuiPickersOutlinedInput-notchedOutline": {
                     borderColor: theme.palette.ui.pickerBorderHover,
-                    borderWidth: "1.7px",
+                    borderWidth: "clamp(1.5px, 0.3vmin, 2.5px)",
                 },
 
+
+                "&.Mui-focused .MuiPickersOutlinedInput-notchedOutline": {
+                    borderWidth: "clamp(1.5px, 0.3vmin, 2.5px)",
+                },
 
                 "&.Mui-disabled .MuiPickersOutlinedInput-notchedOutline": {
                     borderColor: theme.palette.ui.pickerBorderDisabled,
