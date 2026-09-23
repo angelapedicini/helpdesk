@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Controller, type Resolver, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -47,6 +48,7 @@ import { computeDueDate, computeDueWorkDate } from "@/lib/ticket/dueDate";
 
 type TicketDetailFormProps = {
     ticket: TicketFieldsFragment;
+    header?: ReactNode;
     onSubmit: (
         values: UpdateTicketOutput
     ) => void | Promise<void>;
@@ -87,6 +89,7 @@ function mapTicketToFormValues(
 
 export default function TicketDetailForm({
     ticket,
+    header,
     onSubmit,
 }: TicketDetailFormProps) {
     const { registerReset, resetAll } = useResetRegistry();
@@ -538,6 +541,8 @@ export default function TicketDetailForm({
                     </>
                 }
             >
+                {header}
+
                 <Box
                     sx={{
                         display: "grid",

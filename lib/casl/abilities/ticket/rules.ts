@@ -139,13 +139,6 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
       status: { in: ["ASSIGNED", "IN_PROGRESS"] },
     });
 
-    // Il technician assegnatario può modificare categoria
-    // e valore specifico finché il ticket è OPEN o ASSIGNED.
-    can("update", "Ticket", ["categoryId", "specificValue"], {
-      assignedToId: user.userId,
-      status: { in: ["OPEN", "ASSIGNED"] },
-    });
-
     // Il technician non può modificare il creatore
     // di un ticket che gli è stato assegnato.
     cannot("update", "Ticket", ["createdById"], {
@@ -200,11 +193,11 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     );
 
     // L'admin può modificare categoria e valore specifico
-    // dei ticket del proprio dipartimento, finché sono
-    // OPEN o ASSIGNED.
+    // dei ticket del proprio dipartimento, solamente quando
+    // il ticket è OPEN.
     can("update", "Ticket", ["categoryId", "specificValue"], {
       ticketDepartment: user.department,
-      status: { in: ["OPEN", "ASSIGNED"] },
+      status: "OPEN",
     });
 
     // L'admin può modificare la priorità dei ticket

@@ -121,15 +121,16 @@ export default function EasyLoginForm({ defaultDepartment, defaultEmail }: EasyL
                 <AccountCircleIcon />
             </IconButton>
 
-            {/* Step 1: Department */}
+{/* Step 1: Department */}
             <Controller
                 name="department"
                 control={depControl}
                 render={({ field }) => (
                     <FormControl size="small" error={!!depErrors.department} sx={{ minWidth: 110 }}>
-                        <InputLabel id="department-select-label">Dipartimento</InputLabel>
+                        <InputLabel id="department-select-label" className="navbar-input">Dipartimento</InputLabel>
                         <Select
                             {...field}
+                            className="navbar-input"
                             labelId="department-select-label"
                             label="Dipartimento"
                             value={field.value ?? ""}
@@ -163,9 +164,10 @@ export default function EasyLoginForm({ defaultDepartment, defaultEmail }: EasyL
                             disabled={!selectedDepartment || usersLoading || userOptions.length === 0}
                             sx={{ minWidth: 300 }}
                         >
-                            <InputLabel id="user-select-label">Utente</InputLabel>
+                            <InputLabel id="user-select-label" className="navbar-input">Utente</InputLabel>
                             <Select
                                 {...field}
+                                className="navbar-input"
                                 labelId="user-select-label"
                                 label="Utente"
                                 value={safeEmailValue}
@@ -188,6 +190,7 @@ export default function EasyLoginForm({ defaultDepartment, defaultEmail }: EasyL
                 type="submit"
                 variant="contained"
                 size="small"
+                className="navbar-button"
                 disabled={!selectedDepartment || userOptions.length === 0}
             >
                 Accedi

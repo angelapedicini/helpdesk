@@ -106,7 +106,7 @@ export const sharedComponents: Components<Theme> = {
         styleOverrides: {
             root: ({ theme }) => ({
                 "&:hover": {
-                    "& .MuiTableCell-root:not(.highlighted-cell)": {
+                    "& .MuiTableCell-root:not(.highlighted-cell):not(.MuiTableCell-head)": {
                         backgroundColor: theme.palette.ui.tableRowHover,
                     },
                 },
@@ -153,7 +153,7 @@ export const sharedComponents: Components<Theme> = {
         },
 
         styleOverrides: {
-            root: {
+            root: ({ theme }) => ({
                 borderRadius: 4,
                 paddingTop: 4,
                 paddingBottom: 4,
@@ -163,7 +163,27 @@ export const sharedComponents: Components<Theme> = {
                     boxShadow: "none",
                     opacity: 0.9,
                 },
-            },
+
+                // Navbar: pulsante bianco su sfondo primary, solo in light.
+                ...(theme.palette.mode === "light" && {
+                    "&.navbar-button": {
+                        backgroundColor: theme.palette.common.white,
+                        color: theme.palette.primary.main,
+
+                        "&:hover": {
+                            backgroundColor: theme.palette.grey[200],
+                            color: theme.palette.primary.main,
+                            opacity: 1,
+                        },
+
+                        "&.Mui-disabled": {
+                            backgroundColor: theme.palette.grey[400],
+                            color: theme.palette.common.white,
+                            opacity: 1,
+                        },
+                    },
+                }),
+            }),
         },
     },
 
@@ -213,6 +233,17 @@ export const sharedComponents: Components<Theme> = {
                 "&.Mui-disabled": {
                     color: theme.palette.ui.inputTextDisabled,
                 },
+
+                // Navbar: label bianca su sfondo primary, solo in light.
+                ...(theme.palette.mode === "light" && {
+                    "&.navbar-input": {
+                        color: theme.palette.primary.contrastText,
+                    },
+
+                    "&.navbar-input.Mui-focused": {
+                        color: theme.palette.primary.contrastText,
+                    },
+                }),
             }),
         },
     },
@@ -251,6 +282,30 @@ export const sharedComponents: Components<Theme> = {
                 "&.Mui-disabled .MuiOutlinedInput-notchedOutline": {
                     borderColor: theme.palette.ui.inputBorderDisabled,
                 },
+
+                // Navbar: select su sfondo primary → bordi/testo dal
+                // contrastText (bianco) solo in light, per non toccare il dark.
+                ...(theme.palette.mode === "light" && {
+                    "&.navbar-input": {
+                        color: theme.palette.primary.contrastText,
+
+                        "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: theme.palette.primary.contrastText,
+                        },
+
+                        "&:hover:not(.Mui-disabled) .MuiOutlinedInput-notchedOutline": {
+                            borderColor: theme.palette.primary.contrastText,
+                        },
+
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: theme.palette.primary.contrastText,
+                        },
+
+                        "& .MuiSelect-icon": {
+                            color: theme.palette.primary.contrastText,
+                        },
+                    },
+                }),
             }),
 
             input: ({ theme }) => ({

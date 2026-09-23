@@ -31,6 +31,8 @@ export default function FormLayout({
                     flex: 1,
                     minHeight: 0,
                     overflowY: "auto",
+                    px: 1,
+                    pt: 1,
                 }}
             >
                 {children}
@@ -41,6 +43,7 @@ export default function FormLayout({
                     sx={{
                         flexShrink: 0,
                         mt: 3,
+                        px: 1,
                         display: "flex",
                         gap: 2,
                         justifyContent: "flex-end",

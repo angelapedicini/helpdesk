@@ -169,7 +169,7 @@ export default function TicketsPage() {
                 onReset={ticketFilters.reset}
             />
 
-            <Box sx={{ height: "78vh" }}>
+            {/* <Box sx={{ height: "vh" }}> */}
                 <EnhancedTable<TicketFieldsFragment>
                     rows={tickets}
                     headCells={headCells}
@@ -179,7 +179,8 @@ export default function TicketsPage() {
                     hasNextPage={hasNextPage}
                     onLoadMore={loadMore}
                     getRowClassName={(ticket) => (isTicketOverdue(ticket) ? "error-row" : undefined)}
-                     getRowTooltip={getTicketOverdueTooltip}
+                    getRowTooltip={getTicketOverdueTooltip}
+                    maxHeight={"70vh"}
                     actionsWidth="195px"
                     actions={(ticket) => (
                         <TicketRowActions
@@ -192,7 +193,7 @@ export default function TicketsPage() {
                         />
                     )}
                 />
-            </Box>
+            {/* </Box> */}
 
             <FiltersSidebar open={ticketFilters.isOpen} onClose={ticketFilters.close}>
                 <Box sx={{ p: 2 }}>
