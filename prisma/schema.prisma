@@ -68,9 +68,9 @@ model TicketCategory {
   name          String
   department    Department
   specificField TicketSpecificField? // null = nessuna specifica richiesta per questa categoria
-  disabled Boolean @default(false)
-  updatedAt DateTime? 
-  updatedBy Int? 
+  disabled      Boolean              @default(false)
+  updatedAt     DateTime?
+  updatedBy     Int?
 
   accessGrants    TicketCategoryAccess[]
   specializations UserSpecialization[]
@@ -84,9 +84,9 @@ model TicketCategoryAccess {
   categoryId Int
   category   TicketCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  disabled Boolean @default(false)
-  updatedAt DateTime? 
-  updatedBy Int? 
+  disabled  Boolean   @default(false)
+  updatedAt DateTime?
+  updatedBy Int?
 
   requesterDepartment Department? // null = tutti i dipartimenti
   requesterMinRole    Role        @default(EMPLOYEE) // ruolo minimo richiesto (gerarchia EMPLOYEE < TECHNICIAN < ADMIN)
@@ -112,6 +112,7 @@ model User {
   ticketsLastUpdated Ticket[]        @relation("LastUpdatedTickets")
   ticketMessages     TicketMessage[] @relation("TicketMessages")
 
+  ticketNotifications            TicketNotification[]
   ticketReadStates               TicketReadState[]
   adminNotificationSubscriptions TicketAdminNotificationSubscription[]
 
@@ -188,10 +189,10 @@ model Ticket {
   dueDate          DateTime?
   closedAt         DateTime?
 
-  reopenCount  Int     @default(0)
-  reopenReason String?
+  reopenCount         Int                  @default(0)
+  reopenReason        String?
+  ticketNotifications TicketNotification[]
 }
-
 
 model TicketHistory {
   id Int @id @default(autoincrement())
@@ -271,6 +272,30 @@ model TicketReadState {
   @@id([userId, ticketId])
 }
 
+enum TicketNotificationType {
+  NEWTICKET
+  STATUS_CHANGED
+  ASSIGNED
+  CATEGORY_CHANGED
+  PRIORITY_CHANGED
+  DATES_CHANGED
+}
+
+model TicketNotification {
+  id       Int                    @id @default(autoincrement())
+  userId   Int
+  ticketId Int
+  type     TicketNotificationType
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, ticketId, type])
+  @@index([userId, updatedAt])
+}
+
 model TicketAdminNotificationSubscription {
   userId   Int
   ticketId Int
@@ -299,7 +324,7 @@ model TicketHRSpecific {
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
-  payrollReference  String?
+  payrollReference String?
 }
 
 model TicketFinanceSpecific {

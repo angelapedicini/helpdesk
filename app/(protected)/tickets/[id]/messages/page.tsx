@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client/react";
-import { Box, Typography, Button, TextField, Stack, IconButton, Tooltip } from "@mui/material";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import NotificationsOffIcon from "@mui/icons-material/NotificationsOff";
+import { Box, Typography, Stack } from "@mui/material";
 
 import { GET_MESSAGES } from "@/apollo-client/queries/ticket-message/ticket-message.queries";
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
 import TicketMessageThread, { type TicketMessageThreadHandle } from "@/components/chat";
-import { CREATE_TICKET_MESSAGE } from "@/apollo-client/queries/ticket-message/ticket-massage.mutations";
+import TicketMessageForm from "@/components/forms/message/ticket-message-form";
 import { MARK_TICKET_MESSAGES_READ } from "@/apollo-client/queries/ticket-read-state/ticket-read-state.mutation";
 import { GET_TICKET_NOTIFICATION_SUBSCRIPTION } from "@/apollo-client/queries/ticket-adminNotificationSub/ticket-adminNotificationSub.queries";
 import {
@@ -28,7 +26,6 @@ export default function TicketMessagesPage() {
     const ticketId = typeof id === "string" ? Number(id) : NaN;
     const isValidTicketId = Number.isInteger(ticketId);
 
-    const [content, setContent] = useState("");
     const threadRef = useRef<TicketMessageThreadHandle>(null);
 
     // --------------------------------
@@ -57,34 +54,6 @@ export default function TicketMessagesPage() {
         data?.messages?.pageInfo,
         fetchMore
     );
-
-    // --------------------------------
-    // CREATE MESSAGE
-    // --------------------------------
-
-    const [createMessage, { loading: sending }] = useMutation(CREATE_TICKET_MESSAGE, {
-        refetchQueries: [
-            {
-                query: GET_MESSAGES,
-                variables: { ticketId, first: PAGE_SIZE, after: null },
-            },
-        ],
-        awaitRefetchQueries: true,
-    });
-
-    const handleSend = async () => {
-        const trimmed = content.trim();
-        if (!trimmed) return;
-
-        const result = await createMessage({
-            variables: { input: { ticketId, content: trimmed } },
-        });
-
-        if (!result.error) {
-            setContent("");
-            threadRef.current?.scrollToBottom();
-        }
-    };
 
     // --------------------------------
     // NOTIFICHE ADMIN
@@ -195,21 +164,11 @@ export default function TicketMessagesPage() {
             </Box>
 
             <Stack direction="row" spacing={1} sx={{ mt: 2, flexShrink: 0 }}>
-                <TextField
-                    fullWidth
-                    multiline
-                    minRows={2}
-                    placeholder="Scrivi un messaggio..."
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
+                <TicketMessageForm
+                    ticketId={ticketId}
+                    pageSize={PAGE_SIZE}
+                    onSent={() => threadRef.current?.scrollToBottom()}
                 />
-                <Button
-                    variant="contained"
-                    onClick={handleSend}
-                    disabled={sending || !content.trim()}
-                >
-                    Invia
-                </Button>
             </Stack>
         </Box>
     );

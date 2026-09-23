@@ -11,6 +11,7 @@ import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
 import { getSpecificMapping } from "@/graphql/modules/ticket/resolvers/mutations/specific-field-config";
 import { getPrisma } from "@/lib/prisma/index";
 import { buildTicketHistoryData } from "@/lib/ticket/history";
+import { syncTicketNotifications } from "@/lib/ticket/notification";
 
 export async function createTicket(_parent: unknown, args: { input: unknown }) {
   const session = await requireSession();
@@ -116,6 +117,16 @@ export async function createTicket(_parent: unknown, args: { input: unknown }) {
       data: buildTicketHistoryData(created, {
         ticketSpecific: input.specificValue ?? null,
       }),
+    });
+
+    // Notifiche leggere della campanella: NEWTICKET va all'assegnatario
+    // (se il ticket nasce già assegnato) o agli admin del dipartimento
+    // (se nasce OPEN, nuovo lavoro da prendere in carico).
+    await syncTicketNotifications({
+      tx,
+      actorId: session.userId,
+      before: null,
+      after: created,
     });
 
     return created;

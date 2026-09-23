@@ -99,6 +99,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
   addUserSpecialization: UserSpecializationTot;
+  clearTicketNotifications: Scalars['Int']['output'];
   createTicket: Ticket;
   createTicketCategory: TicketCategory;
   createTicketCategoryAccess: TicketCategoryAccess;
@@ -127,6 +128,11 @@ export type Mutation = {
 
 export type MutationAddUserSpecializationArgs = {
   input: UserSpecInput;
+};
+
+
+export type MutationClearTicketNotificationsArgs = {
+  ticketId: Scalars['Int']['input'];
 };
 
 
@@ -254,6 +260,7 @@ export type Query = {
   ticketHistory: TicketHistoryConnection;
   ticketHistoryByTicketId: TicketHistoryConnection;
   ticketNotificationSubscription?: Maybe<TicketAdminNotificationSubscription>;
+  ticketNotifications: Array<TicketNotification>;
   ticketStatsByDepartment: Array<TicketStatsByDepartment>;
   ticketStatsByTechnician: Array<TicketStatsByTechnician>;
   tickets: TicketConnection;
@@ -605,6 +612,24 @@ export type TicketMessageInput = {
   ticketId: Scalars['Int']['input'];
 };
 
+export type TicketNotification = {
+  __typename?: 'TicketNotification';
+  id: Scalars['Int']['output'];
+  ticket: Ticket;
+  type: TicketNotificationType;
+  updatedAt: Scalars['Date']['output'];
+};
+
+export const TicketNotificationType = {
+  Assigned: 'ASSIGNED',
+  CategoryChanged: 'CATEGORY_CHANGED',
+  DatesChanged: 'DATES_CHANGED',
+  Newticket: 'NEWTICKET',
+  PriorityChanged: 'PRIORITY_CHANGED',
+  StatusChanged: 'STATUS_CHANGED'
+} as const;
+
+export type TicketNotificationType = typeof TicketNotificationType[keyof typeof TicketNotificationType];
 export type TicketOrderBy = {
   direction: SortDirection;
   field: TicketSortField;

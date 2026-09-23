@@ -1,6 +1,7 @@
 // modules/ticket/resolvers/mutations/update.ts
 import { getPrisma } from "@/lib/prisma/index";
 import { buildTicketHistoryData } from "@/lib/ticket/history";
+import { syncTicketNotifications } from "@/lib/ticket/notification";
 import { requireSession } from "@/lib/auth/session";
 import { GraphQLError } from "graphql/error";
 import { UpdateTicketSchema } from "@/lib/validators/ticket-detail.schema";
@@ -321,7 +322,7 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
   // specificUpdate accumula le chiavi da passare dentro ticket.update({ data: ... }).
   // Può contenere sia la tabella vecchia (per il delete) sia quella nuova
   // (per l'upsert), se sono tabelle diverse.
-  let specificUpdate: Record<string, unknown> = {};
+  const specificUpdate: Record<string, unknown> = {};
 
   const oldRowExists = oldMapping ? existing[oldMapping.tb] != null : false;
   const tableChanged = oldMapping && newMapping ? oldMapping.tb !== newMapping.tb : oldMapping?.tb !== newMapping?.tb;
@@ -398,6 +399,16 @@ export async function updateTicket(_parent: unknown, args: { id: number; input: 
         ticketSpecific:
           input.specificValue != null ? input.specificValue : oldSpecificValue,
       }),
+    });
+
+    // Notifiche leggere della campanella: status/priorità/categoria vanno
+    // al creatore, il cambio assegnatario al nuovo assegnatario. L'actorId
+    // viene sempre saltato (gestito dentro syncTicketNotifications).
+    await syncTicketNotifications({
+      tx,
+      actorId: session.userId,
+      before: existing,
+      after: result,
     });
 
     return result;
