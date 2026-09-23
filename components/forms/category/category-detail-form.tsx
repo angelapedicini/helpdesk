@@ -15,6 +15,7 @@ import {
 import PublicIcon from "@mui/icons-material/Public";
 
 import { AppSelect, type SelectOption } from "../inputs/select-input";
+import FormLayout from "../form-layout";
 import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
 import { ROLE_CONFIG } from "@/components/enums/role.config";
 import {
@@ -235,6 +236,24 @@ export default function CategoryDetailForm({
                 boxSizing: "border-box",
             }}
         >
+            <FormLayout
+                actions={
+                    <>
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            disabled={isSubmitting || !isDirty}
+                            onClick={handleReset}
+                        >
+                            Ripristina
+                        </Button>
+
+                        <Button type="submit" variant="contained" disabled={isSubmitting}>
+                            Salva
+                        </Button>
+                    </>
+                }
+            >
             <Box
                 sx={{
                     display: "grid",
@@ -335,27 +354,7 @@ export default function CategoryDetailForm({
                 })}
             </Box>
 
-            <Box
-                sx={{
-                    display: "flex",
-                    gap: 2,
-                    justifyContent: "flex-end",
-                    mt: 3,
-                }}
-            >
-                <Button
-                    type="button"
-                    variant="outlined"
-                    disabled={isSubmitting || !isDirty}
-                    onClick={handleReset}
-                >
-                    Ripristina
-                </Button>
-
-                <Button type="submit" variant="contained" disabled={isSubmitting}>
-                    Salva
-                </Button>
-            </Box>
+            </FormLayout>
         </Box>
     );
 }

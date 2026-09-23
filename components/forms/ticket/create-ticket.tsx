@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { SOLE_SPECIALIST_CATEGORY_IDS } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
 import { SpecificFieldInput } from "../inputs/specific-field-input";
 import { useTicketCreateSelfAssignment } from "@/lib/casl/abilities/ticket/hook-permission";
+import FormLayout from "../form-layout";
 
 
 type TicketDetailFormProps = {
@@ -128,6 +129,13 @@ export default function CreateTicket({ category, department, onSubmit }: TicketD
             noValidate
             sx={{ width: "100%", boxSizing: "border-box" }}
         >
+            <FormLayout
+                actions={
+                    <Button type="submit" variant="contained" disabled={isSubmitting}>
+                        Salva
+                    </Button>
+                }
+            >
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 3 }}>
                 <TextField
                     {...register("title")}
@@ -171,11 +179,8 @@ export default function CreateTicket({ category, department, onSubmit }: TicketD
                         verrà assegnato automaticamente al momento della creazione.
                     </Alert>
                 )}
-
-                <Button type="submit" variant="contained" disabled={isSubmitting} sx={{ gridColumn: { md: "1 / -1" } }}>
-                    Salva
-                </Button>
-            </Box>
+                </Box>
+            </FormLayout>
         </Box>
     );
 }

@@ -121,8 +121,11 @@ export const FilterTicketSchema = z.object({
   firstResponseOverdue: z.boolean().optional(),
   reopened: z.boolean().optional(),
 
-  dueDateFrom: z.coerce.date().optional().transform((d) => d?.toISOString()),
-  dueDateTo: z.coerce.date().optional().transform((d) => d?.toISOString()),
+  firstResponseDueSoon: z.boolean().optional(),
+  dueDateDueSoon: z.boolean().optional(),
+
+  dueDateFrom: z.coerce.date().optional().transform((d) => d?.toISOString()).optional(),
+  dueDateTo: z.coerce.date().optional().transform((d) => d?.toISOString()).optional(),
 });
 
 

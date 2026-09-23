@@ -38,6 +38,7 @@ import { useResetRegistry } from "../hooks/use-reset-registry";
 import { SearchInput, SearchResult } from "../inputs/search-input";
 import { SpecificFieldInput } from "../inputs/specific-field-input";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import FormLayout from "../form-layout";
 import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
 import { useTicketAllowedStatuses, useTicketAssigneeBrowseMode, useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/hook-permission";
 import { SOLE_SPECIALIST_CATEGORY_IDS, USERS_SPEC_BY_CATID } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
@@ -198,7 +199,7 @@ export default function TicketDetailForm({
                     categoryId: ticket.category?.id,
                     department: ticket.ticketDepartment,
                 },
-              }
+            }
             : skipToken
     );
 
@@ -515,16 +516,38 @@ export default function TicketDetailForm({
                 boxSizing: "border-box",
             }}
         >
-            <Box
-                sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                        xs: "1fr",
-                        md: "1fr 1fr",
-                    },
-                    gap: 3,
-                }}
+            <FormLayout
+                actions={
+                    <>
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            disabled={isSubmitting || !isDirty}
+                            onClick={handleReset}
+                        >
+                            Ripristina
+                        </Button>
+
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={isSubmitting || !hasAnyEditableField}
+                        >
+                            Salva
+                        </Button>
+                    </>
+                }
             >
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                            xs: "1fr",
+                            md: "1fr 1fr",
+                        },
+                        gap: 3,
+                    }}
+                >
 
                 <TextField
                     label="Prima risposta entro"
@@ -569,33 +592,6 @@ export default function TicketDetailForm({
                             }}
                         />
                     )}
-                />
-
-
-
-                <TextField
-                    {...register("title")}
-                    label="Titolo"
-                    fullWidth
-                    disabled={!fieldPermissions.title}
-                    error={!!errors.title}
-                    helperText={errors.title?.message}
-                />
-
-                <TextField
-                    {...register("description")}
-                    label="Descrizione"
-                    fullWidth
-                    multiline
-                    minRows={3}
-                    disabled={!fieldPermissions.description}
-                    error={!!errors.description}
-                    helperText={errors.description?.message}
-                    sx={{
-                        gridColumn: {
-                            md: "1 / -1",
-                        },
-                    }}
                 />
 
                 <AppSelect
@@ -649,6 +645,33 @@ export default function TicketDetailForm({
                     disabled={!fieldPermissions.status}
                 />
 
+
+
+                <TextField
+                    {...register("title")}
+                    label="Titolo"
+                    fullWidth
+                    disabled={!fieldPermissions.title}
+                    error={!!errors.title}
+                    helperText={errors.title?.message}
+                />
+
+                <TextField
+                    {...register("description")}
+                    label="Descrizione"
+                    fullWidth
+                    multiline
+                    minRows={3}
+                    disabled={!fieldPermissions.description}
+                    error={!!errors.description}
+                    helperText={errors.description?.message}
+                    sx={{
+                        gridColumn: {
+                            md: "1 / -1",
+                        },
+                    }}
+                />
+
                 {showClosingMessage && (
                     <TextField
                         {...register("closingMessage")}
@@ -687,37 +710,8 @@ export default function TicketDetailForm({
                         lui/lei al salvataggio.
                     </Alert>
                 )}
-
-
-
-                <Box
-                    sx={{
-                        display: "flex",
-                        gap: 2,
-                        justifyContent: "flex-end",
-                        gridColumn: {
-                            md: "1 / -1",
-                        },
-                    }}
-                >
-                    <Button
-                        type="button"
-                        variant="outlined"
-                        disabled={isSubmitting || !isDirty}
-                        onClick={handleReset}
-                    >
-                        Ripristina
-                    </Button>
-
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={isSubmitting || !hasAnyEditableField}
-                    >
-                        Salva
-                    </Button>
                 </Box>
-            </Box>
+            </FormLayout>
         </Box>
     );
 }

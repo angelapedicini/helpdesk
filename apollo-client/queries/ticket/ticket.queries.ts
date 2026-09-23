@@ -57,3 +57,15 @@ export const GET_TICKET_BY_ID = graphql(`
     }
   }
 `);
+
+export const TICKET_ALERTS = graphql(`
+  query TicketAlerts($scope: TicketScope) {
+    ticketAlerts(scope: $scope) {
+      firstResponseOverdue
+      dueDateOverdue
+      reopened
+      firstResponseDueSoon
+      dueDateDueSoon
+    }
+  }
+`);

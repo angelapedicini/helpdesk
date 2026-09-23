@@ -16,6 +16,7 @@ import {
 } from "../inputs/search-input";
 
 import { useResetRegistry } from "../hooks/use-reset-registry";
+import FormLayout from "../form-layout";
 import { useUserManagementPermissions } from "@/lib/casl/abilities/user/hook-permission";
 
 import { FilterUserSpecInput, FilterUserSpecOutput, FilterUserSpecSchema } from "@/lib/validators/userSpec.schema";
@@ -111,6 +112,30 @@ export default function FilterUserSpecForm({
                 boxSizing: "border-box",
             }}
         >
+            <FormLayout
+                actionsJustify="stretch"
+                actions={
+                    <>
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            onClick={handleReset}
+                            fullWidth
+                        >
+                            Reset
+                        </Button>
+
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={isSubmitting}
+                            fullWidth
+                        >
+                            Applica
+                        </Button>
+                    </>
+                }
+            >
             <Box
                 sx={{
                     display: "flex",
@@ -150,32 +175,8 @@ export default function FilterUserSpecForm({
                         options={departmentOptions}
                     />
                 )}
-
-                <Box
-                    sx={{
-                        display: "flex",
-                        gap: 2,
-                    }}
-                >
-                    <Button
-                        type="button"
-                        variant="outlined"
-                        onClick={handleReset}
-                        fullWidth
-                    >
-                        Reset
-                    </Button>
-
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={isSubmitting}
-                        fullWidth
-                    >
-                        Applica
-                    </Button>
                 </Box>
-            </Box>
+            </FormLayout>
         </Box>
     );
 }

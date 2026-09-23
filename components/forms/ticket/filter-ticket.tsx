@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -32,6 +33,7 @@ import {
 } from "../inputs/search-input";
 
 import { useResetRegistry } from "../hooks/use-reset-registry";
+import FormLayout from "../form-layout";
 
 import {
     FilterTicketInput,
@@ -46,6 +48,7 @@ type FilterTicketFormProps = {
     onReset?: () => void;
     scope?: string;
     enabled?: boolean;
+    defaultValues?: FilterTicketInput;
 };
 
 export default function FilterTicketForm({
@@ -53,6 +56,7 @@ export default function FilterTicketForm({
     onReset,
     scope,
     enabled = true,
+    defaultValues,
 }: FilterTicketFormProps) {
     const { registerReset, resetAll } = useResetRegistry();
 
@@ -64,6 +68,13 @@ export default function FilterTicketForm({
     } = useForm<FilterTicketInput, unknown, FilterTicketOutput>({
         resolver: zodResolver(FilterTicketSchema),
     });
+
+    // Sincronizza il form con il filtro applicato dalla pagina (chip
+    // in TicketAlerts): il filtro resta unico, sidebar e chip mostrano
+    // sempre lo stesso stato.
+    useEffect(() => {
+        reset(defaultValues);
+    }, [defaultValues, reset]);
 
     const [searchUsers, { loading: loadingUsers }] =
         useLazyQuery(SEARCH_USERS);
@@ -147,6 +158,30 @@ export default function FilterTicketForm({
                 boxSizing: "border-box",
             }}
         >
+            <FormLayout
+                actionsJustify="stretch"
+                actions={
+                    <>
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            onClick={handleReset}
+                            fullWidth
+                        >
+                            Reset
+                        </Button>
+
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={isSubmitting}
+                            fullWidth
+                        >
+                            Applica
+                        </Button>
+                    </>
+                }
+            >
             <Box
                 sx={{
                     display: "flex",
@@ -285,7 +320,51 @@ export default function FilterTicketForm({
                                         }
                                     />
                                 }
-                                label="Solo prima revisione scaduta"
+                                label="Solo prima risposta scaduta"
+                            />
+                        )}
+                    />
+
+                     <Controller
+                        name="firstResponseDueSoon"
+                        control={control}
+                        render={({ field }) => (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={field.value ?? false}
+                                        onChange={(e) =>
+                                            field.onChange(
+                                                e.target.checked
+                                                    ? true
+                                                    : undefined
+                                            )
+                                        }
+                                    />
+                                }
+                                label="Solo prima risposta in scadenza (3 gg)"
+                            />
+                        )}
+                    />
+
+                     <Controller
+                        name="dueDateDueSoon"
+                        control={control}
+                        render={({ field }) => (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={field.value ?? false}
+                                        onChange={(e) =>
+                                            field.onChange(
+                                                e.target.checked
+                                                    ? true
+                                                    : undefined
+                                            )
+                                        }
+                                    />
+                                }
+                                label="Solo scadenze entro 3 gg"
                             />
                         )}
                     />
@@ -333,32 +412,8 @@ export default function FilterTicketForm({
                         />
                     )}
                 />
-
-                <Box
-                    sx={{
-                        display: "flex",
-                        gap: 2,
-                    }}
-                >
-                    <Button
-                        type="button"
-                        variant="outlined"
-                        onClick={handleReset}
-                        fullWidth
-                    >
-                        Reset
-                    </Button>
-
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={isSubmitting}
-                        fullWidth
-                    >
-                        Applica
-                    </Button>
                 </Box>
-            </Box>
+            </FormLayout>
         </Box>
     );
 }

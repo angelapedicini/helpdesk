@@ -56,6 +56,14 @@ export const ticketTypeDefs = `#graphql
     specificData: TicketSpecific
   }
 
+  type TicketAlerts {
+    firstResponseOverdue: Int!
+    dueDateOverdue: Int!
+    reopened: Int!
+    firstResponseDueSoon: Int!
+    dueDateDueSoon: Int!
+  }
+
   input TicketInput {
     title: String!
     description: String!
@@ -78,6 +86,9 @@ input TicketFilter {
     overdue: Boolean
     unassigned: Boolean
 
+    firstResponseDueSoon: Boolean
+    dueDateDueSoon: Boolean
+
     dueDateFrom: Date
     dueDateTo: Date
 }
@@ -93,6 +104,7 @@ input TicketFilter {
   ): TicketConnection!
 
   ticket(id: Int!): Ticket
+  ticketAlerts(scope: TicketScope = ASSIGNED_TO_ME): TicketAlerts!
 }
 
 input TicketUpdateInput {

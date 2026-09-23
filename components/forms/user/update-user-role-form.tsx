@@ -13,6 +13,7 @@ import {
 } from "@/lib/validators/user.schema";
 import { Role } from "@/lib/validators/enums.schema";
 import { UPDATE_USER_ROLE } from "@/apollo-client/queries/user/userRole.mutation";
+import FormLayout from "../form-layout";
 
 const readOnlyFieldSx = {
   "& .MuiInputBase-input.Mui-disabled": {
@@ -84,6 +85,13 @@ export default function UpdateUserRoleForm({
       noValidate
       sx={{ width: "100%", boxSizing: "border-box" }}
     >
+      <FormLayout
+        actions={
+          <Button type="submit" variant="contained" disabled={isSubmitting}>
+            Salva
+          </Button>
+        }
+      >
       <Box
         sx={{
           display: "grid",
@@ -112,16 +120,8 @@ export default function UpdateUserRoleForm({
             {errors.role.message}
           </FormHelperText>
         )}
-
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={isSubmitting}
-          sx={{ gridColumn: { md: "1 / -1" } }}
-        >
-          Salva
-        </Button>
-      </Box>
+        </Box>
+      </FormLayout>
     </Box>
   );
 }

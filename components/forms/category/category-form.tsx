@@ -21,6 +21,7 @@ import {
 } from "@/lib/config/ticket-specific-field.config";
 import { CREATE_TICKET_CATEGORY } from "@/apollo-client/queries/ticket-category/ticket-category.mutations";
 import { useCategoryCreateFieldPermissions } from "@/lib/casl/abilities/category/hook-permission";
+import FormLayout from "../form-layout";
 
 const SPECIFIC_FIELD_OPTIONS: { id: TicketSpecificField; label: string }[] = (
   Object.keys(SPECIFIC_FIELD_LABELS) as TicketSpecificField[]
@@ -110,6 +111,13 @@ export default function CategoryForm({
       noValidate
       sx={{ width: "100%", boxSizing: "border-box" }}
     >
+      <FormLayout
+        actions={
+          <Button type="submit" variant="contained" disabled={isSubmitting}>
+            Crea categoria
+          </Button>
+        }
+      >
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 3, mt: 2 }}>
         <TextField
           label="Nome"
@@ -137,11 +145,8 @@ export default function CategoryForm({
         {errors.department && (
           <FormHelperText error>{errors.department.message}</FormHelperText>
         )}
-
-        <Button type="submit" variant="contained" disabled={isSubmitting} sx={{ gridColumn: { md: "1 / -1" } }}>
-          Crea categoria
-        </Button>
-      </Box>
+        </Box>
+      </FormLayout>
     </Box>
   );
 }

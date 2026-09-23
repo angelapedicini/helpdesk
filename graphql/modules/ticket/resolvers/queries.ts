@@ -9,6 +9,7 @@ import { TICKET_SORT_FIELD_MAP, buildTicketWhere, buildScopeWhere } from "./wher
 import type { TicketScope, TicketSortField } from "@/graphql-generated/schema";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanReadTicket } from "@/lib/casl/abilities/ticket/guards";
+import { assertCanReadTicketScope } from "@/lib/casl/abilities/ticket-scope/guards";
 
 export const ticketQueries = {
   tickets: async (
@@ -97,5 +98,60 @@ export const ticketQueries = {
     assertCanReadTicket(ability, existing);
 
     return existing;
+  },
+
+  ticketAlerts: async (
+    _parent: unknown,
+    args: { scope?: TicketScope }
+  ) => {
+    const session = await requireSession();
+    const ability = defineAbility(session);
+    const prisma = await getPrisma();
+
+    const scope: TicketScope = args.scope ?? "ASSIGNED_TO_ME";
+    assertCanReadTicketScope(ability, scope);
+
+    // Stessa base della lista ticket: solo i ticket leggibili dall'utente
+    // nello scope corrente. Ogni conteggio riusa buildTicketWhere, quindi
+    // il numero coincide esattamente con il risultato del filtro analogo
+    // applicato alla lista (zero drift tra contatore e filtro).
+    const baseWhere: Prisma.TicketWhereInput = {
+      AND: [
+        accessibleBy(ability, "read").ofType("Ticket"),
+        buildScopeWhere(scope, session),
+      ],
+    };
+
+    const exceptionFilters = {
+      firstResponseOverdue: { firstResponseOverdue: true },
+      dueDateOverdue: { overdue: true },
+      reopened: { reopened: true },
+      firstResponseDueSoon: { firstResponseDueSoon: true },
+      dueDateDueSoon: { dueDateDueSoon: true },
+    } as const;
+
+    const [
+      firstResponseOverdue,
+      dueDateOverdue,
+      reopened,
+      firstResponseDueSoon,
+      dueDateDueSoon,
+    ] = await Promise.all(
+      Object.values(exceptionFilters).map((filter) =>
+        prisma.ticket.count({
+          where: {
+            AND: [baseWhere, buildTicketWhere(filter)],
+          },
+        })
+      )
+    );
+
+    return {
+      firstResponseOverdue,
+      dueDateOverdue,
+      reopened,
+      firstResponseDueSoon,
+      dueDateDueSoon,
+    };
   },
 };

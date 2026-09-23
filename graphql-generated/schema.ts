@@ -250,6 +250,7 @@ export type Query = {
   searchUsers: Array<User>;
   soleSpecialistCategoryIds: Array<Scalars['Int']['output']>;
   ticket?: Maybe<Ticket>;
+  ticketAlerts: TicketAlerts;
   ticketHistory: TicketHistoryConnection;
   ticketHistoryByTicketId: TicketHistoryConnection;
   ticketNotificationSubscription?: Maybe<TicketAdminNotificationSubscription>;
@@ -310,6 +311,11 @@ export type QuerySoleSpecialistCategoryIdsArgs = {
 
 export type QueryTicketArgs = {
   id: Scalars['Int']['input'];
+};
+
+
+export type QueryTicketAlertsArgs = {
+  scope?: InputMaybe<TicketScope>;
 };
 
 
@@ -433,6 +439,15 @@ export type TicketAdminNotificationSubscription = {
   userId: Scalars['Int']['output'];
 };
 
+export type TicketAlerts = {
+  __typename?: 'TicketAlerts';
+  dueDateDueSoon: Scalars['Int']['output'];
+  dueDateOverdue: Scalars['Int']['output'];
+  firstResponseDueSoon: Scalars['Int']['output'];
+  firstResponseOverdue: Scalars['Int']['output'];
+  reopened: Scalars['Int']['output'];
+};
+
 export type TicketCategory = {
   __typename?: 'TicketCategory';
   department: Department;
@@ -467,8 +482,10 @@ export type TicketFilter = {
   assignedToId?: InputMaybe<Scalars['Int']['input']>;
   categoryId?: InputMaybe<Scalars['Int']['input']>;
   createdById?: InputMaybe<Scalars['Int']['input']>;
+  dueDateDueSoon?: InputMaybe<Scalars['Boolean']['input']>;
   dueDateFrom?: InputMaybe<Scalars['Date']['input']>;
   dueDateTo?: InputMaybe<Scalars['Date']['input']>;
+  firstResponseDueSoon?: InputMaybe<Scalars['Boolean']['input']>;
   firstResponseOverdue?: InputMaybe<Scalars['Boolean']['input']>;
   overdue?: InputMaybe<Scalars['Boolean']['input']>;
   priority?: InputMaybe<TicketPriority>;

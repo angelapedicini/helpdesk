@@ -17,15 +17,16 @@ import {
     type TicketFieldsFragment,
     type TicketScope,
 } from "@/graphql-generated/graphql";
-import { GET_TICKETS, Ticket, ticketSortFieldMap } from "@/apollo-client/queries/ticket/ticket.queries";
+import { GET_TICKETS, Ticket, ticketSortFieldMap, TICKET_ALERTS } from "@/apollo-client/queries/ticket/ticket.queries";
 import { DELETE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
-import { FilterTicketOutput } from "@/lib/validators/ticket-detail.schema";
+import { FilterTicketInput, FilterTicketOutput } from "@/lib/validators/ticket-detail.schema";
 import { useFragment } from "@/graphql-generated";
 import { getTicketOverdueTooltip, isTicketOverdue } from "@/lib/ticket/expired-status";
 import EnhancedTable from "@/components/table";
 import { createTicketHeadCells } from "@/app/(protected)/tickets/_components/column.def";
 import TicketRowActions from "@/app/(protected)/tickets/_components/actions";
+import TicketAlerts from "@/app/(protected)/tickets/_components/ticket-alerts";
 import { TICKET_SCOPE_CONFIG } from "@/components/enums/ticket-scope.config";
 
 const PAGE_SIZE = 20;
@@ -74,6 +75,10 @@ export default function TicketsPage() {
     const { data, fetchMore } = useQuery(GET_TICKETS, {
         variables: queryVariables,
         notifyOnNetworkStatusChange: true,
+    });
+
+    const { data: alertsData, loading: alertsLoading } = useQuery(TICKET_ALERTS, {
+        variables: { scope },
     });
 
     const tickets: Ticket[] = useFragment(
@@ -156,6 +161,14 @@ export default function TicketsPage() {
                 <Typography variant="h5">{title}</Typography>
             </Stack>
 
+            <TicketAlerts
+                alerts={alertsData?.ticketAlerts}
+                loading={alertsLoading}
+                filter={ticketFilters.filter}
+                onApply={ticketFilters.apply}
+                onReset={ticketFilters.reset}
+            />
+
             <Box sx={{ height: "78vh" }}>
                 <EnhancedTable<TicketFieldsFragment>
                     rows={tickets}
@@ -187,7 +200,7 @@ export default function TicketsPage() {
                         Filtri ticket
                     </Typography>
 
-                    <FilterTicketForm onApply={ticketFilters.apply} onReset={ticketFilters.reset} scope={scope} enabled={ticketFilters.isOpen}/>
+                    <FilterTicketForm onApply={ticketFilters.apply} onReset={ticketFilters.reset} scope={scope} enabled={ticketFilters.isOpen} defaultValues={ticketFilters.filter as FilterTicketInput}/>
                 </Box>
             </FiltersSidebar>
 

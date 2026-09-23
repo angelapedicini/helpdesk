@@ -10,6 +10,7 @@ import { useMutation, useQuery } from "@apollo/client/react";
 import { AppSelect } from "../inputs/select-input";
 import { CreateUserSpecInput, CreateUserSpecOutput, CreateUserSpecSchema } from "@/lib/validators/userSpec.schema";
 import { ADD_USER_SPECIALIZATION } from "@/apollo-client/queries/user-specialization/user-specilization.mutation";
+import FormLayout from "../form-layout";
 
 // stile campi di sola lettura: testo in primary invece del grigio sbiadito di default MUI
 const readOnlyFieldSx = {
@@ -86,6 +87,13 @@ export default function AddUserSpecializationForm({
             noValidate
             sx={{ width: "100%", boxSizing: "border-box", }}
         >
+            <FormLayout
+                actions={
+                    <Button type="submit" variant="contained" disabled={isSubmitting}>
+                        Salva
+                    </Button>
+                }
+            >
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr", }, gap: 3, mt: 2 }}>
                 <TextField
                     label="Nome"
@@ -114,16 +122,8 @@ export default function AddUserSpecializationForm({
                         Seleziona un dipartimento per vedere le categorie disponibili.
                     </Alert>
                 )}
-
-                <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={isSubmitting}
-                    sx={{ gridColumn: { md: "1 / -1" } }}
-                >
-                    Salva
-                </Button>
-            </Box>
+                </Box>
+            </FormLayout>
         </Box>
     );
 }

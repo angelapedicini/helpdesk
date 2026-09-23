@@ -4,6 +4,7 @@ import type { Prisma } from "@/app/generated/prisma/client";
 import { GraphQLError } from "graphql/error";
 import { AccessTokenPayload } from "@/lib/auth/jwt";
 import { FilterTicketSchema } from "@/lib/validators/ticket-detail.schema";
+import { alertDueSoonHorizon } from "@/lib/ticket/dueDate";
 import type { TicketScope, TicketSortField } from "@/graphql-generated/schema";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanReadTicketScope } from "@/lib/casl/abilities/ticket-scope/guards";
@@ -44,6 +45,11 @@ export function buildTicketWhere(
   const filter = result.data;
 
   const conditions: Prisma.TicketWhereInput[] = [];
+
+  // Finestra "in scadenza" (ora + ALERT_DUE_SOON_DAYS): usata insieme dai
+  // filtri firstResponseDueSoon e dueDateDueSoon.
+  const now = new Date();
+  const dueSoonHorizon = alertDueSoonHorizon(now);
 
   // Creatore
   if (filter.createdById !== undefined) {
@@ -95,25 +101,49 @@ export function buildTicketWhere(
   // Solo ticket con SLA di prima risposta scaduto.
   // Assunzione: una volta che il ticket esce da OPEN/ASSIGNED (es. entra in
   // IN_PROGRESS) si considera "già risposto", quindi il filtro ha senso solo
-  // per ticket ancora in quei due stati. Fammi sapere se la definizione di
-  // "prima risposta data" deve invece dipendere da un altro segnale (es. un
-  // messaggio del tecnico), nel qual caso va rivista.
+  // per ticket ancora in quei due stati. Un ticket REOPENED è in attesa di
+  // presa in carico come un ASSIGNED (la SLA è ricalcolata alla riapertura),
+  // quindi è incluso.
   if (filter.firstResponseOverdue === true) {
     conditions.push({
       dueFirstResponse: {
         lt: new Date(),
       },
       status: {
-        in: ["OPEN", "ASSIGNED"],
+        in: ["OPEN", "ASSIGNED", "REOPENED"],
       },
     });
   }
 
-  // Solo ticket riaperti almeno una volta.
+  // Solo ticket attualmente REOPENED (diriapeti e ancora da lavorare).
   if (filter.reopened === true) {
     conditions.push({
-      reopenCount: {
-        gt: 0,
+      status: "REOPENED",
+    });
+  }
+
+  // Prima risposta in scadenza (non ancora scaduta, ma entro l'orizzonte).
+  if (filter.firstResponseDueSoon === true) {
+    conditions.push({
+      dueFirstResponse: {
+        gte: now,
+        lte: dueSoonHorizon,
+      },
+      status: {
+        in: ["OPEN", "ASSIGNED", "REOPENED"],
+      },
+    });
+  }
+
+  // Due date in scadenza (entro l'orizzonte).
+  if (filter.dueDateDueSoon === true) {
+    conditions.push({
+      dueDate: {
+        gte: now,
+        lte: dueSoonHorizon,
+      },
+      status: {
+        notIn: ["CLOSED", "REFUSED"],
       },
     });
   }

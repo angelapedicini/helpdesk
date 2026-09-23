@@ -43,6 +43,7 @@ type Documents = {
     "\n  mutation DeleteTicket($id: Int!) {\n    deleteTicket(id: $id) {\n      ...TicketFields\n    }\n  }\n": typeof types.DeleteTicketDocument,
     "\n  query Tickets(\n    $first: Int\n    $after: String\n    $orderBy: TicketOrderBy\n    $filter: TicketFilter\n    $scope: TicketScope\n  ) {\n    tickets(first: $first, after: $after, orderBy: $orderBy, filter: $filter, scope: $scope) {\n      edges {\n        cursor\n        node {\n          ...TicketFields\n        }\n      }\n      pageInfo { hasNextPage endCursor }\n    }\n  }\n": typeof types.TicketsDocument,
     "\n  query GetTicketById($id: Int!) {\n    ticket(id: $id) {\n      ...TicketFields\n    }\n  }\n": typeof types.GetTicketByIdDocument,
+    "\n  query TicketAlerts($scope: TicketScope) {\n    ticketAlerts(scope: $scope) {\n      firstResponseOverdue\n      dueDateOverdue\n      reopened\n      firstResponseDueSoon\n      dueDateDueSoon\n    }\n  }\n": typeof types.TicketAlertsDocument,
     "\n  query SoleSpecialistCategoryIds($department: Department!, $userId: Int) {\n    soleSpecialistCategoryIds(department: $department, userId: $userId)\n  } \n": typeof types.SoleSpecialistCategoryIdsDocument,
     "\n  query usersForCategoryId($categoryId: Int!, $search: String) {\n    usersForCategoryId(categoryId: $categoryId, search: $search) {\n      id\n      firstName\n      lastName\n    }\n  }\n": typeof types.UsersForCategoryIdDocument,
     "\n  mutation AddUserSpecialization($input: UserSpecInput!) {\n    addUserSpecialization(input: $input) {\n      id\n      user {\n        id\n        firstName\n        lastName\n      }\n      category {\n        id\n        name\n      }\n    }\n  }\n": typeof types.AddUserSpecializationDocument,
@@ -83,6 +84,7 @@ const documents: Documents = {
     "\n  mutation DeleteTicket($id: Int!) {\n    deleteTicket(id: $id) {\n      ...TicketFields\n    }\n  }\n": types.DeleteTicketDocument,
     "\n  query Tickets(\n    $first: Int\n    $after: String\n    $orderBy: TicketOrderBy\n    $filter: TicketFilter\n    $scope: TicketScope\n  ) {\n    tickets(first: $first, after: $after, orderBy: $orderBy, filter: $filter, scope: $scope) {\n      edges {\n        cursor\n        node {\n          ...TicketFields\n        }\n      }\n      pageInfo { hasNextPage endCursor }\n    }\n  }\n": types.TicketsDocument,
     "\n  query GetTicketById($id: Int!) {\n    ticket(id: $id) {\n      ...TicketFields\n    }\n  }\n": types.GetTicketByIdDocument,
+    "\n  query TicketAlerts($scope: TicketScope) {\n    ticketAlerts(scope: $scope) {\n      firstResponseOverdue\n      dueDateOverdue\n      reopened\n      firstResponseDueSoon\n      dueDateDueSoon\n    }\n  }\n": types.TicketAlertsDocument,
     "\n  query SoleSpecialistCategoryIds($department: Department!, $userId: Int) {\n    soleSpecialistCategoryIds(department: $department, userId: $userId)\n  } \n": types.SoleSpecialistCategoryIdsDocument,
     "\n  query usersForCategoryId($categoryId: Int!, $search: String) {\n    usersForCategoryId(categoryId: $categoryId, search: $search) {\n      id\n      firstName\n      lastName\n    }\n  }\n": types.UsersForCategoryIdDocument,
     "\n  mutation AddUserSpecialization($input: UserSpecInput!) {\n    addUserSpecialization(input: $input) {\n      id\n      user {\n        id\n        firstName\n        lastName\n      }\n      category {\n        id\n        name\n      }\n    }\n  }\n": types.AddUserSpecializationDocument,
@@ -224,6 +226,10 @@ export function graphql(source: "\n  query Tickets(\n    $first: Int\n    $after
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query GetTicketById($id: Int!) {\n    ticket(id: $id) {\n      ...TicketFields\n    }\n  }\n"): (typeof documents)["\n  query GetTicketById($id: Int!) {\n    ticket(id: $id) {\n      ...TicketFields\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query TicketAlerts($scope: TicketScope) {\n    ticketAlerts(scope: $scope) {\n      firstResponseOverdue\n      dueDateOverdue\n      reopened\n      firstResponseDueSoon\n      dueDateDueSoon\n    }\n  }\n"): (typeof documents)["\n  query TicketAlerts($scope: TicketScope) {\n    ticketAlerts(scope: $scope) {\n      firstResponseOverdue\n      dueDateOverdue\n      reopened\n      firstResponseDueSoon\n      dueDateDueSoon\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

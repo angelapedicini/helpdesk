@@ -1,5 +1,5 @@
 // lib/ticket/dueDate.ts
-import { addBusinessDays } from "date-fns";
+import { addBusinessDays, addDays } from "date-fns";
 import { TicketPriority } from "../validators/enums.schema";
 
 // ============================================================
@@ -38,4 +38,17 @@ const WORK_BUSINESS_DAYS_BY_PRIORITY: Record<TicketPriority, number> = {
 export function computeDueWorkDate(priority: TicketPriority, from: Date): Date {
   const days = WORK_BUSINESS_DAYS_BY_PRIORITY[priority];
   return addBusinessDays(from, days);
+}
+
+// ============================================================
+// ALERT DUE SOON (contatori/filtri in pagina ticket)
+// ============================================================
+// Orizzonte "in scadenza" usato dai filtri firstResponseDueSoon e
+// dueDateDueSoon: un ticket con la scadenza entro questi giorni è vicino
+// al limite ma non ancora scaduto. Giorni di calendario, non lavorativi.
+
+export const ALERT_DUE_SOON_DAYS = 3;
+
+export function alertDueSoonHorizon(from: Date = new Date()): Date {
+  return addDays(from, ALERT_DUE_SOON_DAYS);
 }
