@@ -19,6 +19,7 @@ import { NavLinkItem } from "./types/navlink";
 import NavSidebar from "./sidebar";
 import { useQuery } from "@apollo/client/react";
 import EasyLoginForm from "./forms/user/easyLogin";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { setNavigate } from "@/apollo-client/apollo-links/navigation";
 
 
@@ -27,6 +28,7 @@ export default function Navbar({ links }: { links: NavLinkItem[] }) {
   const { data, loading } = useQuery(ME_QUERY);
   const { data: unreadData } = useQuery(UNREAD_TICKET_MESSAGES);
   const [open, setOpen] = React.useState(false);
+  const [loginOpen, setLoginOpen] = React.useState(false);
   const [notifAnchor, setNotifAnchor] = React.useState<null | HTMLElement>(null);
   // ticketId visti localmente: nascosti dalla lista finché la query non
   // rifetcha e conferma (lato server) che non ci sono più messaggi non letti
@@ -98,7 +100,16 @@ export default function Navbar({ links }: { links: NavLinkItem[] }) {
               ))}
             </Menu>
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              <EasyLoginForm defaultDepartment={user.department} defaultEmail={user.email} />
+              <Box sx={{ display: { xs: "none", sm: "flex" }, alignItems: "center" }}>
+                <EasyLoginForm defaultDepartment={user.department} defaultEmail={user.email} />
+              </Box>
+              <IconButton
+                color="inherit"
+                onClick={() => setLoginOpen(true)}
+                sx={{ display: { xs: "inline-flex", sm: "none" } }}
+              >
+                <AccountCircleIcon />
+              </IconButton>
             </Box>
 
             {/* <NavUser /> */}
@@ -111,6 +122,16 @@ export default function Navbar({ links }: { links: NavLinkItem[] }) {
         onClose={() => setOpen(false)}
         links={links}
       />
+      <NavSidebar
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        anchor="right"
+        width={320}
+      >
+        <Box sx={{ p: 2 }}>
+          <EasyLoginForm stacked defaultDepartment={user.department} defaultEmail={user.email} />
+        </Box>
+      </NavSidebar>
     </>
   );
 }

@@ -27,9 +27,10 @@ import { ROLE_CONFIG } from "@/components/enums/role.config";
 interface EasyLoginFormProps {
     defaultDepartment?: Department;
     defaultEmail?: string;
+    stacked?: boolean;
 }
 
-export default function EasyLoginForm({ defaultDepartment, defaultEmail }: EasyLoginFormProps) {
+export default function EasyLoginForm({ defaultDepartment, defaultEmail, stacked }: EasyLoginFormProps) {
     const router = useRouter();
 
     const [selectedDepartment, setSelectedDepartment] = useState<Department | undefined>(
@@ -112,9 +113,10 @@ export default function EasyLoginForm({ defaultDepartment, defaultEmail }: EasyL
             noValidate
             sx={{
                 display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
+                flexDirection: stacked ? "column" : "row",
+                alignItems: stacked ? "stretch" : "center",
                 gap: 1.5,
+                width: stacked ? "100%" : undefined,
             }}
         >
             <IconButton color="inherit" size="small">
@@ -126,11 +128,11 @@ export default function EasyLoginForm({ defaultDepartment, defaultEmail }: EasyL
                 name="department"
                 control={depControl}
                 render={({ field }) => (
-                    <FormControl size="small" error={!!depErrors.department} sx={{ minWidth: 110 }}>
-                        <InputLabel id="department-select-label" className="navbar-input">Dipartimento</InputLabel>
+                    <FormControl size="small" error={!!depErrors.department} sx={{ minWidth: stacked ? undefined : 110, width: stacked ? "100%" : undefined }}>
+                        <InputLabel id="department-select-label" className={stacked ? undefined : "navbar-input"}>Dipartimento</InputLabel>
                         <Select
                             {...field}
-                            className="navbar-input"
+                            className={stacked ? undefined : "navbar-input"}
                             labelId="department-select-label"
                             label="Dipartimento"
                             value={field.value ?? ""}
@@ -162,12 +164,12 @@ export default function EasyLoginForm({ defaultDepartment, defaultEmail }: EasyL
                             size="small"
                             error={!!loginErrors.email}
                             disabled={!selectedDepartment || usersLoading || userOptions.length === 0}
-                            sx={{ minWidth: 300 }}
+                            sx={{ minWidth: stacked ? undefined : 300, width: stacked ? "100%" : undefined }}
                         >
-                            <InputLabel id="user-select-label" className="navbar-input">Utente</InputLabel>
+                            <InputLabel id="user-select-label" className={stacked ? undefined : "navbar-input"}>Utente</InputLabel>
                             <Select
                                 {...field}
-                                className="navbar-input"
+                                className={stacked ? undefined : "navbar-input"}
                                 labelId="user-select-label"
                                 label="Utente"
                                 value={safeEmailValue}
@@ -190,7 +192,8 @@ export default function EasyLoginForm({ defaultDepartment, defaultEmail }: EasyL
                 type="submit"
                 variant="contained"
                 size="small"
-                className="navbar-button"
+                fullWidth={stacked}
+                className={stacked ? undefined : "navbar-button"}
                 disabled={!selectedDepartment || userOptions.length === 0}
             >
                 Accedi

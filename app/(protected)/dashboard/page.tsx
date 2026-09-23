@@ -60,6 +60,8 @@ export default function Page() {
                 width: "100%",
                 minHeight: "70vh",
                 flexDirection: "column",
+                px: 2,
+
             }}
         >
             <Typography variant="h5">
