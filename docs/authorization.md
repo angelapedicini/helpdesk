@@ -42,45 +42,56 @@ Nessuna ereditarietà: ogni dominio dichiara cosa ottiene ogni ruolo.
 ```mermaid
 flowchart TD
   START([Creazione ticket]) --> BASE["Campi base: titolo, descrizione,<br/>priorità, dipartimento, categoria"]
-  BASE --> AUTO["Assegnatario calcolato dal backend<br/>autoAssign, non scelto dall'utente"]
 
-  AUTO -. "stato iniziale" .-> ST1["ASSIGNED<br/>autoAssign ha trovato un tecnico specialista"]
-  AUTO -. "stato iniziale" .-> ST2["OPEN<br/>nessun specialista, resta da assegnare"]
-  ST2 -. "eccezione" .-> ST3["L'ADMIN può assegnare il tecnico,<br/>oppure cambiare la categoria:<br/>in entrambi i casi diventa ASSIGNED"]
+  BASE --> S1["Stato ASSIGNED<br/>auto-assegnazione calcolata dal backend"]
+  BASE --> S2["Stato OPEN<br/>nessun tecnico specialista, resta da assegnare"]
 
-  AUTO --> READ{"Lettura: chi vede il ticket"}
+  S1 --> READ
+  S2 --> READ
+  READ{"Lettura: chi vede il ticket"}
 
   READ -->|EMPLOYEE| R1["Solo i ticket che ha creato"]
   READ -->|TECHNICIAN| R2["Creati o assegnati a sé"]
   READ -->|ADMIN| R3["Tutto il proprio reparto<br/>più i ticket che ha creato"]
   READ -->|SYSTEM_ADMIN| R4["Tutti, senza restrizioni"]
 
-  R1 --> UPD
-  R2 --> UPD
-  R3 --> UPD
-  R4 --> UPD
-
-  UPD{"Modifica: quali campi"}
-  UPD -->|EMPLOYEE| U1["Titolo, descrizione, priorità, categoria<br/>dei ticket aperti o assegnati<br/>Riapre i ticket che ha creato e sono chiusi"]
-  UPD -->|TECHNICIAN| U2["Come EMPLOYEE, più:<br/>stato, scadenza, riassegnazione<br/>dei ticket assegnati a sé"]
-  UPD -->|ADMIN| U3["Come EMPLOYEE, più:<br/>assegnatario, stato, priorità, categoria<br/>del proprio reparto"]
-  UPD -->|SYSTEM_ADMIN| U4["Solo i ticket che ha creato lui:<br/>la trasversalità arriva alla lettura,<br/>non alla modifica"]
-
-  U1 --> DEL
-  U2 --> DEL
-  U3 --> DEL
-  U4 --> DEL
+  R1 --> DEL
+  R2 --> DEL
+  R3 --> DEL
+  R4 --> DEL
 
   DEL{"Cancellazione"}
   DEL -->|Tutti i ruoli| D1["Solo i propri ticket,<br/>se aperti o assegnati"]
-  D1 --> FIN([Fine])
+  D1 --> UPD
+
+  UPD{"Modifica: quali campi"}
+  UPD -->|EMPLOYEE| U1["Titolo, descrizione, priorità, categoria<br/>se aperti o assegnati<br/>riapre i chiusi che ha creato"]
+  UPD -->|TECHNICIAN| U2["Come EMPLOYEE, più stato, scadenza,<br/>riassegnazione dei ticket assegnati a sé"]
+  UPD -->|ADMIN| U3["Come EMPLOYEE, più assegnatario, stato,<br/>priorità, categoria del proprio reparto"]
+  UPD -->|SYSTEM_ADMIN| U4["Solo i ticket che ha creato lui:<br/>la trasversalità arriva alla lettura,<br/>non alla modifica"]
+
+  U2 --> INPROG["Stato IN_PROGRESS<br/>il tecnico assegnatario prende in carico"]
+  INPROG --> CONS["Da qui può chiudere in CLOSED,<br/>impostare la scadenza, riassegnare il ticket"]
+
+  U3 --> SPEC{"Caso speciale dell'admin<br/>su un ticket OPEN"}
+  SPEC -->|assegna il tecnico| S1
+  SPEC -->|cambia la categoria| S1
+  SPEC -->|rifiuta| REF["Stato REFUSED<br/>stato finale"]
+
+  U1 --> CLOSED["Stato CLOSED<br/>lo riapre il creatore o l'assegnatario"]
+  CONS --> CLOSED
+  CLOSED --> REOP["Stato REOPENED"]
+  REOP --> INPROG
+
+  U4 --> FIN([Fine])
+  REF --> FIN
 
   classDef ok fill:#e8f5e9,stroke:#43a047,color:#1b5e20
   classDef limit fill:#fff3e0,stroke:#fb8c00,color:#e65100
-  classDef note fill:#e3f2fd,stroke:#1565c0,color:#0d47a1,stroke-dasharray: 4 3
-  class ok R1,R2,R3,R4,U1,U2,U3,D1
+  classDef stato fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+  class ok R1,R2,R3,R4,U1,U2,U3,CONS,D1
   class limit U4
-  class note ST1,ST2,ST3
+  class stato S1,S2,INPROG,CLOSED,REOP,REF
 ```
 
 ### Riepilogo per azione
@@ -94,6 +105,9 @@ flowchart TD
 
 - **Creazione**: nessun ruolo sceglie l'assegnatario, lo calcola il backend
   (`autoAssign`).
+- **Cambio categoria e `autoAssign`**: chi può cambiare la categoria, cioè il
+  creatore del ticket e l'admin del reparto, fa scattare l'auto-assegnazione anche
+  senza scegliere il tecnico, e il ticket passa ad `ASSIGNED`.
 - **`ADMIN` e la categoria**: può cambiarla quando il ticket è aperto, **oppure in
   qualsiasi stato se è lui l'ultimo ad averlo aggiornato**, per esempio subito
   dopo averlo assegnato.
