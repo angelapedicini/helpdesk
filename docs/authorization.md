@@ -40,56 +40,38 @@ Nessuna ereditarietà: ogni dominio dichiara cosa ottiene ogni ruolo.
 ## Ticket
 
 ```mermaid
-flowchart TD
-  START([Creazione ticket]) --> BASE["Campi base: titolo, descrizione,<br/>priorità, dipartimento, categoria"]
-
-  BASE --> S1["Stato ASSIGNED<br/>auto-assegnazione calcolata dal backend"]
-  BASE --> S2["Stato OPEN<br/>nessun tecnico specialista, resta da assegnare"]
-
-  S1 --> READ
+flowchart TB
+  START(["Creazione ticket"]) --> BASE["Campi base: titolo, descrizione,<br>priorità, dipartimento, categoria"]
+  BASE --> S1["Stato ASSIGNED<br>auto-assegnazione calcolata dal backend"] & S2["Stato OPEN<br>nessun tecnico specialista, resta da assegnare"]
+  S1 --> READ{"Lettura: chi vede il ticket"}
   S2 --> READ
-  READ{"Lettura: chi vede il ticket"}
-
-  READ -->|EMPLOYEE| R1["Solo i ticket che ha creato"]
-  READ -->|TECHNICIAN| R2["Creati o assegnati a sé"]
-  READ -->|ADMIN| R3["Tutto il proprio reparto<br/>più i ticket che ha creato"]
-  READ -->|SYSTEM_ADMIN| R4["Tutti, senza restrizioni"]
-
-  R1 --> DEL
+  READ -- EMPLOYEE --> R1["Solo i ticket che ha creato"]
+  READ -- TECHNICIAN --> R2["Creati o assegnati a sé"]
+  READ -- ADMIN --> R3["Tutto il proprio reparto<br>più i ticket che ha creato"]
+  READ -- SYSTEM_ADMIN --> R4["Tutti, senza restrizioni"]
+  R1 --> DEL{"Cancellazione"}
   R2 --> DEL
   R3 --> DEL
   R4 --> DEL
-
-  DEL{"Cancellazione"}
-  DEL -->|Tutti i ruoli| D1["Solo i propri ticket,<br/>se aperti o assegnati"]
-  D1 --> UPD
-
-  UPD{"Modifica: quali campi"}
-  UPD -->|EMPLOYEE| U1["Titolo, descrizione, priorità, categoria<br/>se aperti o assegnati<br/>riapre i chiusi che ha creato"]
-  UPD -->|TECHNICIAN| U2["Come EMPLOYEE, più stato, scadenza,<br/>riassegnazione dei ticket assegnati a sé"]
-  UPD -->|ADMIN| U3["Come EMPLOYEE, più assegnatario, stato,<br/>priorità, categoria del proprio reparto"]
-  UPD -->|SYSTEM_ADMIN| U4["Solo i ticket che ha creato lui:<br/>la trasversalità arriva alla lettura,<br/>non alla modifica"]
-
-  U2 --> INPROG["Stato IN_PROGRESS<br/>il tecnico assegnatario prende in carico"]
-  INPROG --> CONS["Da qui può chiudere in CLOSED,<br/>impostare la scadenza, riassegnare il ticket"]
-
-  U3 --> SPEC{"Caso speciale dell'admin<br/>su un ticket OPEN"}
-  SPEC -->|assegna il tecnico| S1
-  SPEC -->|cambia la categoria| S1
-  SPEC -->|rifiuta| REF["Stato REFUSED<br/>stato finale"]
-
-  U1 --> CLOSED["Stato CLOSED<br/>lo riapre il creatore o l'assegnatario"]
-  CONS --> CLOSED
-  CLOSED --> REOP["Stato REOPENED"]
-  REOP --> INPROG
-
-  U4 --> FIN([Fine])
-  REF --> FIN
+  DEL -- Tutti i ruoli --> D1["Solo i propri ticket,<br>se aperti o assegnati"]
+  D1 --> UPD{"Modifica: quali campi"}
+  UPD -- EMPLOYEE --> U1["Titolo, descrizione, priorità, categoria<br>se aperti o assegnati<br>riapre i chiusi che ha creato"]
+  UPD -- TECHNICIAN --> U2["Come EMPLOYEE, più stato, scadenza,<br>riassegnazione dei ticket assegnati a sé"]
+  UPD -- ADMIN --> U3["Come EMPLOYEE, più assegnatario, stato,<br>priorità, categoria del proprio reparto"]
+  UPD -- SYSTEM_ADMIN --> U4["Solo i ticket che ha creato lui:<br>la trasversalità arriva alla lettura,<br>non alla modifica"]
+  U2 --> INPROG["Stato IN_PROGRESS<br>il tecnico assegnatario prende in carico"]
+  INPROG --> CONS["Da qui chiude in CLOSED,<br>imposta la scadenza o riassegna il ticket"]
+  CONS --> CLOSED["Stato CLOSED"]
+  CLOSED --> REOP["Stato REOPENED<br>lo riapre il creatore o l'assegnatario"]
+  U3 --> SPEC{"Caso speciale dell'admin<br>su un ticket OPEN"}
+  SPEC -- assegna il tecnico o cambia la categoria --> BACK["Ritorna su ASSIGNED:<br>il backend ricalcola l'assegnatario"]
+  SPEC -- rifiuta --> REF["Stato REFUSED<br>stato finale"]
+  U1 --> REOP
 
   classDef ok fill:#e8f5e9,stroke:#43a047,color:#1b5e20
   classDef limit fill:#fff3e0,stroke:#fb8c00,color:#e65100
   classDef stato fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
-  class ok R1,R2,R3,R4,U1,U2,U3,CONS,D1
+  class ok R1,R2,R3,R4,U1,U2,U3,D1
   class limit U4
   class stato S1,S2,INPROG,CLOSED,REOP,REF
 ```
@@ -130,8 +112,10 @@ in CASL, perché sono una macchina a stati e non una questione di permessi.
 | `CLOSED` | riapre i propri | riapre quelli assegnati a sé | — | riapre i propri |
 | `REFUSED` | — | — | — | — |
 
-`REFUSED` è uno stato finale e in nessuno stato diverso da `OPEN` e `ASSIGNED` il
-ticket è eliminabile. Nessun ruolo ha un vantaggio sulla **lettura**, che non
+`REFUSED` è l'unico stato davvero finale: da lì non esce nessuna transizione, e il
+ticket non è nemmeno eliminabile, perché l'eliminazione è consentita solo in `OPEN` e
+`ASSIGNED`. `CLOSED` invece non è finale, perché il creatore o l'assegnatario lo
+possono riaprire in `REOPENED`. Nessun ruolo ha un vantaggio sulla **lettura**, che non
 dipende dallo stato ma solo dalla relazione con il ticket.
 
 ### Disallineamenti noti
