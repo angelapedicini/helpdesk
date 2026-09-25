@@ -43,6 +43,11 @@ Nessuna ereditarietà: ogni dominio dichiara cosa ottiene ogni ruolo.
 flowchart TD
   START([Creazione ticket]) --> BASE["Campi base: titolo, descrizione,<br/>priorità, dipartimento, categoria"]
   BASE --> AUTO["Assegnatario calcolato dal backend<br/>autoAssign, non scelto dall'utente"]
+
+  AUTO -. "stato iniziale" .-> ST1["ASSIGNED<br/>autoAssign ha trovato un tecnico specialista"]
+  AUTO -. "stato iniziale" .-> ST2["OPEN<br/>nessun specialista, resta da assegnare"]
+  ST2 -. "eccezione" .-> ST3["L'ADMIN può assegnare il tecnico,<br/>oppure cambiare la categoria:<br/>in entrambi i casi diventa ASSIGNED"]
+
   AUTO --> READ{"Lettura: chi vede il ticket"}
 
   READ -->|EMPLOYEE| R1["Solo i ticket che ha creato"]
@@ -72,8 +77,10 @@ flowchart TD
 
   classDef ok fill:#e8f5e9,stroke:#43a047,color:#1b5e20
   classDef limit fill:#fff3e0,stroke:#fb8c00,color:#e65100
+  classDef note fill:#e3f2fd,stroke:#1565c0,color:#0d47a1,stroke-dasharray: 4 3
   class ok R1,R2,R3,R4,U1,U2,U3,D1
   class limit U4
+  class note ST1,ST2,ST3
 ```
 
 ### Riepilogo per azione
