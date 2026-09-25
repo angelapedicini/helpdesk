@@ -39,48 +39,42 @@ Nessuna ereditarietà: ogni dominio dichiara cosa ottiene ogni ruolo.
 
 ## Ticket
 
-### Ciclo di vita
-
-La creazione non parte da uno stato neutro: il ticket nasce già `ASSIGNED` se
-`autoAssign` trova un tecnico specialista nella categoria, altrimenti nasce `OPEN` e
-resta da assegnare. Le transizioni ammesse stanno in `ALLOWED_STATUS_TRANSITIONS`, non
-in CASL, perché sono una macchina a stati e non una questione di permessi.
-
 ```mermaid
-stateDiagram-v2
-  direction LR
+flowchart TD
+  START([Creazione ticket]) --> BASE["Campi base: titolo, descrizione,<br/>priorità, dipartimento, categoria"]
+  BASE --> AUTO["Assegnatario calcolato dal backend<br/>autoAssign, non scelto dall'utente"]
+  AUTO --> READ{"Lettura: chi vede il ticket"}
 
-  [*] --> ASSIGNED : creazione, autoAssign trova uno specialista
-  [*] --> OPEN : creazione, nessuno specialista
+  READ -->|EMPLOYEE| R1["Solo i ticket che ha creato"]
+  READ -->|TECHNICIAN| R2["Creati o assegnati a sé"]
+  READ -->|ADMIN| R3["Tutto il proprio reparto<br/>più i ticket che ha creato"]
+  READ -->|SYSTEM_ADMIN| R4["Tutti, senza restrizioni"]
 
-  OPEN --> ASSIGNED : ADMIN assegna il tecnico
-  OPEN --> ASSIGNED : ADMIN o creatore cambia la categoria, scatta autoAssign
-  OPEN --> REFUSED : ADMIN rifiuta
+  R1 --> UPD
+  R2 --> UPD
+  R3 --> UPD
+  R4 --> UPD
 
-  ASSIGNED --> IN_PROGRESS : TECHNICIAN assegnatario prende in carico
-  ASSIGNED --> REFUSED : TECHNICIAN assegnatario rifiuta
-  REOPENED --> IN_PROGRESS : TECHNICIAN assegnatario prende in carico
-  REOPENED --> REFUSED : TECHNICIAN assegnatario rifiuta
+  UPD{"Modifica: quali campi"}
+  UPD -->|EMPLOYEE| U1["Titolo, descrizione, priorità, categoria<br/>dei ticket aperti o assegnati<br/>Riapre i ticket che ha creato e sono chiusi"]
+  UPD -->|TECHNICIAN| U2["Come EMPLOYEE, più:<br/>stato, scadenza, riassegnazione<br/>dei ticket assegnati a sé"]
+  UPD -->|ADMIN| U3["Come EMPLOYEE, più:<br/>assegnatario, stato, priorità, categoria<br/>del proprio reparto"]
+  UPD -->|SYSTEM_ADMIN| U4["Solo i ticket che ha creato lui:<br/>la trasversalità arriva alla lettura,<br/>non alla modifica"]
 
-  IN_PROGRESS --> CLOSED : TECHNICIAN assegnatario chiude
+  U1 --> DEL
+  U2 --> DEL
+  U3 --> DEL
+  U4 --> DEL
 
-  CLOSED --> REOPENED : creatore o assegnatario riapre
+  DEL{"Cancellazione"}
+  DEL -->|Tutti i ruoli| D1["Solo i propri ticket,<br/>se aperti o assegnati"]
+  D1 --> FIN([Fine])
+
+  classDef ok fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+  classDef limit fill:#fff3e0,stroke:#fb8c00,color:#e65100
+  class ok R1,R2,R3,R4,U1,U2,U3,D1
+  class limit U4
 ```
-
-### Cosa può fare ogni ruolo, per stato
-
-| Stato | `EMPLOYEE` | `TECHNICIAN` | `ADMIN` | `SYSTEM_ADMIN` |
-| --- | --- | --- | --- | --- |
-| `OPEN` | legge, modifica i campi base, elimina | come employee | legge tutto il reparto, assegna il tecnico, cambia stato, priorità e categoria | solo i ticket che ha creato |
-| `ASSIGNED` | come `OPEN`, non lo stato | prende in carico o rifiuta, scadenza, riassegnazione | come `OPEN`, e rifiuta | solo i ticket che ha creato |
-| `REOPENED` | — | prende in carico o rifiuta | — | riapre i propri |
-| `IN_PROGRESS` | — | chiude | — | solo i ticket che ha creato |
-| `CLOSED` | riapre i propri | riapre quelli assegnati a sé | — | riapre i propri |
-| `REFUSED` | — | — | — | — |
-
-`REFUSED` è uno stato finale e in nessuno stato diverso da `OPEN` e `ASSIGNED` il
-ticket è eliminabile. Nessun ruolo ha un vantaggio sulla **lettura**, che non
-dipende dallo stato ma solo dalla relazione con il ticket.
 
 ### Riepilogo per azione
 
@@ -99,6 +93,26 @@ dipende dallo stato ma solo dalla relazione con il ticket.
 - **`SYSTEM_ADMIN`**: la trasversalità si ferma alla lettura. Sulla modifica valgono
   le regole del creatore, quindi tocca solo i propri ticket.
 
+### Stati del ticket
+
+La creazione non parte da uno stato neutro: il ticket nasce già `ASSIGNED` se
+`autoAssign` trova un tecnico specialista nella categoria, altrimenti nasce `OPEN` e
+resta da assegnare. Le transizioni ammesse stanno in `ALLOWED_STATUS_TRANSITIONS`, non
+in CASL, perché sono una macchina a stati e non una questione di permessi.
+
+| Stato | `EMPLOYEE` | `TECHNICIAN` | `ADMIN` | `SYSTEM_ADMIN` |
+| --- | --- | --- | --- | --- |
+| `OPEN` | legge, modifica i campi base, elimina | come employee | legge tutto il reparto, assegna il tecnico, cambia stato, priorità e categoria | solo i ticket che ha creato |
+| `ASSIGNED` | come `OPEN`, non lo stato | prende in carico o rifiuta, scadenza, riassegnazione | come `OPEN`, e rifiuta | solo i ticket che ha creato |
+| `REOPENED` | — | prende in carico o rifiuta | — | riapre i propri |
+| `IN_PROGRESS` | — | chiude | — | solo i ticket che ha creato |
+| `CLOSED` | riapre i propri | riapre quelli assegnati a sé | — | riapre i propri |
+| `REFUSED` | — | — | — | — |
+
+`REFUSED` è uno stato finale e in nessuno stato diverso da `OPEN` e `ASSIGNED` il
+ticket è eliminabile. Nessun ruolo ha un vantaggio sulla **lettura**, che non
+dipende dallo stato ma solo dalla relazione con il ticket.
+
 ### Disallineamenti noti
 
 Non sono stati possibili in teoria, ma transizioni che il codice non rende
@@ -115,6 +129,7 @@ raggiungibili o che lasciano un buco. Sono qui finché non vengono sistemati.
 - **`REOPENED` non è eliminabile.** La cancellazione è consentita in `OPEN` e
   `ASSIGNED` soltanto, quindi un ticket riaperto sfugge a chi lo aveva creato anche
   se nella pratica è ancora lavoro da fare.
+
 
 
 ## Messaggi (TicketMessage)
