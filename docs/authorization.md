@@ -2,6 +2,10 @@
 
 Cosa può fare ogni ruolo, su ogni risorsa, e dove stanno le regole.
 
+Il percorso completo di un ticket, con i poteri a ogni stato, è descritto in
+[ticket-lifecycle.md](ticket-lifecycle.md). Qui ci sono gli altri domini, in forma
+di consultazione.
+
 ## Come è organizzata
 
 ```
@@ -37,106 +41,6 @@ lib/casl/defineAbility.ts          ← composing point: unisce tutti i domini
 
 Nessuna ereditarietà: ogni dominio dichiara cosa ottiene ogni ruolo.
 
-## Ticket
-
-```mermaid
-flowchart TB
-  START(["Creazione ticket"]) --> BASE["Campi base: titolo, descrizione,<br>priorità, dipartimento, categoria"]
-  BASE --> S1["Stato ASSIGNED<br>auto-assegnazione calcolata dal backend"] & S2["Stato OPEN<br>nessun tecnico specialista, resta da assegnare"]
-  S1 --> READ{"Lettura: chi vede il ticket"}
-  S2 --> READ
-  READ -- EMPLOYEE --> R1["Solo i ticket che ha creato"]
-  READ -- TECHNICIAN --> R2["Creati o assegnati a sé"]
-  READ -- ADMIN --> R3["Tutto il proprio reparto<br>più i ticket che ha creato"]
-  READ -- SYSTEM_ADMIN --> R4["Tutti, senza restrizioni"]
-  R1 --> DEL{"Cancellazione"}
-  R2 --> DEL
-  R3 --> DEL
-  R4 --> DEL
-  DEL -- Tutti i ruoli --> D1["Solo i propri ticket,<br>se aperti o assegnati"]
-  D1 --> UPD{"Modifica: quali campi"}
-  UPD -- EMPLOYEE --> U1["Titolo, descrizione, priorità, categoria<br>se aperti o assegnati<br>riapre i chiusi che ha creato"]
-  UPD -- TECHNICIAN --> U2["Come EMPLOYEE, più stato, scadenza,<br>riassegnazione dei ticket assegnati a sé"]
-  UPD -- ADMIN --> U3["Come EMPLOYEE, più assegnatario, stato,<br>priorità, categoria del proprio reparto"]
-  UPD -- SYSTEM_ADMIN --> U4["Solo i ticket che ha creato lui:<br>la trasversalità arriva alla lettura,<br>non alla modifica"]
-  U2 --> INPROG["Stato IN_PROGRESS<br>il tecnico assegnatario prende in carico"]
-  INPROG --> CONS["Da qui chiude in CLOSED,<br>imposta la scadenza o riassegna il ticket"]
-  CONS --> CLOSED["Stato CLOSED"]
-  CLOSED --> REOP["Stato REOPENED<br>lo riapre il creatore o l'assegnatario"]
-  U3 --> SPEC{"Caso speciale dell'admin<br>su un ticket OPEN"}
-  SPEC -- assegna il tecnico o cambia la categoria --> BACK["Ritorna su ASSIGNED:<br>il backend ricalcola l'assegnatario"]
-  SPEC -- rifiuta --> REF["Stato REFUSED<br>stato finale"]
-  U1 --> REOP
-
-  classDef ok fill:#e8f5e9,stroke:#43a047,color:#1b5e20
-  classDef limit fill:#fff3e0,stroke:#fb8c00,color:#e65100
-  classDef stato fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
-  class ok R1,R2,R3,R4,U1,U2,U3,D1
-  class limit U4
-  class stato S1,S2,INPROG,CLOSED,REOP,REF
-```
-
-### Riepilogo per azione
-
-| Azione | `EMPLOYEE` | `TECHNICIAN` | `ADMIN` | `SYSTEM_ADMIN` |
-| --- | --- | --- | --- | --- |
-| Lettura | i propri | i propri + assegnati a sé | tutto il reparto + i propri creati | tutti |
-| Creazione | sì, campi base | sì, campi base | sì, campi base | sì, campi base |
-| Modifica | i propri se aperti o assegnati; riapre i chiusi | come employee + stato, scadenza, riassegnazione dei assegnati a sé | come employee + assegnatario, stato, priorità, categoria nel proprio reparto | solo i ticket che ha creato lui |
-| Cancellazione | i propri se aperti o assegnati | come employee | come employee | come employee |
-
-- **Creazione**: nessun ruolo sceglie l'assegnatario, lo calcola il backend
-  (`autoAssign`).
-- **Cambio categoria e `autoAssign`**: chi può cambiare la categoria, cioè il
-  creatore del ticket e l'admin del reparto, fa scattare l'auto-assegnazione anche
-  senza scegliere il tecnico, e il ticket passa ad `ASSIGNED`.
-- **`ADMIN` e la categoria**: può cambiarla quando il ticket è aperto, **oppure in
-  qualsiasi stato se è lui l'ultimo ad averlo aggiornato**, per esempio subito
-  dopo averlo assegnato.
-- **`SYSTEM_ADMIN`**: la trasversalità si ferma alla lettura. Sulla modifica valgono
-  le regole del creatore, quindi tocca solo i propri ticket.
-
-### Stati del ticket
-
-La creazione non parte da uno stato neutro: il ticket nasce già `ASSIGNED` se
-`autoAssign` trova un tecnico specialista nella categoria, altrimenti nasce `OPEN` e
-resta da assegnare. Le transizioni ammesse stanno in `ALLOWED_STATUS_TRANSITIONS`, non
-in CASL, perché sono una macchina a stati e non una questione di permessi.
-
-| Stato | `EMPLOYEE` | `TECHNICIAN` | `ADMIN` | `SYSTEM_ADMIN` |
-| --- | --- | --- | --- | --- |
-| `OPEN` | legge, modifica i campi base, elimina | come employee | legge tutto il reparto, assegna il tecnico, cambia stato, priorità e categoria | solo i ticket che ha creato |
-| `ASSIGNED` | come `OPEN`, non lo stato | prende in carico o rifiuta, scadenza, riassegnazione | come `OPEN`, e rifiuta | solo i ticket che ha creato |
-| `REOPENED` | — | prende in carico o rifiuta | — | riapre i propri |
-| `IN_PROGRESS` | — | chiude | — | solo i ticket che ha creato |
-| `CLOSED` | riapre i propri | riapre quelli assegnati a sé | — | riapre i propri |
-| `REFUSED` | — | — | — | — |
-
-`REFUSED` è l'unico stato davvero finale: da lì non esce nessuna transizione, e il
-ticket non è nemmeno eliminabile, perché l'eliminazione è consentita solo in `OPEN` e
-`ASSIGNED`. `CLOSED` invece non è finale, perché il creatore o l'assegnatario lo
-possono riaprire in `REOPENED`. Nessun ruolo ha un vantaggio sulla **lettura**, che non
-dipende dallo stato ma solo dalla relazione con il ticket.
-
-### Disallineamenti noti
-
-Non sono stati possibili in teoria, ma transizioni che il codice non rende
-raggiungibili o che lasciano un buco. Sono qui finché non vengono sistemati.
-
-- **`ADMIN` non può riaprire.** Il registry gli assegna `CLOSED → REOPENED`, ma la
-  regola CASL gli nega lo stato su un ticket `CLOSED`. La transizione non si può
-  mai usare.
-- **Cambio categoria su un ticket in lavorazione.** L'`ADMIN` può cambiare la
-  categoria in qualsiasi stato se è l'ultimo ad aver aggiornato il ticket, ma
-  `update.ts` forza `status = "ASSIGNED"`: un ticket `IN_PROGRESS` torna
-  silenziosamente ad assegnato. Il controllo delle transizioni gira solo quando lo
-  stato arriva dalla richiesta, quindi qui non parte.
-- **`REOPENED` non è eliminabile.** La cancellazione è consentita in `OPEN` e
-  `ASSIGNED` soltanto, quindi un ticket riaperto sfugge a chi lo aveva creato anche
-  se nella pratica è ancora lavoro da fare.
-
-
-
 ## Messaggi (TicketMessage)
 
 | Azione | `EMPLOYEE` | `TECHNICIAN` | `ADMIN` | `SYSTEM_ADMIN` |
@@ -160,8 +64,8 @@ raggiungibili o che lasciano un buco. Sono qui finché non vengono sistemati.
 | Gestione catalogo | — | proprio reparto, incluse le disabilitate | tutto il catalogo e la matrice |
 
 La matrice di accesso è l'unica fonte di visibilità operativa: nessuno vede il
-catalogo per dipartimento, nemmeno l'admin del reparto. La trasversalità del system
-admin vale per **gestire** il catalogo, non per **usarlo**.
+catalogo per dipartimento, nemmeno l'amministratore di reparto. La trasversalità
+dell'amministratore di sistema vale per **gestire** il catalogo, non per **usarlo**.
 
 ## Notifiche (campanella e subscription)
 
@@ -169,6 +73,10 @@ admin vale per **gestire** il catalogo, non per **usarlo**.
 | --- | --- | --- | --- | --- |
 | Lettura e cancellazione | le proprie | le proprie | le proprie | le proprie |
 | Subscription | — | — | sì, anche su ticket non propri | sì, su qualsiasi ticket |
+
+Le notifiche non sono scoped per proprietà: un amministratore può attivarle su un
+ticket non suo e la campanella resta leggibile anche se il ticket non lo è più. Il
+controllo vero è `assertCanReadTicket` sulla pagina, che risponde `FORBIDDEN`.
 
 ## Statistiche
 
@@ -180,7 +88,7 @@ admin vale per **gestire** il catalogo, non per **usarlo**.
 
 | Azione | `EMPLOYEE` | `TECHNICIAN` | `ADMIN` | `SYSTEM_ADMIN` |
 | --- | --- | --- | --- | --- |
-| Lettura | ticket creati | creati + assegnati a sé | tutto il proprio reparto | tutto |
+| Lettura | ticket creati | creati e assegnati a sé | tutto il proprio reparto | tutto |
 
 ## Viste della lista ticket
 
@@ -193,18 +101,6 @@ admin vale per **gestire** il catalogo, non per **usarlo**.
 
 ## Note
 
-- **Lock da ultimo aggiornamento admin.** Un ticket toccato da un admin resta
-  bloccato per gli altri ruoli finché l'admin non interviene di nuovo: serve a
-  lasciare al tecnico assegnatario lo spazio per prendere in carico il lavoro.
-  Unica eccezione, lo **stato**, e solo per l'assegnatario, altrimenti un altro
-  tecnico potrebbe muovere un ticket non suo. Il blocco colpisce anche il
-  `SYSTEM_ADMIN`. Appena il tecnico interviene il lock scompare da solo.
-- **Due regole che non sono permessi.** `browseAssignees` e la `assignedToId` in
-  creazione servono **solo a decidere cosa mostrare nella UI**: l'elenco dei tecnici
-  del reparto e il suggerimento di auto-assegnazione. Non autorizzano scritture.
-- **Le notifiche non sono scoped per proprietà.** Un admin può attivarle su un ticket
-  non suo e la campanella resta leggibile anche se il ticket non lo è più. Il
-  controllo vero è `assertCanReadTicket` sulla pagina, che risponde `FORBIDDEN`.
 - **Non sta in CASL** perché non è una domanda "chi può": transizioni di stato
   ammesse, regola della `dueDate`, verifica che l'assegnatario abbia la
   specializzazione della categoria, validazione dello specific value, assegnazione
