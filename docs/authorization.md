@@ -39,6 +39,43 @@ Nessuna ereditarietà: ogni dominio dichiara cosa ottiene ogni ruolo.
 
 ## Ticket
 
+```mermaid
+flowchart TD
+  START([Creazione ticket]) --> BASE["Campi base: titolo, descrizione,<br/>priorità, dipartimento, categoria"]
+  BASE --> AUTO["Assegnatario calcolato dal backend<br/>autoAssign, non scelto dall'utente"]
+  AUTO --> READ{"Lettura: chi vede il ticket"}
+
+  READ -->|EMPLOYEE| R1["Solo i ticket che ha creato"]
+  READ -->|TECHNICIAN| R2["Creati o assegnati a sé"]
+  READ -->|ADMIN| R3["Tutto il proprio reparto<br/>più i ticket che ha creato"]
+  READ -->|SYSTEM_ADMIN| R4["Tutti, senza restrizioni"]
+
+  R1 --> UPD
+  R2 --> UPD
+  R3 --> UPD
+  R4 --> UPD
+
+  UPD{"Modifica: quali campi"}
+  UPD -->|EMPLOYEE| U1["Titolo, descrizione, priorità, categoria<br/>dei ticket aperti o assegnati<br/>Riapre i ticket che ha creato e sono chiusi"]
+  UPD -->|TECHNICIAN| U2["Come EMPLOYEE, più:<br/>stato, scadenza, riassegnazione<br/>dei ticket assegnati a sé"]
+  UPD -->|ADMIN| U3["Come EMPLOYEE, più:<br/>assegnatario, stato, priorità, categoria<br/>del proprio reparto"]
+  UPD -->|SYSTEM_ADMIN| U4["Solo i ticket che ha creato lui:<br/>la trasversalità arriva alla lettura,<br/>non alla modifica"]
+
+  U1 --> DEL
+  U2 --> DEL
+  U3 --> DEL
+  U4 --> DEL
+
+  DEL{"Cancellazione"}
+  DEL -->|Tutti i ruoli| D1["Solo i propri ticket,<br/>se aperti o assegnati"]
+  D1 --> FIN([Fine])
+
+  classDef ok fill:#e8f5e9,stroke:#43a047,color:#1b5e20
+  classDef limit fill:#fff3e0,stroke:#fb8c00,color:#e65100
+  class ok R1,R2,R3,R4,U1,U2,U3,D1
+  class limit U4
+```
+
 | Azione | `EMPLOYEE` | `TECHNICIAN` | `ADMIN` | `SYSTEM_ADMIN` |
 | --- | --- | --- | --- | --- |
 | Lettura | i propri | i propri + assegnati a sé | tutto il reparto + i propri creati | tutti |
