@@ -16,6 +16,7 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     "categoryId",
     "priority",
     "department",
+    "specificValue",
   ] as const;
 
   // ------------------------------------------------------------
@@ -23,12 +24,13 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
   // ------------------------------------------------------------
 
   // Tutti gli utenti possono creare un ticket specificando
-  // solamente i campi base.
+  // solamente i campi base (elenco allineato a CreateTicketSchema).
   can("create", "Ticket", [...BASE_CREATE_FIELDS]);
 
-  // Il technician può impostare l'assegnatario direttamente
-  // durante la creazione, ma solo per ticket appartenenti
-  // al proprio dipartimento.
+  // Capacità di presentazione, non permesso di modifica: il technician
+  // mostra il suggerimento di auto-assegnazione solo per i ticket del
+  // proprio dipartimento (useTicketCreateSelfAssignment). L'assegnatario
+  // in creazione resta comunque calcolato dal backend (autoAssign).
   if (user.role === "TECHNICIAN") {
     can("create", "Ticket", "assignedToId", {
       ticketDepartment: user.department,
@@ -242,12 +244,13 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
       "lastUpdatedBy.role": "ADMIN",
     });
 
-    // L'eccezione sullo stato vale solo per il tecnico assegnatario:
+    // L'eccezione sullo stato vale solo per il tecnico ASSEGNATARIO:
     // deve poter ancora prendere in carico o rifiutare. Per il creatore
     // ogni campo (stato incluso) resta bloccato quando l'ultimo
     // aggiornatore è un admin.
     if (user.role === "TECHNICIAN") {
       can("update", "Ticket", ["status"], {
+        assignedToId: user.userId,
         "lastUpdatedBy.role": "ADMIN",
       });
     }

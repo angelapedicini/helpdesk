@@ -23,7 +23,13 @@ export function defineAbilityForUserManagement(
   if (user.role === "ADMIN") {
     // L'admin vede solo gli utenti del proprio dipartimento.
     can("read", "User", { department: user.department });
-    can("manageSpecialization", "User", { role: "TECHNICIAN" });
+    // L'admin gestisce le specializzazioni dei soli tecnici del proprio
+    // dipartimento: il campo department è la condizione che tiene il
+    // controllo dentro CASL (prima ne mancava, e bastava role=TECHNICIAN).
+    can("manageSpecialization", "User", {
+      role: "TECHNICIAN",
+      department: user.department,
+    });
   }
 
   if (user.role === "TECHNICIAN") {

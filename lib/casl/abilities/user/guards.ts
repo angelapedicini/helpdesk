@@ -8,6 +8,7 @@ export function toUserSubject(user: UserForAbility) {
     __typename: "User",
     id: user.id,
     role: user.role,
+    department: user.department,
   });
 }
 

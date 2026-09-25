@@ -13,7 +13,7 @@ async function assertTargetCanBeManaged(prisma: PrismaClient, userId: number) {
 
   const target = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, department: true },
   });
 
   if (!target) {
@@ -22,7 +22,13 @@ async function assertTargetCanBeManaged(prisma: PrismaClient, userId: number) {
     });
   }
 
-  assertCanManageSpecialization(ability, { id: target.id, role: target.role });
+  // department è necessario: la regola manageSpecialization dell'admin
+  // è condizionata al dipartimento del target.
+  assertCanManageSpecialization(ability, {
+    id: target.id,
+    role: target.role,
+    department: target.department,
+  });
 }
 
 export const userSpecMutations = {

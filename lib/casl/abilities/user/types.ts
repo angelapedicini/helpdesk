@@ -4,8 +4,10 @@ import type { Department } from "@/app/generated/prisma/enums";
 
 export type UserManagementActions = "updateRole" | "manageSpecialization" | "read";
 
-// department opzionale: le condizioni su updateRole/manageSpecialization usano
-// solo id/role, quindi i subject costruiti per quelle azioni non lo richiedono.
+// department serve ad applicare la condizione di manageSpecialization
+// (l'admin gestisce i tecnici del proprio dipartimento). È quindi
+// necessario nei subject costruiti per quella azione; per updateRole
+// (che usa solo id/role) resta opzionale.
 export type UserForAbility = Pick<User, "id" | "role"> & {
   department?: Department;
 };

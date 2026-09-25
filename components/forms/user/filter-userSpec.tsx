@@ -34,7 +34,7 @@ export default function FilterUserSpecForm({
     onApply,
     onReset,
 }: FilterUserSpecFormProps) {
-    const { canUseDepartmentFilter } = useUserManagementPermissions();
+    const { canUseDepartmentFilter, canViewFilters } = useUserManagementPermissions();
     const { registerReset, resetAll } = useResetRegistry();
 
     const {
@@ -65,7 +65,18 @@ export default function FilterUserSpecForm({
     }
 
 
-    const { data } = useQuery(GET_CATEGORIES);
+    // Scope di gestione categorie: includeDisabled=true fa usare al resolver
+    // il percorso "departmentScope" (ADMIN -> solo il proprio dipartimento,
+    // SYSTEM_ADMIN -> catalogo completo). Senza questo flag il resolver userebbe
+    // la lettura operativa (matrice di accesso) e l'admin vedrebbe anche
+    // categorie di altri dipartimenti con grant globale.
+    // skip per chi non gestisce: la SidebarDrawer usa keepMounted, quindi il
+    // form resta montato (e la query partirebbe) anche per tecnico/impiegato,
+    // che con includeDisabled riceverebbero un FORBIDDEN.
+    const { data } = useQuery(GET_CATEGORIES, {
+        variables: { includeDisabled: true },
+        skip: !canViewFilters,
+    });
 
     const categoryOptions = (data?.categories ?? []).map((c) => ({
         id: c.id,
