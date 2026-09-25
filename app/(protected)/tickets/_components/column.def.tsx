@@ -82,14 +82,14 @@ export function createTicketHeadCells({
             label: "Categoria",
             sortable: true,
             render: (ticket) =>
-                ticket.category ? ticket.category.name : "Nessuna categoria",
+                ticket.category ? ticket.category.name : "-",
         },
         {
             id: "specificData",
             label: "Specifica",
             sortable: false,
             render: (ticket) => {
-                if (!ticket.specificData) return "Nessuna specifica";
+                if (!ticket.specificData) return "-";
                 const { __typename, ...fields } = ticket.specificData;
                 return Object.values(fields).filter(Boolean).join(" / ") || "-";
             },

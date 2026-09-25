@@ -43,7 +43,7 @@ export const lightTheme = createTheme({
             // Standard inputs
             inputBorder: "#000000",
             inputBorderHover: "#000000",
-            inputBorderDisabled: "#dad9d9",
+            inputBorderDisabled: "#cacaca",
             inputTextDisabled: "#000000",
 
 

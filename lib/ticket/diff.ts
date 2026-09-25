@@ -13,10 +13,21 @@ const COMPARABLE_SCALAR_FIELDS = [
     "ticketDepartment",
     "sourceDepartmentForUser",
     "dueDate",
+    "dueFirstResponse",
     "closedAt",
     "closingMessage",
     "ticketSpecific",
-    "deletedAt"
+    "deletedAt",
+    "reopenCount",
+    "reopenReason",
+] as const;
+
+const COMPARABLE_RELATION_FIELDS = [
+    "category",
+    "createdBy",
+    "assignedTo",
+    "lastUpdatedBy",
+    "deletedBy",
 ] as const;
 
 function normalize(value: unknown) {
@@ -40,9 +51,14 @@ export function diffTicketHistory(
         }
     }
 
-    if (current.category?.id !== previous.category?.id) changed.add("category");
-    if (current.assignedTo?.id !== previous.assignedTo?.id) changed.add("assignedTo");
-    if (current.lastUpdatedBy?.id !== previous.lastUpdatedBy?.id) changed.add("lastUpdatedBy");
+    for (const field of COMPARABLE_RELATION_FIELDS) {
+        const currentValue = current[field] as { id: string } | null | undefined;
+        const previousValue = previous[field] as { id: string } | null | undefined;
+
+        if ((currentValue?.id ?? null) !== (previousValue?.id ?? null)) {
+            changed.add(field);
+        }
+    }
 
     return changed;
 }

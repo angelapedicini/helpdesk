@@ -12,6 +12,7 @@ import TableSortLabel from '@mui/material/TableSortLabel';
 import Tooltip from '@mui/material/Tooltip';
 import Paper from '@mui/material/Paper';
 import { visuallyHidden } from '@mui/utils';
+import { TruncatedTooltip } from './truncated-tooltip';
 
 // --------------------------------
 // TYPES
@@ -127,33 +128,6 @@ function resolveColumnWidths<T>(
 }
 
 // --------------------------------
-// TRUNCATABLE LABEL
-// --------------------------------
-
-function TruncatableLabel({
-    label,
-}: {
-    label: React.ReactNode;
-}) {
-    return (
-        <Tooltip title={label} arrow>
-            <Box
-                component="span"
-                sx={{
-                    display: 'block',
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                }}
-            >
-                {label}
-            </Box>
-        </Tooltip>
-    );
-}
-
-// --------------------------------
 // HEADER
 // --------------------------------
 
@@ -181,7 +155,8 @@ function EnhancedTableHead<T>(
     } = props;
 
     // Se non viene passato onRequestSort, l'intera tabella è considerata
-    // non ordinabile: ogni colonna diventa una semplice label troncabile.
+    // non ordinabile: ogni colonna diventa una semplice label troncabile
+    // (solo hover, tramite TruncatedTooltip), senza TableSortLabel né icone.
     const sortingEnabled = !!onRequestSort;
 
     return (
@@ -219,9 +194,10 @@ function EnhancedTableHead<T>(
                             }}
                         >
                             {!isSortable ? (
-                                <TruncatableLabel
-                                    label={headCell.label}
-                                />
+                                // Header non ordinabile: solo hover, nessun pulsante
+                                <TruncatedTooltip trigger="hover">
+                                    {headCell.label}
+                                </TruncatedTooltip>
                             ) : (
                                 <TableSortLabel
                                     active={
@@ -244,9 +220,10 @@ function EnhancedTableHead<T>(
                                         },
                                     }}
                                 >
-                                    <TruncatableLabel
-                                        label={headCell.label}
-                                    />
+                                    {/* Header ordinabile: solo hover, nessun pulsante */}
+                                    <TruncatedTooltip trigger="hover">
+                                        {headCell.label}
+                                    </TruncatedTooltip>
 
                                     {orderBy === headCell.id ? (
                                         <Box
@@ -455,27 +432,21 @@ export default function EnhancedTable<
                                                         headCell.id
                                                     )}
                                                     sx={{
-                                                        width: columnWidths[
-                                                            index
-                                                        ],
-                                                        overflow:
-                                                            'hidden',
-                                                        textOverflow:
-                                                            'ellipsis',
-                                                        whiteSpace:
-                                                            'nowrap',
+                                                        width: columnWidths[index],
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap',
                                                     }}
                                                 >
-                                                    {headCell.render
-                                                        ? headCell.render(
-                                                            row
-                                                        )
-                                                        : String(
-                                                            row[
-                                                            headCell
-                                                                .id
-                                                            ]
-                                                        )}
+                                                    {headCell.render ? (
+                                                        // Render custom: resta a discrezione del chiamante
+                                                        headCell.render(row)
+                                                    ) : (
+                                                        // Render di default: click con pulsante "espandi"
+                                                        <TruncatedTooltip trigger="click">
+                                                            {String(row[headCell.id])}
+                                                        </TruncatedTooltip>
+                                                    )}
                                                 </TableCell>
                                             )
                                         )}

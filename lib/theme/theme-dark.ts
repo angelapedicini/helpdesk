@@ -43,14 +43,14 @@ export const darkTheme = createTheme({
       // Standard inputs
       inputBorder: "#ffffff",
       inputBorderHover: "#ffffff",
-      inputBorderDisabled: "#3e4144",
+      inputBorderDisabled: "#7c7c7c",
       // inputTextDisabled: "#bebebe",
       inputTextDisabled: "#ffffff",
 
       // Date pickers
       pickerBorder: "#ffffff",
       pickerBorderHover: "#f3f0f0",
-      pickerBorderDisabled: "#3e4144",
+      pickerBorderDisabled: "#303030",
       // pickerTextDisabled: "#bebebe",
       pickerTextDisabled: "#ffffff",
 

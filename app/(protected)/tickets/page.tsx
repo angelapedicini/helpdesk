@@ -28,6 +28,7 @@ import { createTicketHeadCells } from "@/app/(protected)/tickets/_components/col
 import TicketRowActions from "@/app/(protected)/tickets/_components/actions";
 import TicketAlerts from "@/app/(protected)/tickets/_components/ticket-alerts";
 import { TICKET_SCOPE_CONFIG } from "@/components/enums/ticket-scope.config";
+import { GET_DELETED_TICKETS } from "@/apollo-client/queries/ticket-history/ticket-history.queries";
 
 const PAGE_SIZE = 20;
 
@@ -109,6 +110,9 @@ export default function TicketsPage() {
         const result = await deleteTicket({
             variables: { id: deleteModal.value.id },
             context: { successMessage: "Ticket eliminato con successo." },
+            refetchQueries: [
+                { query: GET_DELETED_TICKETS, variables: queryVariables },
+            ],
         });
 
         if (result.error) return;
@@ -170,29 +174,29 @@ export default function TicketsPage() {
             />
 
             {/* <Box sx={{ height: "vh" }}> */}
-                <EnhancedTable<TicketFieldsFragment>
-                    rows={tickets}
-                    headCells={headCells}
-                    order={order}
-                    orderBy={orderBy}
-                    onRequestSort={onRequestSort}
-                    hasNextPage={hasNextPage}
-                    onLoadMore={loadMore}
-                    getRowClassName={(ticket) => (isTicketOverdue(ticket) ? "error-row" : undefined)}
-                    getRowTooltip={getTicketOverdueTooltip}
-                    maxHeight={"70vh"}
-                    actionsWidth="195px"
-                    actions={(ticket) => (
-                        <TicketRowActions
-                            ticket={ticket}
-                            scope={scope}
-                            onOpen={handleOpen}
-                            onHistory={handleHistory}
-                            onDelete={handleDelete}
-                            onMessage={handleMessage}
-                        />
-                    )}
-                />
+            <EnhancedTable<TicketFieldsFragment>
+                rows={tickets}
+                headCells={headCells}
+                order={order}
+                orderBy={orderBy}
+                onRequestSort={onRequestSort}
+                hasNextPage={hasNextPage}
+                onLoadMore={loadMore}
+                getRowClassName={(ticket) => (isTicketOverdue(ticket) ? "error-row" : undefined)}
+                getRowTooltip={getTicketOverdueTooltip}
+                maxHeight={"70vh"}
+                actionsWidth="195px"
+                actions={(ticket) => (
+                    <TicketRowActions
+                        ticket={ticket}
+                        scope={scope}
+                        onOpen={handleOpen}
+                        onHistory={handleHistory}
+                        onDelete={handleDelete}
+                        onMessage={handleMessage}
+                    />
+                )}
+            />
             {/* </Box> */}
 
             <FiltersSidebar open={ticketFilters.isOpen} onClose={ticketFilters.close}>
@@ -201,7 +205,7 @@ export default function TicketsPage() {
                         Filtri ticket
                     </Typography>
 
-                    <FilterTicketForm onApply={ticketFilters.apply} onReset={ticketFilters.reset} scope={scope} enabled={ticketFilters.isOpen} defaultValues={ticketFilters.filter as FilterTicketInput}/>
+                    <FilterTicketForm onApply={ticketFilters.apply} onReset={ticketFilters.reset} scope={scope} enabled={ticketFilters.isOpen} defaultValues={ticketFilters.filter as FilterTicketInput} />
                 </Box>
             </FiltersSidebar>
 

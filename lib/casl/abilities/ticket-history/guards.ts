@@ -1,7 +1,10 @@
 import { accessibleBy } from "@casl/prisma";
+import { subject } from "@casl/ability";
+import { GraphQLError } from "graphql/error";
 import { defineAbility } from "@/lib/casl/defineAbility";
+import type { AppAbility } from "@/lib/casl/defineAbility";
 import type { AccessTokenPayload } from "@/lib/auth/jwt";
-import type { Prisma } from "@/app/generated/prisma/client";
+import type { Prisma, TicketHistory } from "@/app/generated/prisma/client";
 
 /**
  * Costruisce il filtro Prisma per la history leggibile dall'utente corrente,
@@ -14,4 +17,15 @@ export function getReadableTicketHistoryWhere(
 ): Prisma.TicketHistoryWhereInput {
   const ability = defineAbility(session);
   return accessibleBy(ability, "read").ofType("TicketHistory");
+}
+
+export function assertCanReadTicketHistory(
+  ability: AppAbility,
+  existing: TicketHistory | null
+): void {
+  if (!existing || ability.cannot("read", subject("TicketHistory", existing))) {
+    throw new GraphQLError("Ticket history is not accessible", {
+      extensions: { code: "FORBIDDEN" },
+    });
+  }
 }

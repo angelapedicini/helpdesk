@@ -1,7 +1,11 @@
 import { getPrisma } from "@/lib/prisma/index";
 import { requireSession } from "@/lib/auth/session";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
-import { getReadableTicketHistoryWhere } from "@/lib/casl/abilities/ticket-history/guards";
+import {
+  assertCanReadTicketHistory,
+  getReadableTicketHistoryWhere,
+} from "@/lib/casl/abilities/ticket-history/guards";
+import { defineAbility } from "@/lib/casl/defineAbility";
 import { Prisma } from "@/app/generated/prisma/client";
 import { buildHistoryScopeWhere, buildTicketWhere } from "./where";
 import type { TicketScope } from "@/graphql-generated/schema";
@@ -43,8 +47,15 @@ export const ticketHistoryQueries = {
     args: { ticketId: number; first?: number; after?: string; filter?: unknown }
   ) => {
     const session = await requireSession();
+    const ability = defineAbility(session);
     const prisma = await getPrisma();
 
+    const existing = await prisma.ticketHistory.findFirst({
+      where: { originalTicketId: args.ticketId },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    });
+
+    assertCanReadTicketHistory(ability, existing);
 
     const where: Prisma.TicketHistoryWhereInput = {
       AND: [

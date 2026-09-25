@@ -2,7 +2,7 @@
 
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
-import { SxProps, Theme } from "@mui/material/styles";
+import type { SxProps, Theme } from "@mui/material/styles";
 import {
     TicketPriority,
     TicketStatus,
@@ -15,7 +15,7 @@ import { Department } from "@/lib/validators/enums.schema";
 import { TicketHistoryRow } from "../column.def";
 import type { ChangedFields } from "@/lib/ticket/diff";
 import { toDatetimeLocalValue } from "@/lib/helper/date-helper";
-
+import { TruncatedTextField } from "@/components/truncated-tooltip";
 
 function statusLabel(status: TicketStatus) {
     return TICKET_STATUS_CONFIG[status].label;
@@ -38,33 +38,6 @@ function displayValue(value: string | number | null | undefined): string {
     return value === null || value === undefined || value === "" ? "-" : String(value);
 }
 
-// --------------------------------
-// STILI CAMPI DISABLED (bordo invisibile, tema-agnostico)
-// --------------------------------
-
-const disabledFieldSx: SxProps<Theme> = {
-    "& .MuiOutlinedInput-notchedOutline": {
-        borderColor: "transparent !important",
-    },
-    "& .MuiInputBase-input.Mui-disabled": {
-        WebkitTextFillColor: "currentColor",
-        color: "primary.main",
-        opacity: "1 !important",
-    },
-    "& .MuiInputLabel-root.Mui-disabled": {
-        color: "text.secondary",
-        opacity: "1 !important",
-    },
-};
-
-const highlightedFieldSx: SxProps<Theme> = {
-    ...disabledFieldSx,
-    "& .MuiOutlinedInput-root": (theme) => ({
-        backgroundColor: `${theme.palette.action.selected} !important`,
-    }),
-    borderRadius: 1,
-};
-
 interface TicketHistoryDetailModalProps {
     row: TicketHistoryRow | null;
     changedFields?: ChangedFields;
@@ -76,216 +49,230 @@ export default function TicketHistoryDetailModal({
 }: TicketHistoryDetailModalProps) {
     if (!row) return null;
 
-    const fieldSx = (field: string): SxProps<Theme> =>
-        changedFields?.has(field) ? highlightedFieldSx : disabledFieldSx;
+    const highlightSx = (field: string): SxProps<Theme> | undefined =>
+        changedFields?.has(field)
+            ? {
+                  backgroundColor: (theme: Theme) => theme.palette.ui.highlightedCell,
+                  borderRadius: 1,
+              }
+            : undefined;
 
     return (
-            <Box
+        <Box
+            sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                    xs: "1fr",
+                    md: "1fr 1fr",
+                },
+                gap: 3,
+                mt: 1,
+            }}
+        >
+            <TruncatedTextField
+                label="Creato da"
+                value={userLabel(row.createdBy)}
+                fullWidth
+                disabled
+                sx={highlightSx("createdBy")}
+            />
+
+            <TruncatedTextField
+                label="Assegnato a"
+                value={row.assignedTo ? userLabel(row.assignedTo) : "-"}
+                fullWidth
+                disabled
+                sx={highlightSx("assignedTo")}
+            />
+
+            <TruncatedTextField
+                label="Dipartimento origine"
+                value={departmentLabel(row.sourceDepartmentForUser)}
+                fullWidth
+                disabled
+                sx={highlightSx("sourceDepartmentForUser")}
+            />
+
+            <TruncatedTextField
+                label="Titolo"
+                value={displayValue(row.title)}
+                fullWidth
+                disabled
+                sx={highlightSx("title")}
+            />
+
+            <TextField
+                label="Descrizione"
+                value={displayValue(row.description)}
+                fullWidth
+                multiline
+                minRows={3}
+                disabled
                 sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                        xs: "1fr",
-                        md: "1fr 1fr",
-                    },
-                    gap: 3,
-                    mt: 1,
+                    gridColumn: { xs: "1", md: "1 / -1" },
+                    ...highlightSx("description"),
                 }}
-            >
+            />
 
-                <TextField
-                    label="Titolo"
-                    value={displayValue(row.title)}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("title")}
-                />
+            <TruncatedTextField
+                label="Categoria"
+                value={row.category ? row.category.name : "-"}
+                fullWidth
+                disabled
+                sx={highlightSx("category")}
+            />
 
-                <TextField
-                    label="Stato"
-                    value={statusLabel(row.status)}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("status")}
-                />
+            <TruncatedTextField
+                label="Specifica"
+                value={displayValue(row.ticketSpecific)}
+                fullWidth
+                disabled
+                sx={highlightSx("ticketSpecific")}
+            />
 
-                <TextField
-                    label="Priorità"
-                    value={priorityLabel(row.priority)}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("priority")}
-                />
+            <TruncatedTextField
+                label="Stato"
+                value={statusLabel(row.status)}
+                fullWidth
+                disabled
+                sx={highlightSx("status")}
+            />
 
-                <TextField
-                    label="Categoria"
-                    value={row.category ? row.category.name : "-"}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("category")}
-                />
+            <TruncatedTextField
+                label="Priorità"
+                value={priorityLabel(row.priority)}
+                fullWidth
+                disabled
+                sx={highlightSx("priority")}
+            />
 
-                <TextField
-                    label="Specifica"
-                    value={displayValue(row.ticketSpecific)}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("ticketSpecific")}
-                />
+            <TextField
+                label="Prima revisione entro"
+                value={displayValue(toDatetimeLocalValue(row.dueFirstResponse))}
+                type="datetime-local"
+                fullWidth
+                disabled
+                slotProps={{ inputLabel: { shrink: true } }}
+            />
 
-                <TextField
-                    label="Creato da"
-                    value={userLabel(row.createdBy)}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("createdBy")}
-                />
+            <TextField
+                label="Data fine lavoro"
+                value={displayValue(toDatetimeLocalValue(row.dueDate))}
+                type="datetime-local"
+                fullWidth
+                disabled
+                slotProps={{ inputLabel: { shrink: true } }}
+                sx={highlightSx("dueDate")}
+            />
 
-                <TextField
-                    label="Assegnato a"
-                    value={row.assignedTo ? userLabel(row.assignedTo) : "-"}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("assignedTo")}
-                />
+            <TextField
+                label="Cancellato il"
+                value={displayValue(toDatetimeLocalValue(row.deletedAt))}
+                type="datetime-local"
+                fullWidth
+                disabled
+                slotProps={{ inputLabel: { shrink: true } }}
+                sx={highlightSx("deletedAt")}
+            />
 
-                <TextField
-                    label="Modificato da"
-                    value={userLabel(row.lastUpdatedBy)}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("lastUpdatedBy")}
-                />
+            <TruncatedTextField
+                label="Dipartimento"
+                value={departmentLabel(row.ticketDepartment)}
+                fullWidth
+                disabled
+                sx={highlightSx("ticketDepartment")}
+            />
 
-                <TextField
-                    label="Dipartimento origine"
-                    value={departmentLabel(row.sourceDepartmentForUser)}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("sourceDepartmentForUser")}
-                />
+            <TruncatedTextField
+                label="N° riaperture"
+                value={displayValue(row.reopenCount)}
+                fullWidth
+                disabled
+                sx={highlightSx("reopenCount")}
+            />
 
-                <TextField
-                    label="Dipartimento"
-                    value={departmentLabel(row.ticketDepartment)}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("ticketDepartment")}
-                />
+            <TruncatedTextField
+                label="Cancellato da"
+                value={userLabel(row.deletedBy)}
+                fullWidth
+                disabled
+                sx={highlightSx("deletedBy")}
+            />
 
-                <TextField
-                    label="N° riaperture"
-                    value={displayValue(row.reopenCount)}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("reopenCount")}
-                />
+            <TextField
+                label="Data modifica"
+                value={displayValue(toDatetimeLocalValue(row.createdAt))}
+                type="datetime-local"
+                fullWidth
+                disabled
+                slotProps={{ inputLabel: { shrink: true } }}
+            />
 
-                <TextField
-                    label="Cancellato da"
-                    value={userLabel(row.deletedBy)}
-                    fullWidth
-                    disabled
-                    sx={fieldSx("deletedBy")}
-                />
+            <TruncatedTextField
+                label="Modificato da"
+                value={userLabel(row.lastUpdatedBy)}
+                fullWidth
+                disabled
+                sx={highlightSx("lastUpdatedBy")}
+            />
 
-                <TextField
-                    label="Data modifica"
-                    value={displayValue(toDatetimeLocalValue(row.createdAt))}
-                    type="datetime-local"
-                    fullWidth
-                    disabled
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    sx={disabledFieldSx}
-                />
+            <TextField
+                label="Ultima modifica"
+                value={displayValue(toDatetimeLocalValue(row.updatedAt))}
+                type="datetime-local"
+                fullWidth
+                disabled
+                slotProps={{ inputLabel: { shrink: true } }}
+            />
 
-                {/*
-                  FIX: prima qui c'era un campo "Ultimo aggiornamento" con
-                  value={userLabel(row.lastUpdatedBy)} ma type="datetime-local"
-                  (nome dentro un input che si aspetta una data) — ed era un
-                  doppione di "Modificato da" qui sopra. Rimosso.
-                  Il vecchio "Ultimo aggiornamento di" (che in realtà mostrava
-                  updatedAt, cioè la data di questo snapshot) è stato
-                  rinominato in "Snapshot" per coerenza con la colonna
-                  "Snapshot" già usata in column.def.tsx.
-                */}
-                <TextField
-                    label="Snapshot"
-                    value={displayValue(toDatetimeLocalValue(row.updatedAt))}
-                    type="datetime-local"
-                    fullWidth
-                    disabled
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    sx={fieldSx("updatedAt")}
-                />
+            <TextField
+                label="Chiuso il"
+                value={row.closedAt ? toDatetimeLocalValue(row.closedAt) : "-"}
+                type="datetime-local"
+                fullWidth
+                disabled
+                slotProps={{ inputLabel: { shrink: true } }}
+                sx={highlightSx("closedAt")}
+            />
 
-                <TextField
-                    label="Chiuso il"
-                    value={row.closedAt ? toDatetimeLocalValue(row.closedAt) : "-"}
-                    type={row.closedAt ? "datetime-local" : "text"}
-                    fullWidth
-                    disabled
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    sx={fieldSx("closedAt")}
-                />
+            <TextField
+                label="Descrizione"
+                value={displayValue(row.description)}
+                fullWidth
+                multiline
+                minRows={3}
+                disabled
+                sx={{
+                    gridColumn: { xs: "1", md: "1 / -1" },
+                    ...highlightSx("description"),
+                }}
+            />
 
-                <TextField
-                    label="Entro"
-                    value={row.dueDate ? toDatetimeLocalValue(row.dueDate) : "-"}
-                    type={row.dueDate ? "datetime-local" : "text"}
-                    fullWidth
-                    disabled
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    sx={fieldSx("dueDate")}
-                />
+            <TextField
+                label="Motivo riapertura"
+                value={displayValue(row.reopenReason)}
+                fullWidth
+                multiline
+                minRows={2}
+                disabled
+                sx={{
+                    gridColumn: { xs: "1", md: "1 / -1" },
+                    ...highlightSx("reopenReason"),
+                }}
+            />
 
-                <TextField
-                    label="Entro (prima risposta)"
-                    value={row.dueFirstResponse ? toDatetimeLocalValue(row.dueFirstResponse) : "-"}
-                    type={row.dueFirstResponse ? "datetime-local" : "text"}
-                    fullWidth
-                    disabled
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    sx={fieldSx("dueFirstResponse")}
-                />
-
-                <TextField
-                    label="Descrizione"
-                    value={displayValue(row.description)}
-                    fullWidth
-                    multiline
-                    minRows={3}
-                    disabled
-                    sx={{
-                        gridColumn: { xs: "1", md: "1 / -1" },
-                        ...fieldSx("description"),
-                    }}
-                />
-
-                <TextField
-                    label="Motivo riapertura"
-                    value={displayValue(row.reopenReason)}
-                    fullWidth
-                    multiline
-                    minRows={2}
-                    disabled
-                    sx={{
-                        gridColumn: { xs: "1", md: "1 / -1" },
-                        ...fieldSx("reopenReason"),
-                    }}
-                />
-
-                <TextField
-                    label="Messaggio di chiusura"
-                    value={displayValue(row.closingMessage)}
-                    fullWidth
-                    multiline
-                    minRows={2}
-                    disabled
-                    sx={{
-                        gridColumn: { xs: "1", md: "1 / -1" },
-                        ...fieldSx("closingMessage"),
-                    }}
-                />
-            </Box>
+            <TextField
+                label="Messaggio di chiusura"
+                value={displayValue(row.closingMessage)}
+                fullWidth
+                multiline
+                minRows={2}
+                disabled
+                sx={{
+                    gridColumn: { xs: "1", md: "1 / -1" },
+                    ...highlightSx("closingMessage"),
+                }}
+            />
+        </Box>
     );
 }
