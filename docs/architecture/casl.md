@@ -15,32 +15,36 @@ quel dominio, non qui.
 ## Diagramma
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "20px"}, "flowchart": {"useMaxWidth": false, "nodeSpacing": 50, "rankSpacing": 60, "wrappingWidth": 320}}}%%
 flowchart TB
-  REQ["Richiesta GraphQL"] --> SESS["requireSession()<br>AccessTokenPayload"]
+  REQ(["Richiesta GraphQL"]) --> SESS["requireSession()<br>AccessTokenPayload"]
   SESS --> DA["defineAbility(session)"]
+  DA --> DOM{"Un array di regole per dominio,<br>ognuno prodotto in isolamento"}
 
-  subgraph COMPOSE["defineAbility.ts: concatena le regole di ogni dominio"]
-    direction TB
-    T["defineAbilityForTicket(user).rules"]
-    U["defineAbilityForUserManagement(user).rules"]
-    C["defineAbilityForCategory(user).rules"]
-    N["defineAbilityForTicketNotification(user).rules"]
-    S["defineAbilityForStats(user).rules"]
-    H["defineAbilityForTicketHistory(user).rules"]
-    SC["defineAbilityForTicketScope(user).rules"]
-  end
+  DOM --> T["ticket"]
+  DOM --> U["user"]
+  DOM --> C["category"]
+  DOM --> N["ticket-notification"]
+  DOM --> S["stats"]
+  DOM --> H["ticket-history"]
+  DOM --> SC["ticket-scope"]
 
-  DA --> COMPOSE --> BUILD["createPrismaAbility(rules, { detectSubjectType })"]
+  T & U & C & N & S & H & SC --> BUILD["createPrismaAbility(rules,<br>{ detectSubjectType })"]
   BUILD --> ABILITY["AppAbility — istanza server"]
-  ABILITY --> GUARDS["guards.ts di ogni dominio<br>ability.can / ability.cannot"]
-  ABILITY --> SER["ability.rules serializzate<br>(passate al client)"]
-  SER --> PROVIDER["AbilityProvider<br>(abilityContext.tsx)"]
-  PROVIDER --> CLIENT_ABILITY["AppAbility — istanza client"]
-  CLIENT_ABILITY --> HOOKS["presentation.ts di ogni dominio<br>useAbility().can(...)"]
 
+  ABILITY --> G["guards.ts di ogni dominio<br>assertCan… → GraphQLError"]
+  ABILITY --> LIST["accessibleBy(ability, 'read')<br>filtro Prisma sulle liste"]
+  ABILITY --> SER["ability.rules serializzate"]
+
+  SER --> PROVIDER["AbilityProvider<br>abilityContext.tsx"]
+  PROVIDER --> CLIENT_ABILITY["AppAbility — istanza client"]
+  CLIENT_ABILITY --> HOOKS["hook-permission.ts di ogni dominio<br>useAbility().can(...)"]
+
+  classDef dominio fill:#e8f5e9,stroke:#43a047,color:#1b5e20
   classDef server fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
   classDef client fill:#f3e5f5,stroke:#8e24aa,color:#4a148c
-  class SESS,DA,COMPOSE,BUILD,ABILITY,GUARDS,SER server
+  class T,U,C,N,S,H,SC dominio
+  class SESS,DA,DOM,BUILD,ABILITY,G,LIST,SER server
   class PROVIDER,CLIENT_ABILITY,HOOKS client
 ```
 
