@@ -1,4 +1,5 @@
 import { accessibleBy } from "@casl/prisma";
+import { subject, type ForcedSubject } from "@casl/ability";
 import { GraphQLError } from "graphql/error";
 import type { PrismaClient } from "@/app/generated/prisma/client";
 import type { Department } from "@/app/generated/prisma/enums";
@@ -67,30 +68,30 @@ type CategoryManageAction = Extract<CategoryActions, "manage" | "read" | "create
 
 const SUBJECT_TICKET_CATEGORY = "TicketCategory" as const;
 
-// Il typing di CASL limita il subject delle "can" alle Model registrate, che
-// non prevedono __typename. Qui il cast è contenuto: l'unico uso è valutare
-// una regola CONDIZIONALE su un oggetto parziale (department) fornendo al
-// runtime la detection esplicita (vedi detectSubjectType in defineAbility).
-type CategoryAbilityCheck = {
-  can(
-    action: CategoryManageAction,
-    subject: { __typename: typeof SUBJECT_TICKET_CATEGORY; [key: string]: unknown }
-  ): boolean;
-  cannot(
-    action: CategoryManageAction,
-    subject: { __typename: typeof SUBJECT_TICKET_CATEGORY; [key: string]: unknown }
-  ): boolean;
-};
-
+/**
+ * Valuta una regola CASL su un oggetto parziale (es. solo `department`),
+ * senza avere un'istanza reale di TicketCategory: stesso principio di
+ * `toTicketDepartmentSubject` nel dominio ticket. `subject(...)` di
+ * `@casl/ability` tagga l'oggetto con `__caslSubjectType__`, che
+ * `detectSubjectType` in `defineAbility.ts` riconosce esplicitamente — non
+ * serve un tipo/cast locale ad hoc, basta l'helper della libreria.
+ * Il cast resta necessario solo perché l'oggetto è parziale rispetto a
+ * `CategoryForAbility`, non per aggirare il rilevamento del subject type —
+ * per questo il tipo di destinazione include ancora `ForcedSubject`,
+ * il tag che `subject(...)` ha appena impostato: castare a un
+ * `CategoryForAbility` "nudo" lo butterebbe via e romperebbe il typing
+ * di `AppSubjects`, che quel tag lo richiede.
+ */
 function canOnCategorySubject(
   ability: AppAbility,
   action: CategoryManageAction,
-  subject: Partial<CategoryForAbility>
+  category: Partial<CategoryForAbility>
 ): boolean {
-  return (ability as unknown as CategoryAbilityCheck).can(action, {
-    __typename: SUBJECT_TICKET_CATEGORY,
-    ...subject,
-  });
+  return ability.can(
+    action,
+    subject(SUBJECT_TICKET_CATEGORY, category) as unknown as CategoryForAbility &
+      ForcedSubject<typeof SUBJECT_TICKET_CATEGORY>
+  );
 }
 
 // "Manage" non condizionato: solo SYSTEM_ADMIN (regola "manage" senza condizioni).
@@ -100,7 +101,7 @@ export function isUnrestrictedCategoryManager(ability: AppAbility): boolean {
 }
 
 // Gestore scoped sul reparto: true per SYSTEM_ADMIN e per l'ADMIN del reparto.
-// Il subject viene taggato con __typename perché il server risolva il tipo
+// Il subject viene taggato tramite subject() perché il server risolva il tipo
 // sull'oggetto (la regola ADMIN è condizionale sul department).
 export function isDepartmentCategoryManager(
   ability: AppAbility,

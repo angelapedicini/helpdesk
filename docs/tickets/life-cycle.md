@@ -11,6 +11,10 @@ tutti quelli del suo reparto, l'amministratore di sistema tutti quanti. Se nessu
 specializzato nella categoria scelta, il ticket nasce aperto e senza assegnatario, e
 aspetta che qualcuno lo prenda.
 
+Questo file descrive il flusso e chi-può-vedere-cosa a livello di business. Per le
+regole CASL a grana di campo (chi può modificare *quale campo* in *quale stato*) vedi
+[`casl.md`](./casl.md).
+
 ## Flusso
 
 ```mermaid
@@ -76,7 +80,7 @@ La creazione non parte da uno stato neutro: il ticket nasce già `ASSIGNED` se
 l'assegnazione automatica trova un tecnico specialista nella categoria, altrimenti
 nasce `OPEN` e resta da assegnare. Le transizioni ammesse stanno in
 `ALLOWED_STATUS_TRANSITIONS` e non in CASL, perché sono una macchina a stati e non una
-domanda di permessi.
+domanda di permessi — vedi [`casl.md`](./casl.md#stato-vs-permesso) per il perché.
 
 | Stato | `EMPLOYEE` | `TECHNICIAN` | `ADMIN` | `SYSTEM_ADMIN` |
 | --- | --- | --- | --- | --- |
@@ -92,36 +96,3 @@ ticket non è nemmeno eliminabile, perché l'eliminazione è consentita solo qua
 aperto o assegnato. `CLOSED` invece non è finale, perché il creatore o l'assegnatario
 lo possono riaprire in `REOPENED`. Nessun ruolo ha un vantaggio sulla **lettura**,
 che non dipende dallo stato ma solo dalla relazione con il ticket.
-
-## Casi particolari
-
-**Il blocco dopo l'ultimo aggiornamento dell'admin.** Un ticket su cui ha lavorato
-un amministratore di reparto resta bloccato per gli altri ruoli finché l'amministratore
-non interviene di nuovo: serve a lasciare al tecnico assegnatario lo spazio per
-prendere in carico il lavoro senza che nessun altro lo modifichi a freddo. L'unica
-eccezione è lo stato, e solo per l'assegnatario, altrimenti un altro tecnico potrebbe
-muovere un ticket che non è suo. Il blocco colpisce anche l'amministratore di
-sistema. Appena il tecnico interviene il blocco scompare da solo.
-
-**Due regole che sembrano permessi ma non lo sono.** `browseAssignees` e la
-`assignedToId` in creazione servono solo a decidere cosa mostrare nella interfaccia:
-l'elenco dei tecnici del reparto e il suggerimento di auto-assegnazione. Non
-autorizzano nessuna scrittura, perché in creazione l'assegnatario non è un campo che
-l'utente possa scegliere.
-
-## Disallineamenti noti
-
-Non sono transizioni possibili in teoria, ma percorsi che il codice non rende
-raggiungibili o che lasciano un buco. Sono qui finché non vengono sistemati.
-
-- **L'amministratore di reparto non può riaprire.** Il registro gli assegna
-  `CLOSED → REOPENED`, ma la regola CASL gli nega lo stato su un ticket `CLOSED`. La
-  transizione non si può mai usare.
-- **Cambio categoria su un ticket in lavorazione.** L'amministratore di reparto può
-  cambiare la categoria in qualsiasi stato se è l'ultimo ad aver aggiornato il ticket,
-  ma l'update forza lo stato ad `ASSIGNED`: un ticket `IN_PROGRESS` torna
-  silenziosamente ad assegnato. Il controllo delle transizioni gira solo quando lo
-  stato arriva dalla richiesta, quindi in questo caso non parte.
-- **Un ticket riaperto non è eliminabile.** L'eliminazione è consentita solo quando il
-  ticket è aperto o assegnato, quindi un ticket `REOPENED` sfugge a chi lo aveva
-  creato anche se nella pratica è ancora lavoro da fare.
