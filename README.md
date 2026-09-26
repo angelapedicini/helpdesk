@@ -6,7 +6,7 @@ o al rifiuto. Ognuno vede solo quello che gli compete, in base al ruolo e al
 reparto.
 
 Il documento da leggere per primo è il
-[ciclo di vita del ticket](docs/ticket-lifecycle.md): spiega il percorso di una
+[ciclo di vita del ticket](docs/domains/ticket/life-cycle.md): spiega il percorso di una
 richiesta e chi può fare cosa a ogni passo.
 
 ## Funzionalità
@@ -69,6 +69,8 @@ dell'autenticazione.
 
 | Documento | Contenuto |
 | --- | --- |
-| [Ciclo di vita del ticket](docs/ticket-lifecycle.md) | Il percorso di un ticket dalla creazione alla chiusura, con i poteri di ogni ruolo a ogni passo. |
-| [Autorizzazione](docs/authorization.md) | Le regole CASL degli altri domini: messaggi, utenti, categorie, notifiche, statistiche, history, viste. |
 | [Indice e convenzioni](docs/README.md) | Come è organizzata la documentazione e come si scrive un file nuovo. |
+| [Ciclo di vita del ticket](docs/domains/ticket/life-cycle.md) | Il percorso di un ticket dalla creazione alla chiusura, con i poteri di ogni ruolo a ogni passo. |
+| [Autorizzazione](docs/architecture/casl.md) | Come i domini vengono uniti in un'unica ability, e le regole CASL di ciascun dominio. |
+| [Autenticazione](docs/auth.md) | Login, refresh token e gestione della sessione. |
+| [Frontend](docs/frontend.md) | Organizzazione del frontend e responsabilità dei layer. |

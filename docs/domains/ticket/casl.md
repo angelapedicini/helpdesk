@@ -1,11 +1,11 @@
 # CASL — dominio ticket
 
 Per il flusso di business (stati, chi vede cosa a livello generale) vedi
-[`lifecycle.md`](./lifecycle.md). Questo file entra nel dettaglio delle regole
+[`life-cycle.md`](./life-cycle.md). Questo file entra nel dettaglio delle regole
 scritte in `lib/casl/abilities/ticket/rules.ts`, a livello di singolo campo, e
 nei pattern usati per farle rispettare. Per come questo dominio viene composto
 insieme agli altri in un'unica ability applicativa, vedi
-[`casl-architecture.md`](../casl-architecture.md).
+[`casl.md` dell'architettura](../../architecture/casl.md).
 
 ## File del dominio
 

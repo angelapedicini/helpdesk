@@ -4,7 +4,7 @@
 
 Ogni dominio (`ticket`, `category`, `ticket-scope`, ...) definisce le proprie
 regole CASL in isolamento, in `lib/casl/abilities/<dominio>/`, e le documenta
-nel proprio `docs/<dominio>/casl.md`. Questo file non spiega *le regole* di
+nel proprio `docs/domains/<dominio>/casl.md`. Questo file non spiega *le regole* di
 nessun dominio: spiega solo *come tutti i domini vengono composti* in
 un'unica ability applicativa (`lib/casl/defineAbility.ts`) e come quella
 ability arriva fino al frontend (`lib/casl/abilityContext.tsx`). Se cerchi il
