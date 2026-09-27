@@ -17,18 +17,38 @@ Su cosa sono e come si usano `can`, `cannot` e `subject` la documentazione è
 quella della libreria, su [casl.js.org](https://casl.js.org/). Qui e nei documenti
 di dominio si documentano solo le scelte di questo progetto.
 
+## Il percorso
+
+```mermaid
+flowchart TB
+  S["session"] --> D["defineAbility()"]
+  D --> R["7 domini, ognuno con le sue regole"]
+  R --> A["un'unica AppAbility"]
+
+  A -->|"ogni resolver"| G["assertCan* in guards.ts"]
+  A -->|"ogni resolver"| W["accessibleBy()"]
+  A -->|"ogni resolver"| N["nav-links"]
+
+  A -->|"ability.rules, serializzato"| L["layout protetto"]
+  L --> P["AbilityProvider → useAbility()"]
+  P --> H["hook in hook-permission.ts"]
+
+  G -.->|"rispecchiato, non sostituito"| H
+```
+
+Da un solo oggetto partono due strade. A sinistra l'ability viene usata sul
+posto, a ogni richiesta: è lì che nasce l'autorizzazione. A destra le stesse
+regole attraversano il layout come semplici dati e vengono ricostruite nel
+browser, dove servono a costruire l'interfaccia. La linea tratteggiata dice che
+il ramo destro è la copia del sinistro, non un secondo controllo.
+
 ## Backend — `defineAbility.ts`
 
 È il punto in cui i domini si incontrano, e l'unico file che li vede tutti.
-
-`defineAbility(session)` fa tre cose:
-
-1. chiama `defineAbilityFor<Dominio>` per ognuno dei sette domini, passandogli
-   il token payload dell'utente autenticato;
-2. mette in un unico array tutte le regole restituite;
-3. restituisce l'ability risultante.
-
-Non decide nulla. La decisione avviene dopo, su quell'oggetto:
+`defineAbility(session)` chiama `defineAbilityFor<Dominio>` per ognuno dei sette
+domini, passandogli il token payload dell'utente, mette tutte le regole in un
+unico array e restituisce l'ability risultante. Non decide nulla: la decisione
+avviene dopo, su quell'oggetto.
 
 ```ts
 const ability = defineAbility(session);
@@ -58,6 +78,10 @@ chiamano per fare rispettare le regole. Un dominio senza `guards.ts` è un
 dominio senza istanze da valutare: `stats` controlla solo il tipo di azione
 consentita, quindi non ha bisogno del file.
 
+Per le liste il meccanismo è diverso: invece di un assert, il resolver traduce
+le regole di lettura in un filtro Prisma con `accessibleBy`, così non deve
+fetchare tutto e scartare lato applicativo.
+
 ### Aggiungere un dominio
 
 Un dominio nuovo si aggiunge in quattro file nella sua cartella — `types.ts`
@@ -70,19 +94,17 @@ Un dominio nuovo si aggiunge in quattro file nella sua cartella — `types.ts`
 
 ## Frontend — `abilityContext.tsx`
 
-Sul client le regole non vengono ricalcolate: il frontend non ha il token
-payload e non ha il database, quindi non potrebbe.
+Le regole che il layout ha calcolato passano come dati a `AbilityProvider`, che
+le ricostruisce in un'ability funzionante nel browser e la espone tramite
+`useAbility()`. È lo stesso oggetto costruito a partire dalle stesse regole,
+quindi i due lati non possono divergere.
 
-Le regole calcolate dal server passano dal layout protetto
-(`app/(protected)/layout.tsx`), che chiama `defineAbility` e passa
-`ability.rules` a `AbilityProvider`. Questi le ricostruisce in un'ability
-funzionante nel browser e la espone tramite `useAbility()`. È lo stesso oggetto
-costruito a partire dalle stesse regole, quindi i due lati non possono
-divergere.
+Sul client non si ricalcola niente, perché non si potrebbe: manca il token
+payload e manca il database.
 
-Il layout viene ricalcolato a ogni render: se cambia il ruolo o il reparto
-dell'utente, l'ability cambia con lui. Navigando fra ticket le regole invece
-non cambiano mai, perché sono condizionali sull'utente e non sull'oggetto — la
+Il layout viene ricalcolato a ogni render, quindi se cambia il ruolo o il reparto
+dell'utente l'ability cambia con lui. Navigando fra ticket le regole invece non
+cambiano mai, perché sono condizionali sull'utente e non sull'oggetto — la
 differenza di permessi fra due ticket la produce la valutazione della condizione
 sul subject, non un insieme di regole diverso.
 
