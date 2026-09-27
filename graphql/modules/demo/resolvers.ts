@@ -36,7 +36,7 @@ export const demoResolvers = {
         branch = await createDemoBranch(DEMO_TTL_MS);
       } catch (err) {
         console.error("Errore creazione branch Neon:", err);
-        throw new GraphQLError("Impossibile creare l'ambiente demo. Riprova.", {
+        throw new GraphQLError("Cannot create demo enviroemnt, try again", {
           extensions: { code: "DEMO_BRANCH_FAILED" },
         });
       }

@@ -1415,7 +1415,13 @@ export async function main() {
 
   await prisma.ticketCategory.deleteMany();
 
-  const hashedPassword = await bcrypt.hash("Password123!", 10);
+  const rawPassword = process.env.SEED_PASSWORD;
+
+  if (!rawPassword) {
+    throw new Error("SEED_PASSWORD non impostata: aggiungila al file .env prima di eseguire il seed.");
+  }
+
+  const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
   const systemAdmin = await prisma.user.create({
     data: {
@@ -1757,7 +1763,7 @@ export async function main() {
 
   console.log(
     `Seed completato: ${allUsers.length} utenti, ${allUsers.length + 10} ticket creati ` +
-      `(${allUsers.length} standard + 10 casi speciali SLA)`
+    `(${allUsers.length} standard + 10 casi speciali SLA)`
   );
 }
 

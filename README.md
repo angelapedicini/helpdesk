@@ -68,8 +68,8 @@ dell'autenticazione.
 La documentazione è in `docs/` ed è organizzata per **dominio di business**, non
 per file sorgente: ogni dominio (`ticket`, `category`, `user`, ...) ha la sua
 cartella in `docs/domains/` e i documenti che lo descrivono. I documenti che
-valgono per tutti i domini stanno in `docs/architecture/`, le guide che seguono
-il percorso di una sessione o di una richiesta nella root di `docs/`.
+valgono per tutti i domini stanno in `docs/architecture/`, le guide di frontend
+nella root di `docs/`.
 
 Le convenzioni generali del progetto — separazione dei layer, regole di GraphQL,
 gestione degli errori — non stanno qui: sono in [AGENTS.md](AGENTS.md) e valgono
@@ -82,6 +82,7 @@ così*.
 ### Architettura
 
 - [CASL](docs/architecture/casl.md)
+- [Autenticazione](docs/architecture/auth.md)
 - [Data flow](docs/architecture/data-flow.md)
 
 ### Domini
@@ -109,5 +110,4 @@ nella cartella omonima. Il pattern è quello di
 
 ### Guide
 
-- [Autenticazione](docs/auth.md)
 - [Frontend](docs/frontend.md)
