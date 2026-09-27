@@ -100,7 +100,7 @@ function handleUnauthenticated(req: NextRequest) {
 
 function handleForbidden(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith("/api")) {
-    return NextResponse.json({ error: "Accesso negato" }, { status: 403 });
+    return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }
   return NextResponse.redirect(new URL("/dashboard", req.url));
 }

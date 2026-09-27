@@ -63,12 +63,51 @@ dell'autenticazione.
 
 ## Documentazione
 
-La documentazione è in [`docs/`](docs/README.md), dove c'è l'indice completo e
-le convenzioni con cui è scritta. Da dove iniziare:
+### In breve
 
-- [ciclo di vita del ticket](docs/domains/ticket/life-cycle.md) — il percorso
-  di una richiesta, stato per stato
-- [architettura CASL](docs/architecture/casl.md) — come i domini vengono uniti
-  in un'unica ability e come questa arriva al frontend
-- [regole CASL del dominio ticket](docs/domains/ticket/casl.md) — chi può fare
-  cosa, campo per campo
+La documentazione è in `docs/` ed è organizzata per **dominio di business**, non
+per file sorgente: ogni dominio (`ticket`, `category`, `user`, ...) ha la sua
+cartella in `docs/domains/` e i documenti che lo descrivono. I documenti che
+valgono per tutti i domini stanno in `docs/architecture/`, le guide che seguono
+il percorso di una sessione o di una richiesta nella root di `docs/`.
+
+Le convenzioni generali del progetto — separazione dei layer, regole di GraphQL,
+gestione degli errori — non stanno qui: sono in [AGENTS.md](AGENTS.md) e valgono
+per tutto il repository.
+
+I sorgenti restano la verità sul *come* una cosa è implementata. Questi
+documenti rispondono a *cosa si può fare*, *chi può farlo* e *perché è fatto
+così*.
+
+### Architettura
+
+- [CASL](docs/architecture/casl.md)
+- [Data flow](docs/architecture/data-flow.md)
+
+### Domini
+
+Ogni dominio ha le sue regole in `lib/casl/abilities/<dominio>/` e le documenta
+nella cartella omonima. Il pattern è quello di
+[ticket](docs/domains/ticket/casl.md): `In breve`, file del dominio, tabelle
+`Ruolo × Azione`, e come le regole vengono fatte rispettare.
+
+- **ticket**
+  - [ciclo di vita](docs/domains/ticket/life-cycle.md)
+  - [regole CASL](docs/domains/ticket/casl.md)
+- **user**
+  - [regole CASL](docs/domains/user/casl.md)
+- **category**
+  - [regole CASL](docs/domains/category/casl.md)
+- **ticket-scope**
+  - [regole CASL](docs/domains/ticket-scope/casl.md)
+- **ticket-history**
+  - [regole CASL](docs/domains/ticket-history/casl.md)
+- **ticket-notification**
+  - [regole CASL](docs/domains/ticket-notification/casl.md)
+- **stats**
+  - [regole CASL](docs/domains/stats/casl.md)
+
+### Guide
+
+- [Autenticazione](docs/auth.md)
+- [Frontend](docs/frontend.md)
