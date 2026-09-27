@@ -13,7 +13,7 @@ export function assertCanReadTicketNotification(
   subscription: TicketNotificationSubject
 ): void {
   if (ability.cannot("read", subject("TicketNotification", subscription))) {
-    throw new GraphQLError("Accesso negato", {
+    throw new GraphQLError("Access denied", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -25,7 +25,7 @@ export function assertCanCreateTicketNotification(
 ): void {
   if (ability.cannot("create", subject("TicketNotification", subscription))) {
     throw new GraphQLError(
-      "Non hai i permessi per attivare le notifiche su questo ticket",
+      "User cannot subscribe to notifications on this ticket",
       { extensions: { code: "FORBIDDEN" } }
     );
   }
@@ -37,7 +37,7 @@ export function assertCanDeleteTicketNotification(
 ): void {
   if (ability.cannot("delete", subject("TicketNotification", subscription))) {
     throw new GraphQLError(
-      "Non hai i permessi per disattivare le notifiche su questo ticket",
+      "User cannot unsubscribe from notifications on this ticket",
       { extensions: { code: "FORBIDDEN" } }
     );
   }

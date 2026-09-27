@@ -1,11 +1,21 @@
 # CASL — dominio ticket
 
-Per il flusso di business (stati, chi vede cosa a livello generale) vedi
-[`life-cycle.md`](./life-cycle.md). Questo file entra nel dettaglio delle regole
-scritte in `lib/casl/abilities/ticket/rules.ts`, a livello di singolo campo, e
-nei pattern usati per farle rispettare. Per come questo dominio viene composto
-insieme agli altri in un'unica ability applicativa, vedi
-[`casl.md` dell'architettura](../../architecture/casl.md).
+## In breve
+
+Due subject, `Ticket` e `TicketMessage`, e un'azione in più rispetto agli altri
+domini: `browseAssignees`, che non autorizza nulla e serve solo a decidere come
+popolare il campo assegnatario.
+
+È l'unico dominio dove l'`update` è a grana di campo — quale campo si può toccare
+dipende dal ruolo e dallo stato — ed è l'unico che tiene le transizioni di stato
+fuori da CASL, in una mappa separata.
+
+`TicketMessage` non ha un `rules.ts` proprio: le sue condizioni hanno senso solo
+in funzione del ticket padre, quindi vivono in coda a quelle di `Ticket`.
+
+Le regole sono in `lib/casl/abilities/ticket/rules.ts`. Per il flusso di business
+vedi [`life-cycle.md`](./life-cycle.md), per come i domini vengono uniti in
+un'unica ability vedi [`casl.md` dell'architettura](../../architecture/casl.md).
 
 ## File del dominio
 
@@ -13,17 +23,15 @@ insieme agli altri in un'unica ability applicativa, vedi
 | --- | --- |
 | `types.ts` | `TicketActions`, `TicketForAbility` (`Pick` di `Ticket` sui soli campi usati nelle condizioni), `TicketMessageForAbility` |
 | `rules.ts` | `defineAbilityForTicket(user)` — le regole di `Ticket` **e** di `TicketMessage` insieme, più `ALLOWED_STATUS_TRANSITIONS` |
-| `guards.ts` | `assertCanCreateTicket` / `assertCanReadTicket` / `assertCanUpdateTicket` / `assertCanDeleteTicket`, gli adapter `to*Subject` |
-| `ticket-message.guards.ts` | `assertCanCreateTicketMessage` / `assertCanDeleteTicketMessage` |
-| `presentation.ts` | hook React (`useTicketUpdatePermissions`, `useTicketAllowedStatuses`, ...) |
+| `guards.ts` | `assertCanCreateTicket` / `assertCanReadTicket` / `assertCanUpdateTicket` / `assertCanDeleteTicket`, gli assert `assertCan*TicketMessage`, gli adapter `to*Subject` |
+| `hook-permission.ts` | hook React (`useTicketUpdatePermissions`, `useTicketAllowedStatuses`, ...) |
 
 `TicketMessage` non ha un proprio `rules.ts`: le sue `can`/`cannot` sono scritte
 in coda alla stessa `defineAbilityForTicket`, perché le sue condizioni
 (`ticket.createdById`, `ticket.status`, ...) hanno senso solo in funzione dello
-stesso ticket padre — non sono una politica indipendente. `ticket-message.guards.ts`
-è comunque un file a parte, ma solo per leggibilità: separa le funzioni
-`assertCan...TicketMessage` da quelle di `Ticket` senza dover spezzare anche le
-regole.
+stesso ticket padre — non sono una politica indipendente. Anche i suoi assert
+(`assertCanCreateTicketMessage`, `assertCanDeleteTicketMessage`) stanno in
+`guards.ts` accanto a quelli di `Ticket`, per lo stesso motivo.
 
 ## Permessi CASL — Ticket
 
@@ -118,99 +126,71 @@ non la scrittura.
 
 ## Stato vs permesso
 
-Le transizioni di stato ammesse (`OPEN → ASSIGNED`, `IN_PROGRESS → CLOSED`, ...)
-non sono scritte come condizioni CASL: vivono in una mappa a parte,
-`ALLOWED_STATUS_TRANSITIONS`, indicizzata per ruolo e stato corrente. Il motivo
-è che CASL risponde a "posso toccare il campo `status` su questo ticket", non a
-"questo valore di `status` è una transizione legale da quello attuale" — sono
-due domande diverse, e mescolarle in un'unica condizione CASL (es. provare a
-esprimere "posso mettere `status: CLOSED` solo se ero `IN_PROGRESS`" con un
-`in: [...]` sul valore nuovo) non è rappresentabile con le condizioni CASL,
-che valutano l'oggetto esistente, non il valore che l'utente sta scrivendo.
+Le transizioni ammesse (`OPEN → ASSIGNED`, `IN_PROGRESS → CLOSED`, ...) non sono
+regole CASL: stanno in una mappa separata, `ALLOWED_STATUS_TRANSITIONS`,
+indicizzata per ruolo e stato corrente. Le due cose rispondono a domande
+diverse — "posso scrivere il campo `status`?" e "questo valore è una
+transizione valida dallo stato attuale?" — e solo la prima è un permesso.
 
-Questa mappa viene usata due volte:
+La mappa viene usata in due punti:
 
-- **Lato server**, in `assertCanUpdateTicket` (in `guards.ts`): dopo aver
-  verificato con CASL che l'utente può toccare il campo `status`, se
-  `input.status` è presente si verifica separatamente che
-  `ALLOWED_STATUS_TRANSITIONS[ruolo][statoAttuale]` includa il valore
-  richiesto; altrimenti l'errore è `BAD_USER_INPUT`, non `FORBIDDEN` — è un
-  input non valido, non un problema di permessi.
-- **Lato client**, in `useTicketAllowedStatuses` (in `presentation.ts`): popola
-  le opzioni di un `<Select>` con lo stato attuale più le transizioni
-  ammesse, ma solo se `ability.can("update", subject, "status")` è vero — se
-  CASL nega il campo, l'unica opzione mostrata resta lo stato attuale.
+- **`assertCanUpdateTicket`** (`guards.ts`): dopo il check CASL sul campo
+  `status`, verifica che la transizione sia ammessa. Se non lo è l'errore è
+  `BAD_USER_INPUT`, non `FORBIDDEN` — è un input non valido, non un permesso.
+- **`useTicketAllowedStatuses`** (`hook-permission.ts`): popola le opzioni
+  del `<Select>` con lo stato attuale più le transizioni ammesse, ma solo se
+  il check CASL sul campo `status` passa.
 
 ## Come vengono fatte rispettare: `guards.ts`
 
-Ogni subject espone funzioni `assertCan...`, chiamate dai resolver GraphQL
-(`modules/ticket/resolvers/`). Il pattern:
+Ogni subject espone funzioni `assertCan*`, chiamate dai resolver GraphQL
+(`graphql/modules/ticket/resolvers/`). Su un'istanza singola costruiscono
+`subject("Ticket", existing)` e valutano il check; in creazione, dove l'istanza
+non esiste ancora, il check è sul tipo e basta.
 
-1. **CREATE**: nessuna istanza esiste ancora, il check è di tipo:
-   `ability.cannot("create", "Ticket")`.
-2. **READ/UPDATE/DELETE su un'istanza singola**: si costruisce
-   `subject("Ticket", existing)` — l'helper di `@casl/ability`, che tagga
-   l'oggetto con `__caslSubjectType__` così il rilevamento del tipo non
-   dipende dal costruttore né da un `__typename` GraphQL — e si valuta
-   `ability.cannot(azione, subject, campo)`.
-3. **UPDATE è per campo**: `assertCanUpdateTicket` itera solo sui campi
-   effettivamente presenti nell'input e verifica ciascuno singolarmente,
-   più il controllo di transizione di stato descritto sopra.
-4. **Liste**: invece di un `assertCanX`, il resolver `tickets` usa
-   direttamente `accessibleBy(ability, "read").ofType("Ticket")` per tradurre
-   le regole di lettura in un filtro Prisma, in `AND` con il filtro dello
-   scope selezionato (vedi [`ticket-scope/casl.md`](../ticket-scope/casl.md))
-   e con i filtri liberi dell'utente — evita di dover fetchare tutto e
-   scartare lato applicativo.
+Due scelte sono di questo progetto:
 
-### Subject parziali: valutare una condizione senza un'istanza reale
+- **`update` si verifica campo per campo**: `assertCanUpdateTicket` itera solo
+  sui campi effettivamente presenti nell'input e verifica ciascuno singolarmente,
+  più il controllo di transizione di stato descritto sopra.
+- **Le liste non hanno un assert**: il resolver `tickets` usa
+  `accessibleBy(ability, "read").ofType("Ticket")` per tradurre le regole di
+  lettura in un filtro Prisma, in `AND` con il filtro dello scope selezionato
+  (vedi [`ticket-scope/casl.md`](../ticket-scope/casl.md)) e con i filtri
+  liberi dell'utente — evita di dover fetchare tutto e scartare lato applicativo.
 
-A volte serve sapere se un certo valore di un campo (es. `ticketDepartment`)
-renderebbe l'azione permessa, senza avere un ticket reale — per esempio in
-creazione, prima ancora che l'oggetto esista, per decidere se mostrare il
-suggerimento di auto-assegnazione. Il pattern (`toTicketDepartmentSubject`):
-costruire un oggetto parziale con solo quel campo, passarlo a `subject(...)`,
-e castare il risultato — non a un tipo "nudo" come `TicketForAbility` (che
-butterebbe via il tag `__caslSubjectType__` appena impostato), ma al tipo che
-lo mantiene:
+### Valutare una condizione senza l'istanza
 
-```ts
-export function toTicketDepartmentSubject(
-  department: Department
-): ReturnType<typeof toTicketSubject> {
-  return subject("Ticket", {
-    __typename: "Ticket",
-    ticketDepartment: department,
-  }) as unknown as ReturnType<typeof toTicketSubject>;
-}
-```
+In due casi l'oggetto su cui valutare la regola non esiste, e al suo posto se ne
+costruisce uno parziale:
 
-Quando invece la regola dipende da un oggetto padre che non esiste ancora
-(creare un messaggio su un ticket), si costruisce un subject "finto" con la
-relazione annidata nella stessa forma usata dalle condizioni di `rules.ts`
-(`{ ticket: { createdById, status, ... } }`), senza dover salvare nulla prima
-di sapere se l'azione è permessa — è quello che fa
-`assertCanCreateTicketMessage`.
+- **in creazione**, per decidere se mostrare il suggerimento di auto-assegnazione
+  senza avere ancora un ticket: `toTicketDepartmentSubject` contiene solo
+  `ticketDepartment`, il campo su cui è scritta la condizione del `TECHNICIAN`.
+- **in creazione di un messaggio**, che non ha ancora un id: si costruisce
+  l'istanza con la relazione `ticket` annidata nella stessa forma usata dalle
+  condizioni di `rules.ts`, così non va salvato nulla per sapere se l'azione è
+  consentita.
 
 ### Adapter FE ↔ BE
 
-Le query GraphQL restituiscono relazioni annidate (`createdBy: { id }`,
-`category: { id }`), mentre le condizioni CASL sono scritte in stile Prisma
-flat (`createdById`, `categoryId`). Per questo il dominio espone
-`toTicketSubject(ticketGraphQL)` e `toTicketMessageSubject(messageGraphQL)`:
-prendono la forma GraphQL e restituiscono quella flat/annidata attesa dalle
-condizioni, già avvolta in `subject(...)`. Le stesse condizioni funzionano
-così sia sull'oggetto Prisma reale (backend) sia su quello GraphQL mappato
-(frontend), perché entrambi vengono ricondotti alla stessa shape prima del
-check.
+Le condizioni in `rules.ts` sono scritte in stile Prisma piatto (`createdById`),
+mentre il frontend riceve GraphQL annidato (`createdBy: { id }`). Per questo il
+dominio espone `toTicketSubject` e `toTicketMessageSubject`: prendono la forma
+GraphQL e restituiscono quella attesa dalle condizioni. Le stesse regole
+funzionano così sia sull'oggetto Prisma reale sia su quello GraphQL mappato,
+perché entrambi vengono ricondotti alla stessa forma prima del check.
 
-## `presentation.ts` — hook per la UI
+## `hook-permission.ts` — hook per la UI
 
 Gli hook (`useTicketUpdatePermissions`, `useTicketDeletePermission`,
 `useTicketAllowedStatuses`, `useTicketAssigneeBrowseMode`,
-`useTicketCreateSelfAssignment`) richiamano `ability.can(...)` sui subject
-adattati sopra, per decidere cosa mostrare: quali campi di un form sono
-editabili, quali stati proporre in una select, se mostrare la ricerca o la
-lista completa per l'assegnatario. **Non sono un confine di sicurezza**:
-replicano le regole solo per evitare che l'utente veda controlli che poi il
-server rifiuterebbe — l'unica verifica che conta è quella in `guards.ts`.
+`useTicketCreateSelfAssignment`) richiamano i check sui subject adattati sopra,
+per decidere cosa mostrare: quali campi di un form sono editabili, quali stati
+proporre in una select, se mostrare la ricerca o la lista completa per
+l'assegnatario.
+
+Non sono un confine di sicurezza, per il motivo descritto in
+[`casl.md` dell'architettura](../../architecture/casl.md#cosa-se-ne-fa-il-frontend):
+replicano le regole solo per non offrire all'utente controlli che il server
+rifiuterebbe comunque.

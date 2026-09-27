@@ -1,4 +1,4 @@
-// lib/casl/abilities/ticket-notification/presentation.ts
+// lib/casl/abilities/ticket-notification/hook-permission.ts
 import { useMemo } from "react";
 import { useAbility } from "@/lib/casl/abilityContext";
 

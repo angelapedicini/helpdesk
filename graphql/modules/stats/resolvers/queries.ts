@@ -16,7 +16,7 @@ export const statQueries = {
     const prisma = await getPrisma();
 
     if (ability.cannot("read", "TicketStats")) {
-      throw new GraphQLError("Accesso negato", {
+      throw new GraphQLError("Access denied", {
         extensions: { code: "FORBIDDEN" },
       });
     }
@@ -159,7 +159,7 @@ export const statQueries = {
     const prisma = await getPrisma();
 
     if (ability.cannot("read", "TicketStats")) {
-      throw new GraphQLError("Accesso negato", {
+      throw new GraphQLError("Access denied", {
         extensions: { code: "FORBIDDEN" },
       });
     }

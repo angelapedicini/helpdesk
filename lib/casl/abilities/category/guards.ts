@@ -116,7 +116,7 @@ export function assertCanManageTicketCategory(
   category: Partial<CategoryForAbility>
 ): void {
   if (!canOnCategorySubject(ability, action, category)) {
-    throw new GraphQLError("Non hai i permessi per gestire le categorie", {
+    throw new GraphQLError("User cannot manage categories", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -132,7 +132,7 @@ export function assertCategoryManagerForDepartment(
     !isUnrestrictedCategoryManager(ability) &&
     !isDepartmentCategoryManager(ability, department)
   ) {
-    throw new GraphQLError("Non hai i permessi per gestire le categorie", {
+    throw new GraphQLError("User cannot manage categories", {
       extensions: { code: "FORBIDDEN" },
     });
   }

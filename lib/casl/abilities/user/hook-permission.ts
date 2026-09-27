@@ -1,4 +1,4 @@
-// lib/casl/abilities/user/presentation.ts
+// lib/casl/abilities/user/hook-permission.ts
 import { useMemo } from "react";
 import { useAbility } from "@/lib/casl/abilityContext";
 import { toUserSubject } from "./guards";

@@ -1,4 +1,4 @@
-// lib/casl/abilities/ticket/presentation.ts
+// lib/casl/abilities/ticket/hook-permission.ts
 import { useMemo } from "react";
 import { useQuery } from "@apollo/client/react";
 import { useAbility } from "@/lib/casl/abilityContext";

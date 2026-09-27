@@ -76,7 +76,7 @@ export function toTicketMessageSubject(message: GraphQLTicketMessage) {
  */
 export function assertCanCreateTicket(ability: AppAbility): void {
   if (ability.cannot("create", "Ticket")) {
-    throw new GraphQLError("Non hai i permessi per creare un ticket", {
+    throw new GraphQLError("User cannot create a ticket", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -90,7 +90,7 @@ export function assertCanCreateTicket(ability: AppAbility): void {
 export function assertCanReadTicket(ability: AppAbility, existing: Ticket): void {
   const ticketSubject = subject("Ticket", existing);
   if (ability.cannot("read", ticketSubject)) {
-    throw new GraphQLError("Non hai i permessi per visualizzare questo ticket", {
+    throw new GraphQLError("User cannot read this ticket", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -111,7 +111,7 @@ export function assertCanUpdateTicket(
   );
 
   if (fieldsToCheck.length === 0) {
-    throw new GraphQLError("Nessun campo da aggiornare", {
+    throw new GraphQLError("No field to update", {
       extensions: { code: "BAD_USER_INPUT" },
     });
   }
@@ -119,7 +119,7 @@ export function assertCanUpdateTicket(
   const ticketSubject = subject("Ticket", existing);
   for (const field of fieldsToCheck) {
     if (ability.cannot("update", ticketSubject, field)) {
-      throw new GraphQLError(`Non hai i permessi per modificare "${field}"`, {
+      throw new GraphQLError(`User cannot update "${field}" on this ticket`, {
         extensions: { code: "FORBIDDEN" },
       });
     }
@@ -129,7 +129,7 @@ export function assertCanUpdateTicket(
     const allowed = ALLOWED_STATUS_TRANSITIONS[session.role]?.[existing.status] ?? [];
     if (!allowed.includes(input.status)) {
       throw new GraphQLError(
-        `Transizione di stato non valida: ${existing.status} → ${input.status}`,
+        `Invalid status transition: ${existing.status} → ${input.status}`,
         { extensions: { code: "BAD_USER_INPUT" } }
       );
     }
@@ -143,7 +143,7 @@ export function assertCanUpdateTicket(
 export function assertCanDeleteTicket(ability: AppAbility, existing: Ticket): void {
   const ticketSubject = subject("Ticket", existing);
   if (ability.cannot("delete", ticketSubject)) {
-    throw new GraphQLError("Non hai i permessi per eliminare questo ticket", {
+    throw new GraphQLError("User cannot delete this ticket", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -174,7 +174,7 @@ export function assertCanCreateTicketMessage(
   });
 
   if (ability.cannot("create", messageSubject)) {
-    throw new GraphQLError("Non hai i permessi per scrivere in questo ticket", {
+    throw new GraphQLError("User cannot write on this ticket", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -191,7 +191,7 @@ export function assertCanDeleteTicketMessage(
   const messageSubject = subject("TicketMessage", existing);
 
   if (ability.cannot("delete", messageSubject)) {
-    throw new GraphQLError("Non hai i permessi per eliminare questo messaggio", {
+    throw new GraphQLError("User cannot delete this message", {
       extensions: { code: "FORBIDDEN" },
     });
   }

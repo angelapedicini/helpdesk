@@ -64,20 +64,18 @@ flowchart TB
 | Cancellazione | i propri, quando sono aperti o assegnati | come `EMPLOYEE` | come `EMPLOYEE` | come `EMPLOYEE` |
 
 Nella creazione nessun ruolo sceglie l'assegnatario: lo calcola il backend in base
-alla categoria e al carico di lavoro dei tecnici. Chi può cambiare la categoria, cioè
-il creatore del ticket e l'amministratore del reparto, fa scattare quell'assegnazione
-anche senza scegliere nessun tecnico, e il ticket passa ad `ASSIGNED`.
+alla categoria e al carico di lavoro dei tecnici. 
 
-L'amministratore di reparto può cambiare la categoria quando il ticket è aperto, e
-inoltre in qualsiasi stato se è lui l'ultimo ad averlo aggiornato, per esempio subito
-dopo averlo assegnato. Sulla modifica l'amministratore di sistema non ha poteri
-trasversali: valgono le regole del creatore, quindi tocca solo i ticket che ha creato
-lui.
+C'è un caso speciale per la creazione del ticket senza categoria, in cui non si assegna un tecnico ma il ticket viene settato con stato open e 
+ADMIN aggiunge a mano il tecnico per la risoluzione, oppure la categoria in caso ne riscontri una come corretta in confronto al giudizio dell'utente.
+Oppure rifutarlo se lo ritiene non fondato.  
+
+Questo crea un momentaneo blocco delle modifiche anche in stato `ASSIGNED` per l'utente. consentendo al tecnico di verificaare in modo accurato la richiesta, scegliendo di far progredire il ticket oppure rifiutarlo. 
 
 ## Stati per ruolo
 
 La creazione non parte da uno stato neutro: il ticket nasce già `ASSIGNED` se
-l'assegnazione automatica trova un tecnico specialista nella categoria, altrimenti
+l'assegnazione automatica trova un tecnico specialista nella categoria, altrimenti  
 nasce `OPEN` e resta da assegnare. Le transizioni ammesse stanno in
 `ALLOWED_STATUS_TRANSITIONS` e non in CASL, perché sono una macchina a stati e non una
 domanda di permessi — vedi [`casl.md`](./casl.md#stato-vs-permesso) per il perché.

@@ -1,4 +1,4 @@
-// lib/casl/abilities/stats/presentation.ts
+// lib/casl/abilities/stats/hook-permission.ts
 import { useMemo } from "react";
 import { useAbility } from "@/lib/casl/abilityContext";
 

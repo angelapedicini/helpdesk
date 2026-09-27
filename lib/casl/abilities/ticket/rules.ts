@@ -146,7 +146,7 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     cannot("update", "Ticket", ["createdById"], {
       assignedToId: user.userId,
     }).because(
-      "Il technician non può modificare creatore di un ticket assegnatogli",
+      "The assigned technician cannot change the creator of a ticket",
     );
   }
 
@@ -183,7 +183,7 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     cannot("update", "Ticket", ["status"], {
       status: { in: ["IN_PROGRESS", "CLOSED"] },
     }).because(
-      "L'admin non può intervenire su un ticket già in lavorazione",
+      "The admin cannot act on a ticket that is already in progress",
     );
 
     // L'admin non può modificare il creatore di un ticket
@@ -191,7 +191,7 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
     cannot("update", "Ticket", ["createdById"], {
       ticketDepartment: user.department,
     }).because(
-      "L'admin non può modificare creatore o categoria di un ticket che non ha creato lui stesso",
+      "The admin cannot change the creator of a ticket they did not create",
     );
 
     // L'admin può modificare categoria e valore specifico

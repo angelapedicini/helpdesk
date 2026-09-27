@@ -17,7 +17,7 @@ export function assertCanUpdateUserRole(
   target: UserForAbility
 ): void {
   if (ability.cannot("updateRole", toUserSubject(target))) {
-    throw new GraphQLError("Non hai i permessi per modificare il ruolo di questo utente", {
+    throw new GraphQLError("User cannot change the role of this user", {
       extensions: { code: "FORBIDDEN" },
     });
   }
@@ -28,7 +28,7 @@ export function assertCanManageSpecialization(
   target: UserForAbility
 ): void {
   if (ability.cannot("manageSpecialization", toUserSubject(target))) {
-    throw new GraphQLError("Non hai i permessi per gestire le specializzazioni di questo utente", {
+    throw new GraphQLError("User cannot manage the specializations of this user", {
       extensions: { code: "FORBIDDEN" },
     });
   }
