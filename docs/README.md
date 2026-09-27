@@ -25,7 +25,7 @@ docs/
   auth.md                    login, refresh, sessione
   frontend.md                page → container → componenti, link Apollo, loading
   architecture/
-    casl.md                  come i domini vengono uniti in un'unica ability
+    casl.md                  come i domini vengono uniti in un'unica ability, e come questa arriva al frontend
     data-flow.md             GraphQL resolver → service → Prisma
   domains/
     ticket/
@@ -41,10 +41,8 @@ docs/
 
 ## Architettura
 
-| Documento | Contenuto |
-| --- | --- |
-| [CASL](architecture/casl.md) | Come le regole dei singoli domini vengono composte in un'unica ability applicativa e come questa arriva al frontend. |
-| [Data flow](architecture/data-flow.md) | Il percorso di una richiesta GraphQL: resolver, regole di business, Prisma. |
+- [CASL](architecture/casl.md)
+- [Data flow](architecture/data-flow.md)
 
 ## Domini
 
@@ -53,19 +51,23 @@ nella cartella omonima. Il pattern è quello di
 [ticket/casl.md](domains/ticket/casl.md): `In breve`, file del dominio, tabelle
 `Ruolo × Azione`, e come le regole vengono fatte rispettare.
 
-| Dominio | Documento | Regole in |
-| --- | --- | --- |
-| ticket | [ciclo di vita](domains/ticket/life-cycle.md) · [CASL](domains/ticket/casl.md) | `lib/casl/abilities/ticket/` |
-| user | [CASL](domains/user/casl.md) | `lib/casl/abilities/user/` |
-| category | [CASL](domains/category/casl.md) | `lib/casl/abilities/category/` |
-| ticket-scope | [CASL](domains/ticket-scope/casl.md) | `lib/casl/abilities/ticket-scope/` |
-| ticket-history | [CASL](domains/ticket-history/casl.md) | `lib/casl/abilities/ticket-history/` |
-| ticket-notification | [CASL](domains/ticket-notification/casl.md) | `lib/casl/abilities/ticket-notification/` |
-| stats | [CASL](domains/stats/casl.md) | `lib/casl/abilities/stats/` |
+- **ticket**
+  - [ciclo di vita](domains/ticket/life-cycle.md)
+  - [regole CASL](domains/ticket/casl.md)
+- **user**
+  - [regole CASL](domains/user/casl.md)
+- **category**
+  - [regole CASL](domains/category/casl.md)
+- **ticket-scope**
+  - [regole CASL](domains/ticket-scope/casl.md)
+- **ticket-history**
+  - [regole CASL](domains/ticket-history/casl.md)
+- **ticket-notification**
+  - [regole CASL](domains/ticket-notification/casl.md)
+- **stats**
+  - [regole CASL](domains/stats/casl.md)
 
 ## Guide
 
-| Documento | Contenuto |
-| --- | --- |
-| [Autenticazione](auth.md) | Login, refresh token, sessione, e cosa succede quando un token scade. |
-| [Frontend](frontend.md) | Come è organizzato il frontend e dove stanno le responsabilità. |
+- [Autenticazione](auth.md)
+- [Frontend](frontend.md)
