@@ -5,6 +5,8 @@ import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql/error";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanManageSpecialization } from "@/lib/casl/abilities/user/guards";
+import { parseOrThrow } from "@/graphql/validate";
+import { CreateUserSpecSchema } from "@/lib/validators/userSpec.schema";
 
 type PrismaClient = Awaited<ReturnType<typeof getPrisma>>;
 
@@ -42,9 +44,9 @@ export const userSpecMutations = {
     context: GraphQLContext
   ) => {
     const session = context.requireSession();
+    const { userId, categoryId } = parseOrThrow(CreateUserSpecSchema, args.input);
     const prisma = await getPrisma();
 
-    const { userId, categoryId } = args.input;
 
     await assertTargetCanBeManaged(prisma, session, userId);
 
@@ -69,9 +71,9 @@ export const userSpecMutations = {
     context: GraphQLContext
   ) => {
     const session = context.requireSession();
+     const { userId, categoryId } = parseOrThrow(CreateUserSpecSchema, args.input);
     const prisma = await getPrisma();
 
-    const { userId, categoryId } = args.input;
 
     await assertTargetCanBeManaged(prisma, session, userId);
 

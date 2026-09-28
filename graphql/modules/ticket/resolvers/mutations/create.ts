@@ -12,6 +12,7 @@ import { getSpecificMapping } from "@/graphql/modules/ticket/resolvers/mutations
 import { getPrisma } from "@/lib/prisma/index";
 import { buildTicketHistoryData } from "@/lib/ticket/history";
 import { syncTicketNotifications } from "@/lib/ticket/notification";
+import { parseOrThrow } from "@/graphql/validate";
 
 export async function createTicket(
   _parent: unknown,
@@ -20,29 +21,21 @@ export async function createTicket(
 ) {
   const session = context.requireSession();
   const ability = defineAbility(session);
+  const input = parseOrThrow(CreateTicketSchema, args.input);
   const prisma = await getPrisma();
 
-  assertCanCreateTicket(ability);
+  //controllo su categorie in cui user ha accesso e può creare ticket
+  const category =
+    input.categoryId !== undefined
+      ? (await getAllowedCategories(prisma, ability)).find(
+        (c) => c.id === input.categoryId
+      )
+      : undefined;
 
-  const result = CreateTicketSchema.safeParse(args.input);
-  if (!result.success) {
-    throw new GraphQLError("Invalid input", {
-      extensions: { code: "BAD_USER_INPUT", issues: result.error.flatten() },
+  if (input.categoryId !== undefined && !category) {
+    throw new GraphQLError("Category not found for this user", {
+      extensions: { code: "NOT_FOUND" },
     });
-  }
-  const input = result.data;
-
-  let category: Awaited<ReturnType<typeof getAllowedCategories>>[number] | undefined;
-
-  if (input.categoryId !== undefined) {
-    const allowedCategories = await getAllowedCategories(prisma, ability);
-
-    category = allowedCategories.find((c) => c.id === input.categoryId);
-    if (!category) {
-      throw new GraphQLError("Category not found for this user", {
-        extensions: { code: "NOT_FOUND" },
-      });
-    }
   }
 
   // La categoria scelta prevede uno specificField ma non è arrivato alcun
@@ -65,6 +58,7 @@ export async function createTicket(
     );
   }
 
+  //qui si fa la ricerca per vedere se dove inserire i dati delle specifiche in tb corretta.
   let specificCreate: Record<string, unknown> | undefined;
 
   if (category?.specificField && input.specificValue != null) {
@@ -92,6 +86,7 @@ export async function createTicket(
     };
   }
 
+  //qui si controlla se c'è categoria si assegna un tecnico tramite funzione autoassegnazione altriemnti si lascia null in categoria e tecnico
   let assignedToId = null;
   if (input.categoryId != undefined) {
     assignedToId = await autoAssign(prisma, input.categoryId, session.userId);
@@ -99,6 +94,7 @@ export async function createTicket(
 
   const dueFirstResponse = computeDueDate(input.priority);
 
+  //si fa transaction per ticket history e notifiche 
   const ticket = await prisma.$transaction(async (tx) => {
     const created = await tx.ticket.create({
       data: {

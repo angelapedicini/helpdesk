@@ -480,7 +480,15 @@ Database access must happen only on the backend.
 
 # Validation Rules
 
-Use Zod for validating external input.
+Zod valida l'input esterno, con **lo stesso schema** su entrambi i lati.
+
+Lo schema vive in `lib/validators/`, uno per dominio, ed è l'unica sorgente del
+tipo dell'input: niente DTO scritti a mano. Il form lo usa con `zodResolver`
+(messaggi in italiano; vedi *Error Handling*), il resolver lo usa con
+`parseOrThrow()` in `graphql/validate.ts`, che lancia `GraphQLError` con
+`extensions.code = BAD_USER_INPUT` e un messaggio inglese per lo sviluppatore.
+Anche quando la firma del resolver dichiara `input: unknown`, il resolver usa
+solo il valore validato, che è tipizzato con `z.infer`.
 
 Typical flow:
 
@@ -488,17 +496,27 @@ Typical flow:
 React Hook Form
         |
         ↓
-Zod validation
+zodResolver (stesso schema, messaggi italiani)
         |
         ↓
 GraphQL Mutation
         |
         ↓
-Backend validation
+parseOrThrow (stesso schema, BAD_USER_INPUT)
         |
         ↓
 Service
 ```
+
+Lo schema dichiara la forma intera dell'input, anche dove l'SDL la dichiara già:
+serve alla tipizzazione e le righe in eccesso sono innocue, perché GraphQL ha
+già bocciato i valori non conformi. Il valore dello schema sono i vincoli che
+l'SDL non può esprimere: lunghezze e stringhe libere, range numerici, date,
+regole fra campi.
+
+Non aggiungere validation su argomenti scalari che GraphQL garantisce da solo
+(`id: Int!`, enum, campi obbligatori): è rumore. Serve solo sugli oggetti
+complessi, cioè `input` e `filter`.
 
 Frontend validation improves UX.
 
@@ -551,7 +569,7 @@ Do not:
 * introduce Redux for GraphQL data
 * put database logic inside React components
 * put large business rules inside GraphQL resolvers
-* duplicate API response types manually
+* duplicate API types manually, response or input (lo schema Zod in `lib/validators/` è l'unico tipo dell'input)
 * bypass GraphQL using direct frontend database calls
 * add dependencies without justification
 * show error notifications from components for errors already handled by `notificationLink`

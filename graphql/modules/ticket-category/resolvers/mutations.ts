@@ -1,5 +1,6 @@
 // graphql/modules/ticket-category/resolvers/mutations.ts
 import type { GraphQLContext } from "@/graphql/context";
+import { parseOrThrow } from "@/graphql/validate";
 import { GraphQLError } from "graphql/error";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import {
@@ -131,32 +132,23 @@ export const categoryMutations = {
 
     const prisma = await getPrisma();
 
-    const result = CreateTicketCategorySchema.safeParse(args.input);
-
-    if (!result.success) {
-      throw new GraphQLError("Invalid input", {
-        extensions: {
-          code: "BAD_USER_INPUT",
-          issues: result.error.flatten(),
-        },
-      });
-    }
+    const input = parseOrThrow(CreateTicketCategorySchema, args.input);
 
     // Il department è imposto dal resolver. SYSTEM_ADMIN può scegliere il
     // reparto dall'input; l'ADMIN può creare solo nel proprio dipartimento,
     // quindi il valore della sessione sovrascrive qualunque input.
     const department = isUnrestrictedCategoryManager(ability)
-      ? result.data.department
+      ? input.department
       : session.department;
 
     assertCanManageTicketCategory(ability, "create", { department });
 
-    if (result.data.specificField) {
+    if (input.specificField) {
       // Valida il campo specifico sullo scope di gestione effettivo,
       // non su quello (eventualmente diverso) inviato dal client.
       const allowedFields = getSpecificFieldsForDepartment(department);
 
-      if (!allowedFields.includes(result.data.specificField)) {
+      if (!allowedFields.includes(input.specificField)) {
         throw new GraphQLError(
           "Specific not valid for this category",
           {
@@ -167,7 +159,7 @@ export const categoryMutations = {
     }
 
     return prisma.ticketCategory.create({
-      data: { ...result.data, department },
+      data: { ...input, department },
     });
   },
 
@@ -180,12 +172,7 @@ export const categoryMutations = {
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
-    const result = UpdateTicketCategorySchema.safeParse(args.input);
-    if (!result.success) {
-      throw new GraphQLError("Invalid input", {
-        extensions: { code: "BAD_USER_INPUT", issues: result.error.flatten() },
-      });
-    }
+    const input = parseOrThrow(UpdateTicketCategorySchema, args.input);
 
     const existing = await prisma.ticketCategory.findUnique({
       where: { id: args.id },
@@ -200,9 +187,9 @@ export const categoryMutations = {
     // del proprio reparto, SYSTEM_ADMIN tutte.
     assertCanManageTicketCategory(ability, "update", existing);
 
-    if (result.data.specificField) {
+    if (input.specificField) {
       const allowedFields = getSpecificFieldsForDepartment(existing.department);
-      if (!allowedFields.includes(result.data.specificField)) {
+      if (!allowedFields.includes(input.specificField)) {
         throw new GraphQLError("Specifica non valida per il dipartimento della categoria", {
           extensions: { code: "BAD_USER_INPUT" },
         });
@@ -212,7 +199,7 @@ export const categoryMutations = {
     return prisma.ticketCategory.update({
       where: { id: args.id },
       data: {
-        ...result.data,
+        ...input,
         updatedAt: new Date(),
         updatedBy: session.userId,
       },
@@ -228,14 +215,9 @@ export const categoryMutations = {
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
-    const result = UpdateCategorySchema.safeParse(args.input);
-    if (!result.success) {
-      throw new GraphQLError("Invalid input", {
-        extensions: { code: "BAD_USER_INPUT", issues: result.error.flatten() },
-      });
-    }
+    const input = parseOrThrow(UpdateCategorySchema, args.input);
 
-    const { accessGrants, ...patch } = result.data;
+    const { accessGrants, ...patch } = input;
     const hasAccessGrants = accessGrants !== undefined;
 
     const existing = await prisma.ticketCategory.findUnique({
@@ -350,13 +332,7 @@ export const categoryMutations = {
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
-    const result = CreateTicketCategoryAccessSchema.safeParse(args.input);
-    if (!result.success) {
-      throw new GraphQLError("Invalid input", {
-        extensions: { code: "BAD_USER_INPUT", issues: result.error.flatten() },
-      });
-    }
-    const input = result.data;
+    const input = parseOrThrow(CreateTicketCategoryAccessSchema, args.input);
 
     const category = await prisma.ticketCategory.findUnique({
       where: { id: input.categoryId },

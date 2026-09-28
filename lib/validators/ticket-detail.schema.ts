@@ -33,21 +33,16 @@ function withUpdateTicketRefinements<T extends ReturnType<typeof updateTicketBas
         });
       }
 
-      // La riapertura (CLOSED -> REOPENED) richiede sempre un motivo.
-      // Il resolver ricontrolla comunque (REOPEN_REASON_REQUIRED) come difesa
-      // in profondità, perché qui vediamo solo l'input e non lo status a DB.
-      if (data.status === "REOPENED" && !data.reopenReason) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Il motivo della riapertura è obbligatorio quando il ticket viene riaperto",
-          path: ["reopenReason"],
-        });
-      }
+      // Il controllo sul passato non si applica quando il ticket viene chiuso,
+      // rifiutato o riaperto: in questi casi la dueDate è quella della vita
+      // precedente del ticket e può essere già scaduta. In riapertura verrà
+      // ricalcolata dal backend quando il tecnico passerà a IN_PROGRESS.
+      const skipDueDatePastCheck =
+        data.status === "CLOSED" ||
+        data.status === "REFUSED" ||
+        data.status === "REOPENED";
 
-      // Durante la riapertura (CLOSED -> REOPENED) la dueDate può essere già
-      // scaduta: è quella della vita precedente del ticket, e verrà ricalcolata
-      // dal backend quando il tecnico passerà a IN_PROGRESS.
-      if (data.dueDate !== undefined && data.status !== "REOPENED") {
+      if (data.dueDate !== undefined && !skipDueDatePastCheck) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -58,6 +53,17 @@ function withUpdateTicketRefinements<T extends ReturnType<typeof updateTicketBas
             path: ["dueDate"],
           });
         }
+      }
+
+      // La riapertura (CLOSED -> REOPENED) richiede sempre un motivo.
+      // Il resolver ricontrolla comunque (REOPEN_REASON_REQUIRED) come difesa
+      // in profondità, perché qui vediamo solo l'input e non lo status a DB.
+      if (data.status === "REOPENED" && !data.reopenReason) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Il motivo della riapertura è obbligatorio quando il ticket viene riaperto",
+          path: ["reopenReason"],
+        });
       }
 
       if (data.categoryId === null && data.specificValue !== undefined) {

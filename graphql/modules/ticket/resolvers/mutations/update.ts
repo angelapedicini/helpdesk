@@ -12,6 +12,7 @@ import { assertCanUpdateTicket } from "@/lib/casl/abilities/ticket/guards";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
 import { getSpecificMapping, getFieldsForTable } from "./specific-field-config";
+import { parseOrThrow } from "@/graphql/validate";
 
 export async function updateTicket(
   _parent: unknown,
@@ -25,17 +26,12 @@ export async function updateTicket(
   const ability = defineAbility(session);
   const prisma = await getPrisma();
 
-  const result = UpdateTicketSchema.safeParse(args.input);
-  if (!result.success) {
-    throw new GraphQLError("Invalid input", {
-      extensions: { code: "BAD_USER_INPUT", issues: result.error.flatten() },
-    });
-  }
-  const input = result.data;
+  const input = parseOrThrow(UpdateTicketSchema, args.input);
 
   // ============================================================
   // 2. LOAD EXISTING TICKET
   // ============================================================
+  //gli include servono in caso di cambio categoria o specializzazione
   const existing = await prisma.ticket.findUnique({
     where: { id: args.id },
     include: {
@@ -74,6 +70,9 @@ export async function updateTicket(
   //
   // Le due variabili sono condivise anche con la sezione 8, dove decidiamo
   // se calcolare un default automatico per la dueDate.
+
+  //mio commento, qui si fa così xk da casl non sappiamo se input contiene o meno istruzione diverse dal calcolo fatto con la funzione
+  //quindi il controllo deve per forza essere fatto qui.
   const isAlreadyInProgress = existing.status === "IN_PROGRESS";
   const isTransitioningToInProgress =
     (existing.status === "ASSIGNED" || existing.status === "REOPENED") &&
@@ -93,6 +92,8 @@ export async function updateTicket(
   // - input.categoryId === undefined -> la categoria non cambia, resta quella esistente
   // - input.categoryId === null      -> il ticket viene portato a "nessuna categoria"
   // - input.categoryId === <id>      -> nuova categoria, va validata come consentita per l'utente
+
+  //questo pezzo da rifare come prima
   let targetCategory: Awaited<ReturnType<typeof getAllowedCategories>>[number] | null = existing.category;
 
   if (input.categoryId !== undefined) {
@@ -119,6 +120,7 @@ export async function updateTicket(
   // Include: validazione utente assegnato, check specializzazione,
   // auto-assegnazione per cambio categoria, e la transizione di stato
   // automatica che ne consegue (OPEN -> ASSIGNED).
+  //--questo teoricamente serve a cambiare assegnatario quando si cambia la categoria in stato assigned per employee
   if (input.assignedToId !== undefined && input.assignedToId !== null) {
     const assignee = await prisma.user.findUnique({ where: { id: input.assignedToId } });
     if (!assignee) {
@@ -144,6 +146,9 @@ export async function updateTicket(
     }
   }
 
+  //caso speciale
+  //questo serve per quando admin non inserisce una categoria ma solo un nuovo assegnatario
+  //quindi bisogna settare assigned da be.
   let status = input.status;
   let assignedToId = input.assignedToId;
 
@@ -155,6 +160,7 @@ export async function updateTicket(
     status = "ASSIGNED";
   }
 
+  //qui invece il caso inverso. admin seleziona la categoria senza assegnatario quini si usa la funzione auto assign e si setta lo stato
   if (input.categoryId !== undefined && input.categoryId !== null && input.assignedToId === undefined) {
     assignedToId = await autoAssign(prisma, input.categoryId, existing.createdById);
     status = "ASSIGNED";

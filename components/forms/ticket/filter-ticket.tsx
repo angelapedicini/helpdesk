@@ -61,20 +61,23 @@ export default function FilterTicketForm({
     const { registerReset, resetAll } = useResetRegistry();
 
     const {
-        control,
-        handleSubmit,
-        reset,
+        control, handleSubmit, reset,
         formState: { errors, isSubmitting },
     } = useForm<FilterTicketInput, unknown, FilterTicketOutput>({
         resolver: zodResolver(FilterTicketSchema),
+        defaultValues: defaultValues ?? {},
     });
 
-    // Sincronizza il form con il filtro applicato dalla pagina (chip
-    // in TicketAlerts): il filtro resta unico, sidebar e chip mostrano
-    // sempre lo stesso stato.
     useEffect(() => {
-        reset(defaultValues);
+        // mai reset(undefined): significherebbe "torna ai vecchi default"
+        reset(defaultValues ?? {});
     }, [defaultValues, reset]);
+
+    const handleReset = () => {
+        reset({});        // vuoto esplicito, e diventa il nuovo default
+        resetAll();
+        onReset?.();
+    };
 
     const [searchUsers, { loading: loadingUsers }] =
         useLazyQuery(SEARCH_USERS);
@@ -138,12 +141,6 @@ export default function FilterTicketForm({
         color: TICKET_PRIORITY_CONFIG[id].color,
     }));
 
-    const handleReset = () => {
-        reset();
-        resetAll();
-        onReset?.();
-    };
-
     function submit(values: FilterTicketOutput) {
         onApply(values);
     }
@@ -182,236 +179,236 @@ export default function FilterTicketForm({
                     </>
                 }
             >
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                }}
-            >
-                <AppSelect
-                    name="priority"
-                    label="Priorità"
-                    control={control}
-                    options={priorityOptions}
-                />
-
-                <AppSelect
-                    name="categoryId"
-                    label="Categoria"
-                    control={control}
-                    options={categoryOptions}
-                />
-
-                <AppSelect
-                    name="status"
-                    label="Stato"
-                    control={control}
-                    options={statusOptions}
-                />
-
-                {scope !== "MINE" && (
-                    <SearchInput
-                        name="createdById"
-                        label="Creato da"
-                        control={control}
-                        onSearch={handleCreatedBy}
-                        loading={loadingUsers}
-                        registerReset={registerReset}
-                    />
-                )}
-
-                <SearchInput
-                    name="assignedToId"
-                    label="Assegnato a"
-                    control={control}
-                    onSearch={handleAssignedTo}
-                    loading={loadingUsers}
-                    registerReset={registerReset}
-                />
-
-                {/* FILTRI BOOLEANI */}
                 <Box
                     sx={{
                         display: "flex",
                         flexDirection: "column",
+                        gap: 2,
                     }}
                 >
-                    <Controller
-                        name="overdue"
+                    <AppSelect
+                        name="priority"
+                        label="Priorità"
                         control={control}
-                        render={({ field }) => (
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={field.value ?? false}
-                                        onChange={(e) =>
-                                            field.onChange(
-                                                e.target.checked
-                                                    ? true
-                                                    : undefined
-                                            )
-                                        }
-                                    />
-                                }
-                                label="Solo ticket scaduti"
-                            />
-                        )}
+                        options={priorityOptions}
                     />
 
-                    <Controller
-                        name="unassigned"
+                    <AppSelect
+                        name="categoryId"
+                        label="Categoria"
                         control={control}
-                        render={({ field }) => (
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={field.value ?? false}
-                                        onChange={(e) =>
-                                            field.onChange(
-                                                e.target.checked
-                                                    ? true
-                                                    : undefined
-                                            )
-                                        }
-                                    />
-                                }
-                                label="Solo ticket non assegnati"
-                            />
-                        )}
+                        options={categoryOptions}
                     />
 
-                    <Controller
-                        name="reopened"
+                    <AppSelect
+                        name="status"
+                        label="Stato"
                         control={control}
-                        render={({ field }) => (
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={field.value ?? false}
-                                        onChange={(e) =>
-                                            field.onChange(
-                                                e.target.checked
-                                                    ? true
-                                                    : undefined
-                                            )
-                                        }
-                                    />
-                                }
-                                label="Solo riaperti"
-                            />
-                        )}
+                        options={statusOptions}
                     />
 
-                     <Controller
-                        name="firstResponseOverdue"
-                        control={control}
-                        render={({ field }) => (
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={field.value ?? false}
-                                        onChange={(e) =>
-                                            field.onChange(
-                                                e.target.checked
-                                                    ? true
-                                                    : undefined
-                                            )
-                                        }
-                                    />
-                                }
-                                label="Solo prima risposta scaduta"
-                            />
-                        )}
-                    />
-
-                     <Controller
-                        name="firstResponseDueSoon"
-                        control={control}
-                        render={({ field }) => (
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={field.value ?? false}
-                                        onChange={(e) =>
-                                            field.onChange(
-                                                e.target.checked
-                                                    ? true
-                                                    : undefined
-                                            )
-                                        }
-                                    />
-                                }
-                                label="Solo prima risposta in scadenza (3 gg)"
-                            />
-                        )}
-                    />
-
-                     <Controller
-                        name="dueDateDueSoon"
-                        control={control}
-                        render={({ field }) => (
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={field.value ?? false}
-                                        onChange={(e) =>
-                                            field.onChange(
-                                                e.target.checked
-                                                    ? true
-                                                    : undefined
-                                            )
-                                        }
-                                    />
-                                }
-                                label="Solo scadenze entro 3 gg"
-                            />
-                        )}
-                    />
-                </Box>
-
-                
-
-                {/* INTERVALLO DATA SCADENZA */}
-                <Controller
-                    name="dueDateFrom"
-                    control={control}
-                    render={({ field }) => (
-                        <DatePicker
-                            label="Scadenza da"
-                            value={toPickerValue(field.value)}
-                            onChange={(date) =>
-                                field.onChange(
-                                    toCalendarUTCDate(date)
-                                )
-                            }
-                        // slotProps={{
-                        //     textField: {
-                        //         fullWidth: true,
-                        //         error: !!errors.dueDateFrom,
-                        //         helperText:
-                        //             errors.dueDateFrom?.message,
-                        //     },
-                        // }}
+                    {scope !== "MINE" && (
+                        <SearchInput
+                            name="createdById"
+                            label="Creato da"
+                            control={control}
+                            onSearch={handleCreatedBy}
+                            loading={loadingUsers}
+                            registerReset={registerReset}
                         />
                     )}
-                />
 
-                <Controller
-                    name="dueDateTo"
-                    control={control}
-                    render={({ field }) => (
-                        <DatePicker
-                            label="Scadenza a"
-                            value={toPickerValue(field.value)}
-                            onChange={(date) =>
-                                field.onChange(
-                                    toCalendarUTCDate(date)
-                                )
-                            }
+                    <SearchInput
+                        name="assignedToId"
+                        label="Assegnato a"
+                        control={control}
+                        onSearch={handleAssignedTo}
+                        loading={loadingUsers}
+                        registerReset={registerReset}
+                    />
+
+                    {/* FILTRI BOOLEANI */}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                        }}
+                    >
+                        <Controller
+                            name="overdue"
+                            control={control}
+                            render={({ field }) => (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={field.value ?? false}
+                                            onChange={(e) =>
+                                                field.onChange(
+                                                    e.target.checked
+                                                        ? true
+                                                        : undefined
+                                                )
+                                            }
+                                        />
+                                    }
+                                    label="Solo ticket scaduti"
+                                />
+                            )}
                         />
-                    )}
-                />
+
+                        <Controller
+                            name="unassigned"
+                            control={control}
+                            render={({ field }) => (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={field.value ?? false}
+                                            onChange={(e) =>
+                                                field.onChange(
+                                                    e.target.checked
+                                                        ? true
+                                                        : undefined
+                                                )
+                                            }
+                                        />
+                                    }
+                                    label="Solo ticket non assegnati"
+                                />
+                            )}
+                        />
+
+                        <Controller
+                            name="reopened"
+                            control={control}
+                            render={({ field }) => (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={field.value ?? false}
+                                            onChange={(e) =>
+                                                field.onChange(
+                                                    e.target.checked
+                                                        ? true
+                                                        : undefined
+                                                )
+                                            }
+                                        />
+                                    }
+                                    label="Solo riaperti"
+                                />
+                            )}
+                        />
+
+                        <Controller
+                            name="firstResponseOverdue"
+                            control={control}
+                            render={({ field }) => (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={field.value ?? false}
+                                            onChange={(e) =>
+                                                field.onChange(
+                                                    e.target.checked
+                                                        ? true
+                                                        : undefined
+                                                )
+                                            }
+                                        />
+                                    }
+                                    label="Solo prima risposta scaduta"
+                                />
+                            )}
+                        />
+
+                        <Controller
+                            name="firstResponseDueSoon"
+                            control={control}
+                            render={({ field }) => (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={field.value ?? false}
+                                            onChange={(e) =>
+                                                field.onChange(
+                                                    e.target.checked
+                                                        ? true
+                                                        : undefined
+                                                )
+                                            }
+                                        />
+                                    }
+                                    label="Solo prima risposta in scadenza (3 gg)"
+                                />
+                            )}
+                        />
+
+                        <Controller
+                            name="dueDateDueSoon"
+                            control={control}
+                            render={({ field }) => (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={field.value ?? false}
+                                            onChange={(e) =>
+                                                field.onChange(
+                                                    e.target.checked
+                                                        ? true
+                                                        : undefined
+                                                )
+                                            }
+                                        />
+                                    }
+                                    label="Solo scadenze entro 3 gg"
+                                />
+                            )}
+                        />
+                    </Box>
+
+
+
+                    {/* INTERVALLO DATA SCADENZA */}
+                    <Controller
+                        name="dueDateFrom"
+                        control={control}
+                        render={({ field }) => (
+                            <DatePicker
+                                label="Scadenza da"
+                                value={toPickerValue(field.value)}
+                                onChange={(date) =>
+                                    field.onChange(
+                                        toCalendarUTCDate(date)
+                                    )
+                                }
+                            // slotProps={{
+                            //     textField: {
+                            //         fullWidth: true,
+                            //         error: !!errors.dueDateFrom,
+                            //         helperText:
+                            //             errors.dueDateFrom?.message,
+                            //     },
+                            // }}
+                            />
+                        )}
+                    />
+
+                    <Controller
+                        name="dueDateTo"
+                        control={control}
+                        render={({ field }) => (
+                            <DatePicker
+                                label="Scadenza a"
+                                value={toPickerValue(field.value)}
+                                onChange={(date) =>
+                                    field.onChange(
+                                        toCalendarUTCDate(date)
+                                    )
+                                }
+                            />
+                        )}
+                    />
                 </Box>
             </FormLayout>
         </Box>

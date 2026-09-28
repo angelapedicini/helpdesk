@@ -10,6 +10,20 @@ import type { TicketScope, TicketSortField } from "@/graphql-generated/schema";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanReadTicket } from "@/lib/casl/abilities/ticket/guards";
 import { assertCanReadTicketScope } from "@/lib/casl/abilities/ticket-scope/guards";
+import { FilterTicketSchema } from "@/lib/validators/ticket-detail.schema";
+import { parseOrThrow, stripNulls } from "@/graphql/validate";
+
+const TICKET_INCLUDE = {
+  category: true,
+  createdBy: true,
+  assignedTo: true,
+  lastUpdatedBy: true,
+  itSpecific: true,
+  hrSpecific: true,
+  financeSpecific: true,
+  supportSpecific: true,
+  logisticSpecific: true,
+} satisfies Prisma.TicketInclude;
 
 export const ticketQueries = {
   tickets: async (
@@ -18,7 +32,7 @@ export const ticketQueries = {
       first?: number;
       after?: string;
       orderBy?: SortArg<TicketSortField>;
-      filter?: unknown;
+      filter?: Record<string, unknown> | null;
       scope?: TicketScope;
     },
     context: GraphQLContext
@@ -27,6 +41,7 @@ export const ticketQueries = {
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
+    const filter = parseOrThrow(FilterTicketSchema, stripNulls(args.filter));
 
     const orderBy = toPrismaOrderBy<TicketSortField, Prisma.TicketOrderByWithRelationInput>(
       args.orderBy,
@@ -40,7 +55,7 @@ export const ticketQueries = {
       AND: [
         accessibleBy(ability, "read").ofType("Ticket"),
         buildScopeWhere(scope, session),
-        buildTicketWhere(args.filter),
+        buildTicketWhere(filter),
       ],
     };
 
@@ -51,18 +66,7 @@ export const ticketQueries = {
           skip,
           cursor,
           where,
-          include: {
-            category: true,
-            createdBy: true,
-            assignedTo: true,
-            lastUpdatedBy: true,
-
-            itSpecific: true,
-            hrSpecific: true,
-            financeSpecific: true,
-            supportSpecific: true,
-            logisticSpecific: true,
-          },
+          include: TICKET_INCLUDE,
           orderBy,
         }),
     });
@@ -79,23 +83,11 @@ export const ticketQueries = {
 
     const existing = await prisma.ticket.findUnique({
       where: { id: args.id },
-      include: {
-        category: true,
-        createdBy: true,
-        assignedTo: true,
-        lastUpdatedBy: true,
-
-        itSpecific: true,
-        hrSpecific: true,
-        financeSpecific: true,
-        supportSpecific: true,
-        logisticSpecific: true,
-      },
+      include: TICKET_INCLUDE,
     });
 
-    // Ticket inesistente: nessuna informazione sul motivo (stesso comportamento
-    // di prima del check). Solo se il ticket esiste viene applicato il controllo
-    // di autorizzazione alla lettura.
+    // Ticket inesistente: nessuna informazione sul motivo. Solo se il
+    // ticket esiste viene applicato il controllo di autorizzazione.
     if (!existing) {
       return null;
     }
@@ -128,13 +120,9 @@ export const ticketQueries = {
       ],
     };
 
-    const exceptionFilters = {
-      firstResponseOverdue: { firstResponseOverdue: true },
-      dueDateOverdue: { overdue: true },
-      reopened: { reopened: true },
-      firstResponseDueSoon: { firstResponseDueSoon: true },
-      dueDateDueSoon: { dueDateDueSoon: true },
-    } as const;
+    // Filtri costanti e tipizzati: nessun parse, TypeScript controlla le chiavi.
+    const count = (filter: Parameters<typeof buildTicketWhere>[0]) =>
+      prisma.ticket.count({ where: { AND: [baseWhere, buildTicketWhere(filter)] } });
 
     const [
       firstResponseOverdue,
@@ -142,15 +130,13 @@ export const ticketQueries = {
       reopened,
       firstResponseDueSoon,
       dueDateDueSoon,
-    ] = await Promise.all(
-      Object.values(exceptionFilters).map((filter) =>
-        prisma.ticket.count({
-          where: {
-            AND: [baseWhere, buildTicketWhere(filter)],
-          },
-        })
-      )
-    );
+    ] = await Promise.all([
+      count({ firstResponseOverdue: true }),
+      count({ overdue: true }),
+      count({ reopened: true }),
+      count({ firstResponseDueSoon: true }),
+      count({ dueDateDueSoon: true }),
+    ]);
 
     return {
       firstResponseOverdue,

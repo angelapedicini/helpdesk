@@ -3,7 +3,7 @@
 import type { Prisma } from "@/app/generated/prisma/client";
 import { GraphQLError } from "graphql/error";
 import { AccessTokenPayload } from "@/lib/auth/jwt";
-import { FilterTicketSchema } from "@/lib/validators/ticket-detail.schema";
+import { FilterTicketOutput, FilterTicketSchema } from "@/lib/validators/ticket-detail.schema";
 import { alertDueSoonHorizon } from "@/lib/ticket/dueDate";
 import type { TicketScope, TicketSortField } from "@/graphql-generated/schema";
 import { defineAbility } from "@/lib/casl/defineAbility";
@@ -27,24 +27,10 @@ export const TICKET_SORT_FIELD_MAP: Record<TicketSortField, string> = {
 };
 
 export function buildTicketWhere(
-  rawFilter: unknown
+  filter: FilterTicketOutput = {}
 ): Prisma.TicketWhereInput {
-  if (!rawFilter) return {};
-
-  const result = FilterTicketSchema.safeParse(rawFilter);
-
-  if (!result.success) {
-    throw new GraphQLError("Filtro non valido", {
-      extensions: {
-        code: "BAD_USER_INPUT",
-        issues: result.error.flatten(),
-      },
-    });
-  }
-
-  const filter = result.data;
-
   const conditions: Prisma.TicketWhereInput[] = [];
+
 
   // Finestra "in scadenza" (ora + ALERT_DUE_SOON_DAYS): usata insieme dai
   // filtri firstResponseDueSoon e dueDateDueSoon.

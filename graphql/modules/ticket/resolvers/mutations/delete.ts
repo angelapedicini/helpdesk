@@ -16,6 +16,9 @@ export async function deleteTicket(
   const ability = defineAbility(session);
   const prisma = await getPrisma();
 
+  // Gli include servono a buildTicketHistoryData (category, utenti) e a leggere
+  // il valore specifico da salvare in history. La cancellazione delle righe
+  // *Specific è gestita da onDelete: Cascade, non serve caricarle per quello.
   const existing = await prisma.ticket.findUnique({
     where: { id: args.id },
     include: {

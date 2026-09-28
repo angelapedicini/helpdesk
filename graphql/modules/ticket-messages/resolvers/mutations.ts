@@ -1,8 +1,14 @@
+// graphql/modules/ticket-message/resolvers/mutations.ts
 import { getPrisma } from "@/lib/prisma/index";
 import type { GraphQLContext } from "@/graphql/context";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { GraphQLError } from "graphql/error";
-import { assertCanCreateTicketMessage, assertCanDeleteTicketMessage } from "@/lib/casl/abilities/ticket/guards";
+import {
+    assertCanCreateTicketMessage,
+    assertCanDeleteTicketMessage,
+} from "@/lib/casl/abilities/ticket/guards";
+import { parseOrThrow } from "@/graphql/validate";
+import { TicketMessageFormSchema } from "@/lib/validators/ticket-message.schema";
 
 export const ticketMessageMutations = {
     createTicketMessage: async (
@@ -14,17 +20,16 @@ export const ticketMessageMutations = {
         const ability = defineAbility(session);
         const prisma = await getPrisma();
 
-
-        if (!args.input.content?.trim()) {
-            throw new GraphQLError("The message cannot be empty", {
-                extensions: { code: "EMPTY_MESSAGE" },
-            });
-        }
+        // Stesso schema del form: trim, non vuoto, lunghezza massima.
+        // ticketId non fa parte dello schema, resta quello tipizzato da GraphQL (Int!).
+        const { content } = parseOrThrow(TicketMessageFormSchema, {
+            content: args.input.content,
+        });
 
         const ticket = await prisma.ticket.findFirst({
             where: {
                 id: args.input.ticketId,
-                // deletedAt: null 
+                // deletedAt: null
             },
             select: {
                 id: true,
@@ -40,19 +45,11 @@ export const ticketMessageMutations = {
             throw new GraphQLError("Ticket not found", { extensions: { code: "NOT_FOUND" } });
         }
 
-        console.log({
-            sessionUserId: session.userId,
-            ticketCreatedById: ticket.createdById,
-            ticketAssignedToId: ticket.assignedToId,
-            ticketStatus: ticket.status,
-            ticketDepartment: ticket.ticketDepartment,
-        });
-
         assertCanCreateTicketMessage(ability, ticket);
 
         return prisma.ticketMessage.create({
             data: {
-                content: args.input.content.trim(),
+                content, // già trimmato dallo schema
                 ticketId: ticket.id,
                 authorId: session.userId,
             },
@@ -89,7 +86,6 @@ export const ticketMessageMutations = {
         const session = context.requireSession();
         const ability = defineAbility(session);
         const prisma = await getPrisma();
-
 
         const existing = await prisma.ticketMessage.findUnique({
             where: { id: args.id },
