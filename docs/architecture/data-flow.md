@@ -31,22 +31,34 @@ route handler non contiene logica, il resolver contiene il caso d'uso, Prisma
 esegue. L'ultima freccia è chiusa: quello che il resolver sbaglia torna
 indietro come `GraphQLError` e lo gestisce il link, non il componente.
 
-## Backend — `graphql/server.ts`
+## Backend — il server GraphQL e l'API
 
-Il server è cinque righe: registra `typeDefs` e `resolver`, e basta.
+Il server GraphQL viene esposto tramite un Route Handler di Next.js (App
+Router), all'endpoint `/api/graphql`. L'integrazione è realizzata con il
+pacchetto `@as-integrations/next`, la cui funzione
+`startServerAndCreateNextHandler` avvia l'istanza di Apollo Server e produce
+un handler compatibile con le API Web `Request`/`Response` di Next. Lo stesso
+handler viene riesportato sia come `POST`, che è il metodo usato dai client per
+inviare query e mutation, sia come `GET`, necessario per le query passate
+via URL e per l'accesso ad Apollo Sandbox in fase di sviluppo. In questo modo
+il backend GraphQL vive nella stessa applicazione del frontend, senza
+richiedere un server separato: stesso processo, stesso deploy, stessa
+configurazione.
+
+L'istanza di Apollo Server è definita in `graphql/server.ts` e registra
+soltanto lo schema e i resolver, nient'altro:
 
 ```ts
 export const server = new ApolloServer({ typeDefs, resolvers });
 ```
 
-**Non ha una funzione `context`.** È una scelta, non una semplificazione: la
-sessione viene riletta e verificata dentro ogni resolver, il che tiene il
-fattore auth indipendente da come sarà trasporto. Il ragionamento è in
-[auth.md](auth.md).
-
-`app/api/graphql/route.ts` è tredici righe e delega a
-`startServerAndCreateNextHandler` di `@as-integrations/next`, che adatta il ciclo
-di vita di Apollo Server a quello di Next. Non c'è logica dentro.
+**Non c'è una funzione `context`.** È una scelta progettuale, non una
+semplificazione: la sessione viene rilessa e verificata dentro ogni resolver
+attraverso `requireSession()`, il che tiene il fattore autenticazione
+indipendente dal modo in cui la richiesta arriva al server. Il resolver non
+sa da quale trasporto è venuta la chiamata, e questo permette di cambiare
+l'infrastruttura sottostante senza toccare la logica di auth. Il ragionamento
+completo è in [auth.md](auth.md).
 
 ### Lo schema è modulare
 
