@@ -1,5 +1,5 @@
 import { getPrisma } from "@/lib/prisma/index";
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql/error";
 import { accessibleBy } from "@casl/prisma";
 import {
@@ -11,9 +11,10 @@ import { defineAbility } from "@/lib/casl/defineAbility";
 export const ticketAdminNotificationMutations = {
     createTicketNotificationSubscription: async (
         _parent: unknown,
-        args: { ticketId: number }
+        args: { ticketId: number },
+        context: GraphQLContext
     ) => {
-        const session = await requireSession();
+        const session = context.requireSession();
         const ability = defineAbility(session);
         assertCanCreateTicketNotification(ability, {
             userId: session.userId,
@@ -52,9 +53,10 @@ export const ticketAdminNotificationMutations = {
 
     deleteTicketNotificationSubscription: async (
         _parent: unknown,
-        args: { ticketId: number }
+        args: { ticketId: number },
+        context: GraphQLContext
     ) => {
-        const session = await requireSession();
+        const session = context.requireSession();
         const ability = defineAbility(session);
         assertCanDeleteTicketNotification(ability, {
             userId: session.userId,

@@ -98,9 +98,7 @@ export default function TicketsPage() {
 
     const deleteModal = useModalState<TicketFieldsFragment>();
 
-    const [deleteTicket] = useMutation(DELETE_TICKET, {
-        refetchQueries: [{ query: GET_TICKETS, variables: queryVariables }],
-    });
+    const [deleteTicket] = useMutation(DELETE_TICKET);
 
     // const handleConfirmDelete = async () => {}
 
@@ -111,6 +109,7 @@ export default function TicketsPage() {
             variables: { id: deleteModal.value.id },
             context: { successMessage: "Ticket eliminato con successo." },
             refetchQueries: [
+                { query: GET_TICKETS, variables: queryVariables },
                 { query: GET_DELETED_TICKETS, variables: queryVariables },
             ],
         });

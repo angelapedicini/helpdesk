@@ -1,5 +1,5 @@
 import { getPrisma } from "@/lib/prisma/index";
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { accessibleBy } from "@casl/prisma";
@@ -7,9 +7,10 @@ import { accessibleBy } from "@casl/prisma";
 export const ticketMessageQueries = {
   messages: async (
     _parent: unknown,
-    args: { ticketId: number; first?: number; after?: string }
+    args: { ticketId: number; first?: number; after?: string },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 

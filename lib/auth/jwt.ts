@@ -20,7 +20,7 @@ export async function signAccessToken(payload: AccessTokenPayload) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("10m")
+    .setExpirationTime("10s")
     .sign(accessSecret);
 }
 
@@ -37,11 +37,15 @@ export async function verifyAccessToken(token: string): Promise<AccessTokenPaylo
 
 //creazione effettiva di refresh token 
 //il payload è solo number per id utente
+//il jti aggiunge un identificativo casuale: senza, due token dello stesso
+//utente emessi nello stesso secondo sarebbero identici e il vincolo unico
+//sul token farebbe fallire il secondo
 //gli header si criptano con alg "HS256" e il segreto refreshSecret
 //il resto è self explanatory
 export async function signRefreshToken(userId: number) {
   return new SignJWT({ userId })
     .setProtectedHeader({ alg: "HS256" })
+    .setJti(crypto.randomUUID())
     .setIssuedAt()
     .setExpirationTime("1d")
     .sign(refreshSecret);

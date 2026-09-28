@@ -17,9 +17,9 @@ Qui si documentano solo le scelte di questo progetto.
 ```mermaid
 flowchart TD
   A["Componente React<br/>useQuery / useMutation"] --> C["Apollo Client<br/>notificationLink → loadingLink → authRefreshLink → httpLink"]
-  C -->|"POST /api/graphql"| R["app/api/graphql/route.ts<br/>espone GET e POST, delega tutto"]
+  C -->|"POST /api/graphql"| R["app/api/graphql/route.ts<br/>espone GET e POST, crea il context, delega tutto"]
   R --> D["Apollo Server<br/>graphql/server.ts"]
-  D --> F["resolver<br/>requireSession() · defineAbility() · getPrisma()"]
+  D --> F["resolver<br/>context.requireSession() · defineAbility() · getPrisma()"]
   F --> P["Prisma → Postgres"]
   F --> E["GraphQLError<br/>extensions.code"]
   E --> C
@@ -46,19 +46,39 @@ richiedere un server separato: stesso processo, stesso deploy, stessa
 configurazione.
 
 L'istanza di Apollo Server è definita in `graphql/server.ts` e registra
-soltanto lo schema e i resolver, nient'altro:
+soltanto lo schema e i resolver:
 
 ```ts
-export const server = new ApolloServer({ typeDefs, resolvers });
+export const server = new ApolloServer<GraphQLContext>({
+  typeDefs,
+  resolvers,
+});
 ```
 
-**Non c'è una funzione `context`.** È una scelta progettuale, non una
-semplificazione: la sessione viene rilessa e verificata dentro ogni resolver
-attraverso `requireSession()`, il che tiene il fattore autenticazione
-indipendente dal modo in cui la richiesta arriva al server. Il resolver non
-sa da quale trasporto è venuta la chiamata, e questo permette di cambiare
-l'infrastruttura sottostante senza toccare la logica di auth. Il ragionamento
-completo è in [auth.md](auth.md).
+Da Apollo Server 5 il `context` non è più un'opzione del costruttore ma
+un parametro dell'handler, e il progetto lo sfrutta per costruirlo una volta per
+operazione. `createContext()` in `graphql/context.ts` legge il cookie
+`access_token`, chiama `verifyAccessToken()` e mette il risultato in
+`context.session`:
+
+```ts
+export type GraphQLContext = {
+  session: AccessTokenPayload | null;
+  requireSession: () => AccessTokenPayload;
+};
+```
+
+La fonte è **solo il cookie**: `/api/graphql` è in `PUBLIC_PATHS`, quindi l'identità
+arriva dal cookie che il browser ha già allegato, e il proxy non ha modo di
+aggiungerci niente. Il context è l'unico posto in cui viene risolta, e i resolver
+non rileggono mai i cookie.
+
+**`session` può essere `null`, e va controllato.** `requireSession()` fa
+esattamente questo: non rilegge i cookie, prende il valore che il context ha già
+risolto e solleva `UNAUTHENTICATED` se manca. Ogni resolver protetto chiama
+`context.requireSession()` per intero, quindi l'obbligo di autenticazione resta in
+testa alla funzione invece di essere ereditato da un parametro che ci si può
+dimenticare. Il ragionamento è in [auth.md](auth.md).
 
 ### Lo schema è modulare
 
@@ -76,7 +96,7 @@ come `PageInfo` e `SortDirection`.
 Un resolver protetto fa sempre le stesse tre cose, e in quest'ordine:
 
 ```ts
-const session = await requireSession();
+const session = context.requireSession();
 const ability = defineAbility(session);
 const prisma = await getPrisma();
 ```
@@ -85,6 +105,18 @@ La sessione decide **se** la chiamata passa, l'ability decide **quanto** passa,
 Prisma esegue. Quando qualcosa non torna, il resolver non lancia un'eccezione
 qualsiasi: solleva `GraphQLError` con un `extensions.code`, e quel codice è il
 contratto con il frontend. Le regole sono in [AGENTS.md](../../AGENTS.md).
+
+**Nessuna query è pubblica.** Ogni resolver in `queries.ts` chiama
+`context.requireSession()`, e non è una scelta sulla carta: la prima fonte della
+sessione è il cookie, e il cookie lo manda il browser, quindi una query aperta
+servirebbe a chi non ha ancora un access token — cioè a chi non ha ancora fatto il
+login. Le uniche operazioni che restano aperte sono le mutation di auth e demo
+(`login`, `createUser`, `refreshToken`, `logout`, `startDemo`), che per definizione
+non possono chiedere una sessione: servono a ottenerla, o a chiuderla.
+
+Le query che il frontend usa per il montaggio iniziale, come `me` o
+`usersByDepForLogin`, non fanno eccezione: chiedono la sessione come tutte le
+altre.
 
 ### Aggiungere un modulo
 

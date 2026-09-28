@@ -1,14 +1,13 @@
 import { getPrisma } from "@/lib/prisma/index";
-import { getSession, requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { Department, Role } from "@/app/generated/prisma/enums";
 import { Prisma } from "@/app/generated/prisma/client";
 import { accessibleBy } from "@casl/prisma";
 import { defineAbility } from "@/lib/casl/defineAbility";
 
 export const userQueries = {
-  me: async () => {
-    const session = await getSession();
-    if (!session) return null;
+  me: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
+    const session = context.requireSession();
     const prisma = await getPrisma();
 
 
@@ -33,9 +32,10 @@ export const userQueries = {
       role?: Role;
       department?: Department;
       categoryId?: number;
-    }
+    },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
@@ -102,10 +102,10 @@ export const userQueries = {
 
    usersByDepForLogin: async (
     _parent: unknown,
-    args: { department: Department; }
+    args: { department: Department; },
+    context: GraphQLContext
   ) => {
-    const session = await getSession();
-    if (!session) return [];
+    const session = context.requireSession();
     const prisma = await getPrisma();
 
     const users = await prisma.user.findMany({

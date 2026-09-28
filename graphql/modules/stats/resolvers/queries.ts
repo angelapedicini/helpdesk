@@ -1,7 +1,7 @@
 // modules/stats/resolvers/queries.ts
 import { getPrisma } from "@/lib/prisma/index";
 import { Department } from "@/app/generated/prisma/enums";
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { Prisma } from "@/app/generated/prisma/client";
 import { GraphQLError } from "graphql/error";
 import { defineAbility } from "@/lib/casl/defineAbility";
@@ -9,9 +9,10 @@ import { defineAbility } from "@/lib/casl/defineAbility";
 export const statQueries = {
   ticketStatsByDepartment: async (
     _parent: unknown,
-    args: { department?: Department }
+    args: { department?: Department },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
@@ -152,9 +153,10 @@ export const statQueries = {
 
   ticketStatsByTechnician: async (
     _parent: unknown,
-    args: { department?: Department }
+    args: { department?: Department },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 

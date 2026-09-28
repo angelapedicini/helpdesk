@@ -18,9 +18,11 @@ import { NAV_NOTIFICATIONS } from "@/apollo-client/queries/ticket-notification/t
 import { CLEAR_TICKET_NOTIFICATIONS } from "@/apollo-client/queries/ticket-notification/ticket-notification.mutation";
 import { NavLinkItem } from "./types/navlink";
 import NavSidebar from "./sidebar";
-import { useMutation, useQuery } from "@apollo/client/react";
+import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
 import EasyLoginForm from "./forms/user/easyLogin";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { LOGOUT } from "@/apollo-client/queries/auth/logout/logout.mutation";
 import { setNavigate } from "@/apollo-client/apollo-links/navigation";
 import type { ResultOf } from "@graphql-typed-document-node/core";
 
@@ -51,6 +53,17 @@ export default function Navbar({ links }: { links: NavLinkItem[] }) {
   // ticketId visti localmente: nascosti dalla lista finché la query non
   // rifetcha e conferma (lato server) che non ci sono più messaggi non letti
   const [dismissedTicketIds, setDismissedTicketIds] = React.useState<Set<number>>(new Set());
+  const client = useApolloClient();
+  const [logout] = useMutation(LOGOUT);
+
+  const handleLogout = async () => {
+    const result = await logout({});
+    if (result.data?.logout.success) {
+      await client.clearStore();
+      router.replace("/");
+    }
+  };
+
   const toggleDrawer = (newOpen: boolean) => () => setOpen(newOpen);
 
   // AGGIUNTO: registra il router di Next nel modulo di navigazione, così
@@ -154,7 +167,9 @@ export default function Navbar({ links }: { links: NavLinkItem[] }) {
               </IconButton>
             </Box>
 
-            {/* <NavUser /> */}
+            <IconButton color="inherit" onClick={handleLogout} title="Logout">
+              <LogoutIcon />
+            </IconButton>
           </Box>
         </Toolbar>
       </AppBar>

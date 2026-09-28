@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAccessToken } from "@/lib/auth/jwt";
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/auth/cookie-names";
 
 // ---------------------------------------------------------------------------
 // Rate limiting (in-memory, nessuna dipendenza esterna)
@@ -69,11 +70,6 @@ const ROLE_PROTECTED_PATHS: { path: string; roles: string[] }[] = [
   { path: "/stats", roles: ["ADMIN", "SYSTEM_ADMIN"] },
 ];
 
-// path su cui la navbar non deve apparire
-export const NAVBAR_HIDDEN_PATHS = [
-  "/",
-];
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -104,15 +100,6 @@ function handleForbidden(req: NextRequest) {
     return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }
   return NextResponse.redirect(new URL("/dashboard", req.url));
-}
-
-function injectUserHeaders(req: NextRequest, payload: { userId: number; role: string, department: string }) {
-  const requestHeaders = new Headers(req.headers);
-  requestHeaders.set("x-user-id", String(payload.userId));
-  requestHeaders.set("x-user-role", payload.role);
-  requestHeaders.set("x-user-department", payload.department);
-  requestHeaders.set("x-pathname", req.nextUrl.pathname);
-  return requestHeaders;
 }
 
 // Chiama la mutation GraphQL refreshToken al posto del vecchio endpoint REST.
@@ -166,7 +153,7 @@ export async function proxy(req: NextRequest) {
   if (matchesPath(pathname, PUBLIC_PATHS)) {
     // se è già loggato e prova ad andare su login/register → redirect dashboard
     if (pathname === "/login" || pathname === "/register") {
-      const accessToken = req.cookies.get("access_token")?.value;
+      const accessToken = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
       if (accessToken) {
         const payload = await verifyAccessToken(accessToken);
         if (payload) {
@@ -175,21 +162,19 @@ export async function proxy(req: NextRequest) {
       }
     }
 
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.delete("x-user-id");
-    requestHeaders.delete("x-user-role");
-    requestHeaders.delete("x-user-department");
-    requestHeaders.set("x-pathname", pathname);
-    return NextResponse.next({ request: { headers: requestHeaders } });
+    // Nessun header da gestire: l'identità viaggia nei cookie, e su una rotta
+    // pubblica non serve comunque sapere chi è l'utente.
+    return NextResponse.next();
   }
 
   // 2. Verifica o rinnova il token
-  const accessToken = req.cookies.get("access_token")?.value;
+  const accessToken = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   let payload = accessToken ? await verifyAccessToken(accessToken) : null;
   let setCookies: string[] = [];
+  let newAccessToken: string | undefined;
 
   if (!payload) {
-    const refreshToken = req.cookies.get("refresh_token")?.value;
+    const refreshToken = req.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
     if (!refreshToken) return handleUnauthenticated(req);
 
     // al posto della fetch a /api/auth/refresh, chiamiamo la mutation GraphQL
@@ -197,8 +182,8 @@ export async function proxy(req: NextRequest) {
     if (!refreshedCookies) return handleUnauthenticated(req);
 
     setCookies = refreshedCookies;
-    const newAccessToken = setCookies
-      .find((c) => c.startsWith("access_token="))
+    newAccessToken = setCookies
+      .find((c) => c.startsWith(`${ACCESS_TOKEN_COOKIE}=`))
       ?.split(";")[0]
       ?.split("=")[1];
 
@@ -215,9 +200,33 @@ export async function proxy(req: NextRequest) {
     return handleForbidden(req);
   }
 
-  // 4. Inietta headers e prosegui
-  const requestHeaders = injectUserHeaders(req, payload);
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  // 4. Prosegui. L'identità non viene inoltrata in un header: resta nel
+  //    cookie, e chi renderizza la pagina la rilegge da lì.
+
+  let response: NextResponse;
+
+  // Se il token è stato rinnovato, il cookie va rimesso anche nella richiesta:
+  // un proxy può scrivere un cookie solo nella risposta, quindi l'access token
+  // nuovo arriverebbe al browser ma resterebbe invisibile a chi renderizza la
+  // pagina in questo stesso ciclo (il layout protetto, che chiama
+  // getAccessToken()). Gli altri cookie — refresh_token, demo_session_id —
+  // vengono preservati.
+  if (newAccessToken) {
+    const cookies = req.cookies
+      .getAll()
+      .filter((cookie) => cookie.name !== ACCESS_TOKEN_COOKIE)
+      .map((cookie) => `${cookie.name}=${cookie.value}`);
+
+    cookies.push(`${ACCESS_TOKEN_COOKIE}=${newAccessToken}`);
+
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("cookie", cookies.join("; "));
+
+    response = NextResponse.next({ request: { headers: requestHeaders } });
+  } else {
+    // Access token valido: niente da correggere, la richiesta passa intatta.
+    response = NextResponse.next();
+  }
 
   response.headers.set("Cache-Control", "no-store, must-revalidate");
 

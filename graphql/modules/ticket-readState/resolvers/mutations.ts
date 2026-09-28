@@ -1,5 +1,5 @@
 import { getPrisma } from "@/lib/prisma/index";
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { accessibleBy } from "@casl/prisma";
 import { GraphQLError } from "graphql/error";
@@ -7,10 +7,11 @@ import { GraphQLError } from "graphql/error";
 export const ticketReadStateMutations = {
     markTicketMessagesRead: async (
         _parent: unknown,
-        args: { ticketId: number }
+        args: { ticketId: number },
+        context: GraphQLContext
     ) => {
 
-        const session = await requireSession();
+        const session = context.requireSession();
         console.log(">>> MARK READ START", {
             userId: session.userId,
             ticketId: args.ticketId,

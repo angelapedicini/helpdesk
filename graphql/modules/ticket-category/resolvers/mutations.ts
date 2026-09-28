@@ -1,5 +1,5 @@
 // graphql/modules/ticket-category/resolvers/mutations.ts
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql/error";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import {
@@ -123,9 +123,10 @@ async function disableOppositeCategoryAccessGrants(
 export const categoryMutations = {
   createTicketCategory: async (
     _parent: unknown,
-    args: { input: unknown }
+    args: { input: unknown },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const ability = defineAbility(session);
 
     const prisma = await getPrisma();
@@ -172,9 +173,10 @@ export const categoryMutations = {
 
   updateTicketCategory: async (
     _parent: unknown,
-    args: { id: number; input: unknown }
+    args: { id: number; input: unknown },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
@@ -219,9 +221,10 @@ export const categoryMutations = {
 
   updateCategory: async (
     _parent: unknown,
-    args: { id: number; input: unknown }
+    args: { id: number; input: unknown },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
@@ -286,8 +289,12 @@ export const categoryMutations = {
     });
   },
 
-  deleteTicketCategory: async (_parent: unknown, args: { id: number }) => {
-    const session = await requireSession();
+  deleteTicketCategory: async (
+    _parent: unknown,
+    args: { id: number },
+    context: GraphQLContext
+  ) => {
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
@@ -308,8 +315,12 @@ export const categoryMutations = {
     });
   },
 
-  restoreTicketCategory: async (_parent: unknown, args: { id: number }) => {
-    const session = await requireSession();
+  restoreTicketCategory: async (
+    _parent: unknown,
+    args: { id: number },
+    context: GraphQLContext
+  ) => {
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
@@ -330,8 +341,12 @@ export const categoryMutations = {
     });
   },
 
-  createTicketCategoryAccess: async (_parent: unknown, args: { input: unknown }) => {
-    const session = await requireSession();
+  createTicketCategoryAccess: async (
+    _parent: unknown,
+    args: { input: unknown },
+    context: GraphQLContext
+  ) => {
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
@@ -369,8 +384,12 @@ export const categoryMutations = {
     });
   },
 
-  deleteTicketCategoryAccess: async (_parent: unknown, args: { id: number }) => {
-    const session = await requireSession();
+  deleteTicketCategoryAccess: async (
+    _parent: unknown,
+    args: { id: number },
+    context: GraphQLContext
+  ) => {
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
@@ -400,8 +419,12 @@ export const categoryMutations = {
     });
   },
 
-  restoreTicketCategoryAccess: async (_parent: unknown, args: { id: number }) => {
-    const session = await requireSession();
+  restoreTicketCategoryAccess: async (
+    _parent: unknown,
+    args: { id: number },
+    context: GraphQLContext
+  ) => {
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 

@@ -1,11 +1,15 @@
 import { getPrisma } from "@/lib/prisma/index";
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { accessibleBy } from "@casl/prisma";
 
 export const ticketNotificationQueries = {
-  ticketNotifications: async () => {
-    const session = await requireSession();
+  ticketNotifications: async (
+    _parent: unknown,
+    _args: unknown,
+    context: GraphQLContext
+  ) => {
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 

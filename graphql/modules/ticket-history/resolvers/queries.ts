@@ -1,5 +1,5 @@
 import { getPrisma } from "@/lib/prisma/index";
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
 import {
   assertCanReadTicketHistory,
@@ -13,9 +13,10 @@ import type { TicketScope } from "@/graphql-generated/schema";
 export const ticketHistoryQueries = {
   ticketHistory: async (
     _parent: unknown,
-    args: { first?: number; after?: string; filter?: unknown }
+    args: { first?: number; after?: string; filter?: unknown },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const prisma = await getPrisma();
 
 
@@ -44,9 +45,10 @@ export const ticketHistoryQueries = {
 
   ticketHistoryByTicketId: async (
     _parent: unknown,
-    args: { ticketId: number; first?: number; after?: string; filter?: unknown }
+    args: { ticketId: number; first?: number; after?: string; filter?: unknown },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
@@ -91,9 +93,10 @@ export const ticketHistoryQueries = {
       after?: string;
       filter?: unknown;
       scope?: TicketScope;
-    }
+    },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const scope: TicketScope = args.scope ?? "MINE";
     const prisma = await getPrisma();
 

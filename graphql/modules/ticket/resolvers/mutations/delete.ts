@@ -1,14 +1,18 @@
 // modules/ticket/resolvers/mutations/delete.ts
 import { getPrisma } from "@/lib/prisma/index";
 import { buildTicketHistoryData } from "@/lib/ticket/history";
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql/error";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanDeleteTicket } from "@/lib/casl/abilities/ticket/guards";
 import { getSpecificMapping } from "./specific-field-config";
 
-export async function deleteTicket(_parent: unknown, args: { id: number }) {
-  const session = await requireSession();
+export async function deleteTicket(
+  _parent: unknown,
+  args: { id: number },
+  context: GraphQLContext
+) {
+  const session = context.requireSession();
   const ability = defineAbility(session);
   const prisma = await getPrisma();
 

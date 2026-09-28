@@ -2,7 +2,7 @@
 import { getPrisma } from "@/lib/prisma/index";
 import { buildTicketHistoryData } from "@/lib/ticket/history";
 import { syncTicketNotifications } from "@/lib/ticket/notification";
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql/error";
 import { UpdateTicketSchema } from "@/lib/validators/ticket-detail.schema";
 import { validateSpecificValueFormat } from "@/lib/validators/specific-value.schema";
@@ -13,11 +13,15 @@ import { defineAbility } from "@/lib/casl/defineAbility";
 import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
 import { getSpecificMapping, getFieldsForTable } from "./specific-field-config";
 
-export async function updateTicket(_parent: unknown, args: { id: number; input: unknown }) {
+export async function updateTicket(
+  _parent: unknown,
+  args: { id: number; input: unknown },
+  context: GraphQLContext
+) {
   // ============================================================
   // 1. AUTH & INPUT
   // ============================================================
-  const session = await requireSession();
+  const session = context.requireSession();
   const ability = defineAbility(session);
   const prisma = await getPrisma();
 

@@ -1,14 +1,16 @@
 // app/(protected)/layout.tsx
-import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { getPrisma } from "@/lib/prisma";
+import { getAccessToken } from "@/lib/auth/cookies";
+import { verifyAccessToken } from "@/lib/auth/jwt";
 import Navbar from "@/components/navbar";
 import { buildNavLinks } from "@/components/nav-links";
 import { AbilityProvider } from "@/lib/casl/abilityContext";
 import { defineAbility } from "@/lib/casl/defineAbility";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-    const session = await getSession();
+    const token = await getAccessToken();
+    const session = token ? await verifyAccessToken(token) : null;
     if (!session) redirect("/");
 
     const prisma = await getPrisma();

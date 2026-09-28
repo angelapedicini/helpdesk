@@ -1,12 +1,12 @@
 import { getPrisma } from "@/lib/prisma/index";
 import { Prisma } from "@/app/generated/prisma/client";
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { accessibleBy } from "@casl/prisma";
 
 export const ticketReadStateQueries = {
-    unreadTicketMessages: async () => {
-        const session = await requireSession();
+    unreadTicketMessages: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
+        const session = context.requireSession();
         const ability = defineAbility(session);
         const prisma = await getPrisma();
 

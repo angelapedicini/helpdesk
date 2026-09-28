@@ -1,6 +1,6 @@
 // modules/ticket/resolvers/queries.ts
 import { getPrisma } from "@/lib/prisma/index";
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
 import type { Prisma } from "@/app/generated/prisma/client";
 import { SortArg, toPrismaOrderBy } from "@/graphql/sorting/sorting";
@@ -20,9 +20,10 @@ export const ticketQueries = {
       orderBy?: SortArg<TicketSortField>;
       filter?: unknown;
       scope?: TicketScope;
-    }
+    },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
@@ -67,8 +68,12 @@ export const ticketQueries = {
     });
   },
 
-  ticket: async (_parent: unknown, args: { id: number }) => {
-    const session = await requireSession();
+  ticket: async (
+    _parent: unknown,
+    args: { id: number },
+    context: GraphQLContext
+  ) => {
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 
@@ -102,9 +107,10 @@ export const ticketQueries = {
 
   ticketAlerts: async (
     _parent: unknown,
-    args: { scope?: TicketScope }
+    args: { scope?: TicketScope },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 

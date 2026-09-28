@@ -1,14 +1,18 @@
 import { getPrisma } from "@/lib/prisma/index";
 
-import { requireSession } from "@/lib/auth/session";
+import type { AccessTokenPayload } from "@/lib/auth/jwt";
+import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql/error";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanManageSpecialization } from "@/lib/casl/abilities/user/guards";
 
 type PrismaClient = Awaited<ReturnType<typeof getPrisma>>;
 
-async function assertTargetCanBeManaged(prisma: PrismaClient, userId: number) {
-  const session = await requireSession();
+async function assertTargetCanBeManaged(
+  prisma: PrismaClient,
+  session: AccessTokenPayload,
+  userId: number
+) {
   const ability = defineAbility(session);
 
   const target = await prisma.user.findUnique({
@@ -34,13 +38,15 @@ async function assertTargetCanBeManaged(prisma: PrismaClient, userId: number) {
 export const userSpecMutations = {
   removeUserSpecialization: async (
     _parent: unknown,
-    args: { input: { userId: number; categoryId: number } }
+    args: { input: { userId: number; categoryId: number } },
+    context: GraphQLContext
   ) => {
+    const session = context.requireSession();
     const prisma = await getPrisma();
 
     const { userId, categoryId } = args.input;
 
-    await assertTargetCanBeManaged(prisma, userId);
+    await assertTargetCanBeManaged(prisma, session, userId);
 
     try {
       await prisma.userSpecialization.delete({
@@ -59,13 +65,15 @@ export const userSpecMutations = {
 
   addUserSpecialization: async (
     _parent: unknown,
-    args: { input: { userId: number; categoryId: number } }
+    args: { input: { userId: number; categoryId: number } },
+    context: GraphQLContext
   ) => {
+    const session = context.requireSession();
     const prisma = await getPrisma();
 
     const { userId, categoryId } = args.input;
 
-    await assertTargetCanBeManaged(prisma, userId);
+    await assertTargetCanBeManaged(prisma, session, userId);
 
     try {
       const specialization = await prisma.userSpecialization.create({

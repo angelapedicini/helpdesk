@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
-
-//imposta le varibili che vanno nei cookie, con i nomi dei cookie per access e refresh token
-const ACCESS_TOKEN_COOKIE = "access_token";
-const REFRESH_TOKEN_COOKIE = "refresh_token";
-const DEMO_SESSION_COOKIE = "demo_session_id";
+import {
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+  DEMO_SESSION_COOKIE,
+} from "@/lib/auth/cookie-names";
 
 //funzione che setta i cookie di access e refresh token, con le opzioni httpOnly, secure, sameSite, path e maxAge
 export async function setAuthCookies(accessToken: string, refreshToken: string) {
@@ -34,7 +34,7 @@ export async function clearAuthCookies() {
   cookieStore.delete(REFRESH_TOKEN_COOKIE);
 }
 // Legge il valore del cookie access_token.
-// Usata da session.ts per verificare il token nei Server Component e route handler.
+// Usata dal context GraphQL e dal layout protetto per verificare il token nei Server Component e route handler.
 // Il frontend non può accedere a questi cookie — sono HttpOnly.
 export async function getAccessToken(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -42,7 +42,7 @@ export async function getAccessToken(): Promise<string | null> {
 }
 
 // Legge il valore del cookie refresh_token.
-// Usata da session.ts per verificare il token nei Server Component e route handler.
+// Usata dal context GraphQL e dal layout protetto per verificare il token nei Server Component e route handler.
 // Il frontend non può accedere a questi cookie — sono HttpOnly.
 export async function getRefreshToken(): Promise<string | null> {
   const cookieStore = await cookies();

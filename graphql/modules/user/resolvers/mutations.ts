@@ -1,5 +1,5 @@
 // graphql/modules/user/resolvers/mutations.ts
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql/error";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanUpdateUserRole } from "@/lib/casl/abilities/user/guards";
@@ -17,8 +17,12 @@ const USER_SELECT = {
 } as const;
 
 export const userMutations = {
-  updateUserRole: async (_parent: unknown, args: { input: unknown }) => {
-    const session = await requireSession();
+  updateUserRole: async (
+    _parent: unknown,
+    args: { input: unknown },
+    context: GraphQLContext
+  ) => {
+    const session = context.requireSession();
     const ability = defineAbility(session);
     const prisma = await getPrisma();
 

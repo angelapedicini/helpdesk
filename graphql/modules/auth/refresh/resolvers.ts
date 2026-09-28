@@ -30,11 +30,21 @@ export const refreshResolvers = {
         include: { user: true },
       });
 
-      if (!storedToken || storedToken.expiresAt < new Date()) {
-        // Se il record esiste ma è scaduto, lo rimuoviamo comunque per pulizia
+      // Il token firmato e la riga nel database devono appartenere allo
+      // stesso utente: se non combaciano la sessione non è attendibile.
+      if (!storedToken || storedToken.userId !== payload.userId) {
         if (storedToken) {
           await prisma.refreshToken.delete({ where: { token: refreshToken } });
         }
+        await clearAuthCookies();
+        throw new GraphQLError("Refresh token non conforme", {
+          extensions: { code: "UNAUTHENTICATED" },
+        });
+      }
+
+      if (storedToken.expiresAt < new Date()) {
+        // Record scaduto: lo rimuoviamo comunque per pulizia
+        await prisma.refreshToken.delete({ where: { token: refreshToken } });
         await clearAuthCookies();
         throw new GraphQLError("Refresh token scaduto", {
           extensions: { code: "UNAUTHENTICATED" },

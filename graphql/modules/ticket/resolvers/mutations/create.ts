@@ -1,5 +1,5 @@
 // modules/ticket/resolvers/mutations/create.ts
-import { requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql/error";
 import { autoAssign } from "@/lib/ticket/autoAssign";
 import { CreateTicketSchema } from "@/lib/validators/ticket-detail.schema";
@@ -13,8 +13,12 @@ import { getPrisma } from "@/lib/prisma/index";
 import { buildTicketHistoryData } from "@/lib/ticket/history";
 import { syncTicketNotifications } from "@/lib/ticket/notification";
 
-export async function createTicket(_parent: unknown, args: { input: unknown }) {
-  const session = await requireSession();
+export async function createTicket(
+  _parent: unknown,
+  args: { input: unknown },
+  context: GraphQLContext
+) {
+  const session = context.requireSession();
   const ability = defineAbility(session);
   const prisma = await getPrisma();
 

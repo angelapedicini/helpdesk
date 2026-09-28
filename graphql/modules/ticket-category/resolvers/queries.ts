@@ -1,5 +1,5 @@
 import { getPrisma } from "@/lib/prisma/index";
-import { getSession, requireSession } from "@/lib/auth/session";
+import type { GraphQLContext } from "@/graphql/context";
 import { Department } from "@/app/generated/prisma/enums";
 import {
   getAllowedCategories,
@@ -12,10 +12,10 @@ import { defineAbility } from "@/lib/casl/defineAbility";
 export const categoryQueries = {
   categories: async (
     _parent: unknown,
-    args: { department?: Department; includeDisabled?: boolean }
+    args: { department?: Department; includeDisabled?: boolean },
+    context: GraphQLContext
   ) => {
-    const session = await getSession();
-    if (!session) return [];
+    const session = context.requireSession();
     const prisma = await getPrisma();
     const ability = defineAbility(session);
 
@@ -48,10 +48,10 @@ export const categoryQueries = {
 
   categoryById: async (
     _parent: unknown,
-    args: { id: number }
+    args: { id: number },
+    context: GraphQLContext
   ) => {
-    const session = await getSession();
-    if (!session) return null;
+    const session = context.requireSession();
     const prisma = await getPrisma();
     const ability = defineAbility(session);
 
@@ -88,9 +88,10 @@ export const categoryQueries = {
 
   categoryAccesses: async (
     _parent: unknown,
-    args: { categoryId?: number }
+    args: { categoryId?: number },
+    context: GraphQLContext
   ) => {
-    const session = await requireSession();
+    const session = context.requireSession();
     const ability = defineAbility(session);
     assertCategoryManagerForDepartment(ability, session.department);
     const prisma = await getPrisma();
