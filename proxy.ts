@@ -64,6 +64,7 @@ const PUBLIC_PATHS = [
 ];
 
 // 3. Protetti per ruolo — richiedono token + ruolo specifico
+//questo si potrebbe togleire xk gestito in modo diverso adesso
 const ROLE_PROTECTED_PATHS: { path: string; roles: string[] }[] = [
   { path: "/stats", roles: ["ADMIN", "SYSTEM_ADMIN"] },
 ];
@@ -175,6 +176,9 @@ export async function proxy(req: NextRequest) {
     }
 
     const requestHeaders = new Headers(req.headers);
+    requestHeaders.delete("x-user-id");
+    requestHeaders.delete("x-user-role");
+    requestHeaders.delete("x-user-department");
     requestHeaders.set("x-pathname", pathname);
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
