@@ -8,12 +8,15 @@ import {
     Stack,
     Typography,
 } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import ControlPointIcon from "@mui/icons-material/ControlPoint";
 // import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditSquareIcon from '@mui/icons-material/EditSquare';
 import DisabledByDefaultIcon from "@mui/icons-material/DisabledByDefault";
 import RestoreIcon from "@mui/icons-material/Restore";
 import EnhancedTable from "@/components/table";
+import CardList from "@/components/card-list"; // NEW
 import Modal from "@/components/modal";
 import { useModalState } from "@/components/hooks/use-modal-state";
 import { ME_QUERY } from "@/apollo-client/queries/user/me";
@@ -34,6 +37,11 @@ import CategoryForm from "@/components/forms/category/category-form";
 
 export default function CategoryManagementPage() {
     const router = useRouter();
+
+    // NEW: breakpoint mobile
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"), { noSsr: true });
+
     const { data: meData } = useQuery(ME_QUERY);
     // const { canManageCategories, canManageCategoryAccesses } =
     //     useCategoryManagementPermissions();
@@ -88,6 +96,24 @@ export default function CategoryManagementPage() {
         }
     };
 
+    // NEW: azioni condivise tra tabella e card
+    const renderActions = (cat: CategoryManagementRowWithAccess) => (
+        <>
+            <IconButton
+                onClick={() => router.push(`/categoryManagement/${cat.id}`)}
+                aria-label="Modifica categoria"
+            >
+                <EditSquareIcon />
+            </IconButton>
+            <IconButton
+                onClick={() => handleToggleCategory(cat)}
+                aria-label={cat.disabled ? "Riattiva categoria" : "Disabilita categoria"}
+            >
+                {cat.disabled ? <RestoreIcon /> : <DisabledByDefaultIcon />}
+            </IconButton>
+        </>
+    );
+
     return (
         <Box sx={{ mt: 3, mx: 2 }}>
             <Stack direction="row" sx={{ alignItems: "center", mb: 3 }}>
@@ -99,30 +125,23 @@ export default function CategoryManagementPage() {
                 {/* )} */}
             </Stack>
 
-            <Box sx={{ height: "78vh" }}>
-                <EnhancedTable<CategoryManagementRowWithAccess>
+            {isMobile ? (
+                <CardList<CategoryManagementRowWithAccess>
                     rows={matrixRows}
                     headCells={headCells}
-                    actionsWidth="120px"
-                    actions={
-                        // canManageCategories
-                        //     ? 
-                        (cat) => (
-                            <>
-                                <IconButton
-                                    onClick={() => router.push(`/categoryManagement/${cat.id}`)}
-                                >
-                                    <EditSquareIcon />
-                                </IconButton>
-                                <IconButton onClick={() => handleToggleCategory(cat)}>
-                                    {cat.disabled ? <RestoreIcon /> : <DisabledByDefaultIcon />}
-                                </IconButton>
-                            </>
-                        )
-                            // : undefined
-                    }
+                    titleKey={headCells[0]?.id}
+                    actions={renderActions}
                 />
-            </Box>
+            ) : (
+                <Box sx={{ height: "78vh" }}>
+                    <EnhancedTable<CategoryManagementRowWithAccess>
+                        rows={matrixRows}
+                        headCells={headCells}
+                        actionsWidth="120px"
+                        actions={renderActions}
+                    />
+                </Box>
+            )}
 
             <Modal
                 title="Nuova categoria"

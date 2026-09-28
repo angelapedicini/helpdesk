@@ -6,9 +6,12 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import { useQuery } from "@apollo/client/react";
 
 import EnhancedTable from "@/components/table";
+import CardList from "@/components/card-list"; // NEW
 import DynamicChart from "@/components/dynamic-charts";
 import { useStatsPermissions } from "@/lib/casl/abilities/stats/hook-permission";
 
@@ -18,6 +21,10 @@ import { STATS_VIEWS } from "./_components/views";
 type DisplayMode = "table" | "chart";
 
 export default function TicketStatsPage() {
+    // NEW: breakpoint mobile
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"), { noSsr: true });
+
     const [activeViewId, setActiveViewId] = useState(
         STATS_VIEWS[0].id,
     );
@@ -68,7 +75,7 @@ export default function TicketStatsPage() {
             </Box>
 
             {/* Contenuto vista attiva */}
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ flex: 1, minWidth: 0, width: { xs: "100%", md: "auto" } }}>
                 {/* Header: totale ticket + toggle tabella/grafico */}
                 <Stack
                     direction={{ xs: "column", md: "row" }}
@@ -117,7 +124,7 @@ export default function TicketStatsPage() {
                         }}
                     >
                         <ToggleButton value="table">
-                            Tabella
+                            {isMobile ? "Card" : "Tabella"}
                         </ToggleButton>
                         <ToggleButton value="chart">
                             Grafico
@@ -139,7 +146,7 @@ export default function TicketStatsPage() {
                     </Typography>
                 )}
 
-                {/* Contenuto: tabella o grafico */}
+                {/* Contenuto: tabella/card o grafico */}
                 {!loading && !error && (
                     rows.length === 0 ? (
                         <Box
@@ -154,10 +161,18 @@ export default function TicketStatsPage() {
                             </Typography>
                         </Box>
                     ) : mode === "table" ? (
-                        <EnhancedTable
-                            rows={rows}
-                            headCells={activeView.headCells}
-                        />
+                        isMobile ? (
+                            <CardList
+                                rows={rows}
+                                headCells={activeView.headCells}
+                                titleKey={activeView.headCells[0]?.id}
+                            />
+                        ) : (
+                            <EnhancedTable
+                                rows={rows}
+                                headCells={activeView.headCells}
+                            />
+                        )
                     ) : (
                         <Box sx={{ width: "100%" }}>
                             <DynamicChart

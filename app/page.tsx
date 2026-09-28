@@ -67,7 +67,7 @@ export default function Page() {
           Start Demo
         </Button>
 
-        {/* <Button
+        <Button
           variant="outlined"
           size="large"
           sx={{ color: "inherit", py: 1.5, fontSize: "1.1rem" }}
@@ -75,7 +75,7 @@ export default function Page() {
           disabled={loading}
         >
           Login Static
-        </Button> */}
+        </Button>
 
         {/* {result && <Alert severity="success">{result}</Alert>} */}
         {/* {error && <Alert severity="error">{error.message}</Alert>} */}

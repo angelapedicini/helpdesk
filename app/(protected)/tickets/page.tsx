@@ -4,6 +4,8 @@ import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import { Badge, Box, IconButton, Stack, Typography } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import FiltersSidebar from "@/components/filters-sidebar";
 import FilterTicketForm from "@/components/forms/ticket/filter-ticket";
@@ -24,6 +26,7 @@ import { FilterTicketInput, FilterTicketOutput } from "@/lib/validators/ticket-d
 import { useFragment } from "@/graphql-generated";
 import { getTicketOverdueTooltip, isTicketOverdue } from "@/lib/ticket/expired-status";
 import EnhancedTable from "@/components/table";
+import CardList from "@/components/card-list"; // NEW
 import { createTicketHeadCells } from "@/app/(protected)/tickets/_components/column.def";
 import TicketRowActions from "@/app/(protected)/tickets/_components/actions";
 import TicketAlerts from "@/app/(protected)/tickets/_components/ticket-alerts";
@@ -37,6 +40,10 @@ const VALID_SCOPES: TicketScope[] = ["ALL", "MINE", "DEPARTMENT", "ASSIGNED_TO_M
 export default function TicketsPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+
+    // NEW: breakpoint mobile
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"), { noSsr: true });
 
     const scopeParam = searchParams.get("scope")?.toUpperCase();
     const scope: TicketScope = VALID_SCOPES.includes(scopeParam as TicketScope)
@@ -100,8 +107,6 @@ export default function TicketsPage() {
 
     const [deleteTicket] = useMutation(DELETE_TICKET);
 
-    // const handleConfirmDelete = async () => {}
-
     const handleConfirmDelete = async () => {
         if (!deleteModal.value) return;
 
@@ -138,6 +143,21 @@ export default function TicketsPage() {
         deleteModal.open(ticket);
     };
 
+    // NEW: azioni condivise tra tabella e card
+    const renderActions = (ticket: TicketFieldsFragment) => (
+        <TicketRowActions
+            ticket={ticket}
+            scope={scope}
+            onOpen={handleOpen}
+            onHistory={handleHistory}
+            onDelete={handleDelete}
+            onMessage={handleMessage}
+        />
+    );
+
+    const getRowClassName = (ticket: TicketFieldsFragment) =>
+        isTicketOverdue(ticket) ? "error-row" : undefined;
+
     // --------------------------------
     // COLUMNS
     // --------------------------------
@@ -172,31 +192,35 @@ export default function TicketsPage() {
                 onReset={ticketFilters.reset}
             />
 
-            {/* <Box sx={{ height: "vh" }}> */}
-            <EnhancedTable<TicketFieldsFragment>
-                rows={tickets}
-                headCells={headCells}
-                order={order}
-                orderBy={orderBy}
-                onRequestSort={onRequestSort}
-                hasNextPage={hasNextPage}
-                onLoadMore={loadMore}
-                getRowClassName={(ticket) => (isTicketOverdue(ticket) ? "error-row" : undefined)}
-                getRowTooltip={getTicketOverdueTooltip}
-                maxHeight={"70vh"}
-                actionsWidth="195px"
-                actions={(ticket) => (
-                    <TicketRowActions
-                        ticket={ticket}
-                        scope={scope}
-                        onOpen={handleOpen}
-                        onHistory={handleHistory}
-                        onDelete={handleDelete}
-                        onMessage={handleMessage}
-                    />
-                )}
-            />
-            {/* </Box> */}
+            {isMobile ? (
+                <CardList<TicketFieldsFragment>
+                    rows={tickets}
+                    headCells={headCells}
+                    titleKey="title"
+                    subtitleKey="id"
+                    hiddenKeys={["specificData"]}
+                    actions={renderActions}
+                    hasNextPage={hasNextPage}
+                    onLoadMore={loadMore}
+                    getRowClassName={getRowClassName}
+                    getRowTooltip={getTicketOverdueTooltip}
+                />
+            ) : (
+                <EnhancedTable<TicketFieldsFragment>
+                    rows={tickets}
+                    headCells={headCells}
+                    order={order}
+                    orderBy={orderBy}
+                    onRequestSort={onRequestSort}
+                    hasNextPage={hasNextPage}
+                    onLoadMore={loadMore}
+                    getRowClassName={getRowClassName}
+                    getRowTooltip={getTicketOverdueTooltip}
+                    maxHeight={"70vh"}
+                    actionsWidth="195px"
+                    actions={renderActions}
+                />
+            )}
 
             <FiltersSidebar open={ticketFilters.isOpen} onClose={ticketFilters.close}>
                 <Box sx={{ p: 2 }}>

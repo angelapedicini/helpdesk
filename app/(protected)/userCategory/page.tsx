@@ -8,10 +8,13 @@ import {
     Stack,
     Typography,
 } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import FiltersSidebar from "@/components/filters-sidebar";
 import { useFilterState } from "@/components/hooks/use-filter-state";
 import EnhancedTable from "@/components/table";
+import CardList from "@/components/card-list"; // NEW
 import { GET_USERS_FOR_MANAGEMENT } from "@/apollo-client/queries/user/user-queries";
 import { createUserManagementHeadCells, UserManagementRow } from "./column.def";
 import { FilterUserSpecOutput } from "@/lib/validators/userSpec.schema";
@@ -26,6 +29,10 @@ import { useUserManagementPermissions } from "@/lib/casl/abilities/user/hook-per
 import UserManagementRowActions from "./_components/actions";
 
 export default function UsersManagementPage() {
+    // NEW: breakpoint mobile
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"), { noSsr: true });
+
     const { data: meData, loading } = useQuery(ME_QUERY);
     const {
         canViewFilters,
@@ -62,7 +69,7 @@ export default function UsersManagementPage() {
     const headCells = createUserManagementHeadCells();
 
     // --------------------------------
-    // RENDER
+    // MODALS + HANDLERS
     // --------------------------------
 
     const specModal = useModalState<UserManagementRow>();
@@ -82,6 +89,16 @@ export default function UsersManagementPage() {
     const handleEditRole = (user: UserManagementRow) => {
         roleModal.open(user);
     };
+
+    // NEW: azioni condivise tra tabella e card
+    const renderActions = (user: UserManagementRow) => (
+        <UserManagementRowActions
+            user={user}
+            onAddSpec={handleAddSpec}
+            onRemoveSpec={handleRemoveSpec}
+            onEditRole={handleEditRole}
+        />
+    );
 
     const showFilters = canViewFilters;
 
@@ -103,21 +120,23 @@ export default function UsersManagementPage() {
                 <Typography variant="h5">Utenti e specializzazioni</Typography>
             </Stack>
 
-            <Box sx={{ height: "78vh" }}>
-                <EnhancedTable<UserManagementRow>
+            {isMobile ? (
+                <CardList<UserManagementRow>
                     rows={users}
                     headCells={headCells}
-                    actionsWidth="152px"
-                    actions={(user) => (
-                        <UserManagementRowActions
-                            user={user}
-                            onAddSpec={handleAddSpec}
-                            onRemoveSpec={handleRemoveSpec}
-                            onEditRole={handleEditRole}
-                        />
-                    )}
+                    titleKey={headCells[0]?.id}
+                    actions={renderActions}
                 />
-            </Box>
+            ) : (
+                <Box sx={{ height: "78vh" }}>
+                    <EnhancedTable<UserManagementRow>
+                        rows={users}
+                        headCells={headCells}
+                        actionsWidth="152px"
+                        actions={renderActions}
+                    />
+                </Box>
+            )}
 
             {/* SPEC MODAL */}
             <Modal
