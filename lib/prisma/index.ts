@@ -1,7 +1,7 @@
 import { getPrismaClient } from "./demo-client";
 import { staticPrismaClient } from "./static-client";
 
-const USE_BRANCHING = process.env.USE_NEON_BRANCHING === "true";
+const USE_BRANCHING = process.env.USE_NEON_BRANCHING === "false";
 //mettere true per branching
 
 export async function getPrisma() {

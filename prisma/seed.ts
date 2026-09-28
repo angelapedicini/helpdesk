@@ -1415,10 +1415,10 @@ export async function main() {
 
   await prisma.ticketCategory.deleteMany();
 
-  const rawPassword = process.env.SEED_PASSWORD;
+  const rawPassword = process.env.PASSWORD;
 
   if (!rawPassword) {
-    throw new Error("SEED_PASSWORD non impostata: aggiungila al file .env prima di eseguire il seed.");
+    throw new Error("PASSWORD non impostata: aggiungila al file .env prima di eseguire il seed.");
   }
 
   const hashedPassword = await bcrypt.hash(rawPassword, 10);
