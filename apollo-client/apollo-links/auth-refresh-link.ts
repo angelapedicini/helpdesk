@@ -3,16 +3,26 @@ import { ApolloLink } from "@apollo/client";
 import { from, mergeMap } from "rxjs";
 
 type GqlError = { extensions?: Record<string, unknown> };
-type RefreshOutcome = "ok" | "denied" | "error";
+
+// "conflict" = un'altra richiesta ha già ruotato il token (race): non è un
+// logout, basta riprovare con i cookie nuovi.
+type RawOutcome = "ok" | "denied" | "error" | "conflict";
+type RefreshOutcome = Exclude<RawOutcome, "conflict">;
 
 const SKIP_OPERATIONS = ["RefreshToken", "Login", "Register"];
 const RECENT_REFRESH_MS = 3_000;
+const CONFLICT_RETRY_DELAY_MS = 300;
 
-function isUnauthenticated(errors?: readonly GqlError[]) {
-  return errors?.some((e) => e.extensions?.code === "UNAUTHENTICATED") ?? false;
+function hasCode(errors: readonly GqlError[] | undefined, code: string) {
+  return errors?.some((e) => e.extensions?.code === code) ?? false;
 }
 
-async function callRefresh(): Promise<RefreshOutcome> {
+function isUnauthenticated(errors?: readonly GqlError[]) {
+  return hasCode(errors, "UNAUTHENTICATED");
+}
+
+// Una singola chiamata alla mutation di refresh, con esito classificato.
+async function callRefresh(): Promise<RawOutcome> {
   try {
     const res = await fetch("/api/graphql", {
       method: "POST",
@@ -26,22 +36,45 @@ async function callRefresh(): Promise<RefreshOutcome> {
 
     const json = await res.json();
     if (json.data?.refreshToken?.success) return "ok";
-    return isUnauthenticated(json.errors) ? "denied" : "error";
+    if (hasCode(json.errors, "REFRESH_CONFLICT")) return "conflict";
+    if (isUnauthenticated(json.errors)) return "denied";
+    return "error";
   } catch {
     return "error"; // rete/parsing: NON è un motivo di logout
   }
 }
 
+// Se il server risponde REFRESH_CONFLICT, un'altra richiesta ha vinto la
+// rotazione e i suoi cookie sono già (o stanno per essere) nel browser:
+// si aspetta un attimo e si riprova UNA volta. Se il conflitto persiste il
+// token è davvero invalido, quindi è un rifiuto.
+async function callRefreshWithRetry(): Promise<RefreshOutcome> {
+  const first = await callRefresh();
+  if (first !== "conflict") return first;
+
+  await new Promise((resolve) => setTimeout(resolve, CONFLICT_RETRY_DELAY_MS));
+
+  const second = await callRefresh();
+  return second === "conflict" ? "denied" : second;
+}
+
 let refreshing: Promise<RefreshOutcome> | null = null;
 let lastRefreshOkAt = 0;
 
+// Web Locks: un solo refresh alla volta anche tra tab diverse.
+// I tipi di lib.dom dichiarano request<T>(name, cb: (lock) => T): Promise<T> e
+// non modellano l'appiattimento delle promise: senza l'await qui sotto il tipo
+// resterebbe Promise<Promise<RefreshOutcome>> e non compilerebbe.
+async function refreshUnderLock(): Promise<RefreshOutcome> {
+  if (typeof navigator !== "undefined" && "locks" in navigator) {
+    return await navigator.locks.request("auth-refresh", callRefreshWithRetry);
+  }
+  return callRefreshWithRetry();
+}
+
 function doRefresh(): Promise<RefreshOutcome> {
   if (!refreshing) {
-    // Web Locks: un solo refresh alla volta anche tra tab diverse
-    const run =
-      typeof navigator !== "undefined" && "locks" in navigator
-        ? navigator.locks.request("auth-refresh", callRefresh)
-        : callRefresh();
+    const run = refreshUnderLock();
 
     refreshing = run
       .then((outcome) => {

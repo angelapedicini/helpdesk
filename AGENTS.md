@@ -587,3 +587,5 @@ The project should remain:
 * easy to extend
 
 Prefer a simple correct solution over a complex optimized solution.
+
+DO NOT INITIATE GIT COMMANDS. ASK ME TO DO THEM, ONLY I WILL PUT IN GIT COMMANDS.

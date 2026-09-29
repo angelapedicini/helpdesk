@@ -24,6 +24,7 @@ export function buildNavLinks(session: AccessTokenPayload): NavLinkItem[] {
 
   const links: NavLinkItem[] = [
     { label: "Dashboard", href: "/dashboard", icon: <DataObjectIcon /> },
+    { label: "Nuovo Ticket", href: "/categories", icon: <DataObjectIcon /> },
     {
       label: "I miei ticket",
       href: "/tickets?scope=mine",

@@ -113,11 +113,13 @@ export const loginResolvers = {
       const accessToken = await signAccessToken(buildAccessTokenPayload(existing));
       const refreshToken = await signRefreshToken(existing.id);
 
+      // La riga muore con il token: stessa scadenza di setExpirationTime("1d")
+      // in lib/auth/jwt.ts, altrimenti resterebbe viva senza più essere usabile.
       await prisma.refreshToken.create({
         data: {
           token: refreshToken,
           userId: existing.id,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         },
       });
 

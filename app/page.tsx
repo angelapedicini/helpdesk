@@ -10,7 +10,9 @@ import { LOGIN } from "@/apollo-client/queries/auth/login/login.mutation";
 
 export default function Page() {
   const router = useRouter();
-  const [startDemo, { loading, error }] = useMutation(START_DEMO_MUTATION);
+  const [startDemo] = useMutation(START_DEMO_MUTATION, {
+    context: { silent: true },
+  });
   const [login] = useMutation(LOGIN);
   const [result, setResult] = useState<string | null>(null);
 
@@ -62,7 +64,7 @@ export default function Page() {
           size="large"
           sx={{ color: "inherit", py: 1.5, fontSize: "1.1rem" }}
           onClick={handleStartDemo}
-          disabled={loading}
+
         >
           Start Demo
         </Button>
@@ -72,13 +74,10 @@ export default function Page() {
           size="large"
           sx={{ color: "inherit", py: 1.5, fontSize: "1.1rem" }}
           onClick={loginStatic}
-          disabled={loading}
         >
           Login Static
         </Button>
 
-        {/* {result && <Alert severity="success">{result}</Alert>} */}
-        {/* {error && <Alert severity="error">{error.message}</Alert>} */}
       </Box>
     </Box>
   );
