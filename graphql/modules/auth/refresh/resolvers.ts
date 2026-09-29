@@ -10,6 +10,8 @@ export const refreshResolvers = {
       const refreshToken = await getRefreshToken();
       const prisma = await getPrisma();
 
+      console.log("refresh attivato")
+
       if (!refreshToken) {
         await clearAuthCookies();
         throw new GraphQLError("Refresh token mancante", {

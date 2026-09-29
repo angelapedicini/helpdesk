@@ -50,7 +50,7 @@ export const darkTheme = createTheme({
       // Date pickers
       pickerBorder: "#ffffff",
       pickerBorderHover: "#f3f0f0",
-      pickerBorderDisabled: "#303030",
+      pickerBorderDisabled: "#7c7c7c",
       // pickerTextDisabled: "#bebebe",
       pickerTextDisabled: "#ffffff",
 
