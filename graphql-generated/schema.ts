@@ -58,6 +58,52 @@ export const Customer = {
 } as const;
 
 export type Customer = typeof Customer[keyof typeof Customer];
+export type Dashboard = {
+  __typename?: 'Dashboard';
+  counterGroups: Array<DashboardCounterGroup>;
+  notifications: Array<DashboardNotification>;
+  ticketLists: Array<DashboardTicketList>;
+};
+
+export type DashboardCounterGroup = {
+  __typename?: 'DashboardCounterGroup';
+  alerts: TicketAlerts;
+  scope: TicketScope;
+};
+
+export const DashboardList = {
+  RecentAll: 'RECENT_ALL',
+  RecentAssigned: 'RECENT_ASSIGNED',
+  RecentCreated: 'RECENT_CREATED',
+  RecentDepartment: 'RECENT_DEPARTMENT',
+  UpcomingDeadlines: 'UPCOMING_DEADLINES'
+} as const;
+
+export type DashboardList = typeof DashboardList[keyof typeof DashboardList];
+export type DashboardNotification = {
+  __typename?: 'DashboardNotification';
+  actor?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  ticketId: Scalars['Int']['output'];
+  type: TicketNotificationType;
+  updatedAt: Scalars['Date']['output'];
+};
+
+export type DashboardTicket = {
+  __typename?: 'DashboardTicket';
+  createdAt: Scalars['Date']['output'];
+  dueDate?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['Int']['output'];
+  status: TicketStatus;
+  title: Scalars['String']['output'];
+};
+
+export type DashboardTicketList = {
+  __typename?: 'DashboardTicketList';
+  list: DashboardList;
+  tickets: Array<DashboardTicket>;
+};
+
 export const Department = {
   Finance: 'FINANCE',
   Hr: 'HR',
@@ -250,6 +296,7 @@ export type Query = {
   categories: Array<TicketCategory>;
   categoryAccesses: Array<TicketCategoryAccess>;
   categoryById?: Maybe<TicketCategory>;
+  dashboard: Dashboard;
   deletedTickets: TicketHistoryConnection;
   me?: Maybe<User>;
   messages: TicketMessageConnection;

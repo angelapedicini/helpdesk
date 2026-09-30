@@ -32,6 +32,8 @@ import { demoResolvers } from "./modules/demo/resolvers";
 import { demoTypeDefs } from "./modules/demo/typeDefs";
 import { statTypeDefs } from "./modules/stats/typeDef";
 import { statResolvers } from "./modules/stats";
+import { dashboardTypeDefs } from "./modules/dashboard/typeDefs";
+import { dashboardResolvers } from "./modules/dashboard";
 
 
 export const typeDefs = [
@@ -52,6 +54,7 @@ export const typeDefs = [
   ticketHistoryTypeDefs,
   demoTypeDefs,
   statTypeDefs,
+  dashboardTypeDefs,
 ];
 
 export const resolvers = {
@@ -66,6 +69,7 @@ export const resolvers = {
     ...ticketNotificationResolvers.Query,
     ...ticketHistoryResolvers.Query,
     ...statResolvers.Query,
+    ...dashboardResolvers.Query,
   },
   Mutation: {
     ...registerResolvers.Mutation,

@@ -18,6 +18,7 @@ import {
 } from "@/apollo-client/queries/ticket-adminNotificationSub/ticket-adminNotificationSub.mutation";
 import NotificationBell from "@/components/notification-bell";
 import { useTicketNotificationPermissions } from "@/lib/casl/abilities/ticket-notification/hook-permission";
+import { NAV_NOTIFICATIONS } from "@/apollo-client/queries/ticket-notification/ticket-notification.queries";
 
 const PAGE_SIZE = 20;
 
@@ -104,7 +105,9 @@ export default function TicketMessagesPage() {
     // MARK AS READ
     // --------------------------------
 
-    const [markMessagesRead] = useMutation(MARK_TICKET_MESSAGES_READ);
+    const [markMessagesRead] = useMutation(MARK_TICKET_MESSAGES_READ, {
+        refetchQueries: [NAV_NOTIFICATIONS],
+    });
 
     const markReadRef = useRef<number | null>(null);
 

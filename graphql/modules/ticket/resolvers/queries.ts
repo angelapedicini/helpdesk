@@ -9,9 +9,9 @@ import { TICKET_SORT_FIELD_MAP, buildTicketWhere, buildScopeWhere } from "./wher
 import type { TicketScope, TicketSortField } from "@/graphql-generated/schema";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanReadTicket } from "@/lib/casl/abilities/ticket/guards";
-import { assertCanReadTicketScope } from "@/lib/casl/abilities/ticket-scope/guards";
 import { FilterTicketSchema } from "@/lib/validators/ticket-detail.schema";
 import { parseOrThrow, stripNulls } from "@/graphql/validate";
+import { countTicketAlerts } from "./alerts";
 
 const TICKET_INCLUDE = {
   category: true,
@@ -103,47 +103,8 @@ export const ticketQueries = {
     context: GraphQLContext
   ) => {
     const session = context.requireSession();
-    const ability = defineAbility(session);
-    const prisma = await getPrisma();
-
     const scope: TicketScope = args.scope ?? "ASSIGNED_TO_ME";
-    assertCanReadTicketScope(ability, scope);
 
-    // Stessa base della lista ticket: solo i ticket leggibili dall'utente
-    // nello scope corrente. Ogni conteggio riusa buildTicketWhere, quindi
-    // il numero coincide esattamente con il risultato del filtro analogo
-    // applicato alla lista (zero drift tra contatore e filtro).
-    const baseWhere: Prisma.TicketWhereInput = {
-      AND: [
-        accessibleBy(ability, "read").ofType("Ticket"),
-        buildScopeWhere(scope, session),
-      ],
-    };
-
-    // Filtri costanti e tipizzati: nessun parse, TypeScript controlla le chiavi.
-    const count = (filter: Parameters<typeof buildTicketWhere>[0]) =>
-      prisma.ticket.count({ where: { AND: [baseWhere, buildTicketWhere(filter)] } });
-
-    const [
-      firstResponseOverdue,
-      dueDateOverdue,
-      reopened,
-      firstResponseDueSoon,
-      dueDateDueSoon,
-    ] = await Promise.all([
-      count({ firstResponseOverdue: true }),
-      count({ overdue: true }),
-      count({ reopened: true }),
-      count({ firstResponseDueSoon: true }),
-      count({ dueDateDueSoon: true }),
-    ]);
-
-    return {
-      firstResponseOverdue,
-      dueDateOverdue,
-      reopened,
-      firstResponseDueSoon,
-      dueDateDueSoon,
-    };
+    return countTicketAlerts(scope, session);
   },
 };

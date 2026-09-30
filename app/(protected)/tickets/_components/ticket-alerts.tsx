@@ -43,7 +43,7 @@ const ALERT_ITEMS: AlertItem[] = [
     {
         key: "dueDateOverdue",
         filterKey: "overdue",
-        label: "Due date scaduta",
+        label: "Data fine lavoro scaduta",
         icon: <ErrorOutlinedIcon fontSize="small" />,
         color: "error",
     },
