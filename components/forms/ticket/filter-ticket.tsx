@@ -49,9 +49,8 @@ import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
 // riscriverlo: la copy del form non puÃ² divergere da quella delle card.
 // "Solo" Ã¨ un'affordance del form, quindi sta qui e non nella config.
 const alertCheckboxLabel = (filterKey: AlertFilterKey): string =>
-    `Solo ${
-        TICKET_ALERTS.find((def) => def.filterKey === filterKey)!.label
-            .toLowerCase()
+    `Solo ${TICKET_ALERTS.find((def) => def.filterKey === filterKey)!.label
+        .toLowerCase()
     }`;
 
 type FilterTicketFormProps = {
@@ -98,6 +97,11 @@ export default function FilterTicketForm({
             variables: {
                 search,
                 role: "TECHNICIAN",
+                // Su scope DEPARTMENT si mostrano solo i tecnici del
+                // dipartimento di chi sta guardando, perché l'admin vede solo
+                // i ticket del suo reparto. Il reparto lo mette il resolver
+                // dalla sessione, non lo passiamo noi.
+                restrictToDepartment: scope === "DEPARTMENT",
             },
         });
 
@@ -227,14 +231,16 @@ export default function FilterTicketForm({
                         />
                     )}
 
-                    <SearchInput
-                        name="assignedToId"
-                        label="Assegnato a"
-                        control={control}
-                        onSearch={handleAssignedTo}
-                        loading={loadingUsers}
-                        registerReset={registerReset}
-                    />
+                    {scope !== "ASSIGNED_TO_ME" && (
+                        <SearchInput
+                            name="assignedToId"
+                            label="Assegnato a"
+                            control={control}
+                            onSearch={handleAssignedTo}
+                            loading={loadingUsers}
+                            registerReset={registerReset}
+                        />
+                    )}
 
                     {/* FILTRI BOOLEANI */}
                     <Box

@@ -34,6 +34,7 @@ export default function UsersManagementPage() {
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"), { noSsr: true });
 
     const { data: meData, loading } = useQuery(ME_QUERY);
+    const isAdmin = meData?.me?.role === "ADMIN";
     const {
         canViewFilters,
     } = useUserManagementPermissions();
@@ -48,6 +49,8 @@ export default function UsersManagementPage() {
     // QUERY
     // --------------------------------
 
+    // I filtri arrivano come variabili: usersForManagement parte già ristretto
+    // per ruolo e i filtri lo restringono ulteriormente, in AND.
     const queryVariables = {
         userId: userFilters.filter?.userId,
         role: userFilters.filter?.role,
@@ -60,7 +63,7 @@ export default function UsersManagementPage() {
         skip: loading,
     });
 
-    const users = data?.searchUsers ?? [];
+    const users = data?.usersForManagement ?? [];
 
     // --------------------------------
     // COLUMNS
@@ -197,6 +200,7 @@ export default function UsersManagementPage() {
                     <FilterUserSpecForm
                         onApply={userFilters.apply}
                         onReset={userFilters.reset}
+                        restrictUsersToDepartment={isAdmin}
                     />
                 </Box>
             </FiltersSidebar>

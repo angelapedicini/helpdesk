@@ -295,6 +295,7 @@ export type Query = {
   unreadTicketMessages: Array<TicketUnreadCount>;
   usersByDepForLogin: Array<UserLoginInfo>;
   usersForCategoryId: Array<UserBasicInfo>;
+  usersForManagement: Array<User>;
 };
 
 
@@ -332,9 +333,9 @@ export type QueryMessagesArgs = {
 export type QuerySearchUsersArgs = {
   categoryId?: InputMaybe<Scalars['Int']['input']>;
   department?: InputMaybe<Department>;
+  restrictToDepartment?: InputMaybe<Scalars['Boolean']['input']>;
   role?: InputMaybe<Role>;
   search?: InputMaybe<Scalars['String']['input']>;
-  userId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -401,6 +402,15 @@ export type QueryUsersByDepForLoginArgs = {
 export type QueryUsersForCategoryIdArgs = {
   categoryId: Scalars['Int']['input'];
   search?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryUsersForManagementArgs = {
+  categoryId?: InputMaybe<Scalars['Int']['input']>;
+  department?: InputMaybe<Department>;
+  role?: InputMaybe<Role>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type RefreshPayload = {

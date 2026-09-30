@@ -8,7 +8,7 @@ import { HeadCell } from "@/components/table";
 import { ROLE_CONFIG } from "@/components/enums/role.config";
 import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
 
-export type UserManagementRow = UsersManagementQuery["searchUsers"][number];
+export type UserManagementRow = UsersManagementQuery["usersForManagement"][number];
 
 export function createUserManagementHeadCells(): HeadCell<UserManagementRow>[] {
     return [

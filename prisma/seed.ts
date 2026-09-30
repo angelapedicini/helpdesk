@@ -1402,18 +1402,27 @@ export async function main() {
    * TicketCategoryAccess viene eliminata prima di TicketCategory
    * per rispettare la relazione FK.
    */
-  await prisma.ticketHistory.deleteMany();
-  await prisma.ticketMessage.deleteMany();
-  await prisma.ticket.deleteMany();
-
-  await prisma.ticketCategoryAccess.deleteMany();
-
-  await prisma.userPermission.deleteMany();
-  await prisma.userSpecialization.deleteMany();
-  await prisma.refreshToken.deleteMany();
-  await prisma.user.deleteMany();
-
-  await prisma.ticketCategory.deleteMany();
+  await prisma.$executeRawUnsafe(`
+  TRUNCATE TABLE
+    "TicketHistory",
+    "TicketMessage",
+    "TicketReadState",
+    "TicketNotification",
+    "TicketAdminNotificationSubscription",
+    "TicketITSpecific",
+    "TicketHRSpecific",
+    "TicketFinanceSpecific",
+    "TicketSupportSpecific",
+    "TicketLogisticSpecific",
+    "Ticket",
+    "TicketCategoryAccess",
+    "UserPermission",
+    "UserSpecialization",
+    "RefreshToken",
+    "User",
+    "TicketCategory"
+  RESTART IDENTITY
+`);
 
   const rawPassword = process.env.PASSWORD;
 

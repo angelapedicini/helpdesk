@@ -2,7 +2,7 @@ import { graphql } from "@/graphql-generated";
 
 export const GET_USERS_FOR_MANAGEMENT = graphql(`
   query UsersManagement($search: String, $userId: Int, $role: Role, $department: Department, $categoryId: Int) {
-    searchUsers(search: $search, userId: $userId, role: $role, department: $department, categoryId: $categoryId) {
+    usersForManagement(search: $search, userId: $userId, role: $role, department: $department, categoryId: $categoryId) {
       id
       firstName
       lastName

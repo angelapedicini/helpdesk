@@ -108,7 +108,7 @@ export default function DashboardPage() {
                     </Typography>
 
                     <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-                        <Button variant="contained" size="large" startIcon={<AddIcon />} component={Link} href="/userCategory">
+                        <Button variant="contained" size="large" startIcon={<AddIcon />} component={Link} href="/categories">
                             Apri ticket
                         </Button>
                         {canReadStats && (

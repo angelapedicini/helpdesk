@@ -28,11 +28,13 @@ import { Department, Role } from "@/lib/validators/enums.schema";
 type FilterUserSpecFormProps = {
     onApply: (filter: FilterUserSpecOutput) => void;
     onReset?: () => void;
+    restrictUsersToDepartment?: boolean;
 };
 
 export default function FilterUserSpecForm({
     onApply,
     onReset,
+    restrictUsersToDepartment = false,
 }: FilterUserSpecFormProps) {
     const { canUseDepartmentFilter, canViewFilters } = useUserManagementPermissions();
     const { registerReset, resetAll } = useResetRegistry();
@@ -55,6 +57,7 @@ export default function FilterUserSpecForm({
         const { data } = await searchUsers({
             variables: {
                 search,
+                restrictToDepartment: restrictUsersToDepartment,
             },
         });
 

@@ -45,7 +45,8 @@ export const userTypeDefs = `#graphql
 
   extend type Query {
     me: User
-    searchUsers(search: String, userId: Int, role: Role, department: Department, categoryId: Int): [User!]!
+    searchUsers(search: String, role: Role, department: Department, categoryId: Int, restrictToDepartment: Boolean): [User!]!
+    usersForManagement(search: String, userId: Int, role: Role, department: Department, categoryId: Int): [User!]!
     usersByDepForLogin(department: Department!): [UserLoginInfo!]!
   }
 
