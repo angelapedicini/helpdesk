@@ -6,31 +6,44 @@
 // della navbar: Apollo la legge dalla cache, senza una seconda richiesta di rete.
 
 import Link from "next/link";
-import { Box, Button, CircularProgress, Paper, Stack, Typography } from "@mui/material";
+import { Box, Button, Paper, Stack, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import { useQuery } from "@apollo/client/react";
-import Counters, { CounterGroup } from "./_components/counters";
+import type { DashboardList, TicketScope } from "@/graphql-generated/schema";
+import Counters, { type CounterGroup } from "@/components/counters/counters";
+import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
+import { fmt } from "@/lib/helper/formt-helpers";
 import TicketList, { TicketItem } from "./_components/ticketList";
 import { GET_DASHBOARD } from "@/apollo-client/queries/dashboard/dashboard.queries";
 import { useAbility } from "@/lib/casl/abilityContext";
 import { TICKET_SCOPE_CONFIG } from "@/components/enums/ticket-scope.config";
-import {
-    ALERT_DESCRIPTORS,
-    TICKET_LIST_LABEL,
-    TICKET_STATUS_LABEL,
-    counterHref,
-    formatDate,
-} from "./dashboard-labels";
+import { TICKET_ALERTS, type AlertFilterKey } from "@/components/enums/ticket-alert.config";
 import { useTicketNotifications } from "./_components/hooks/useTicketNotifications";
 import TicketNotificationsList from "./_components/notification";
 
 const PAGE_HEIGHT = "90vh";
 const SIDEBAR_WIDTH = 320;
 
+// La copy della dashboard sta qui. Il backend dice solo QUALI gruppi e QUALI
+// liste esistono, mai con quali titoli: i testi restano nel frontend.
+const TICKET_LIST_LABEL: Record<DashboardList, string> = {
+    RECENT_CREATED: "Ultimi ticket creati",
+    RECENT_ASSIGNED: "Ultimi assegnati a me",
+    UPCOMING_DEADLINES: "Prossime scadenze",
+    RECENT_DEPARTMENT: "Ultimi ticket del reparto",
+    RECENT_ALL: "Ultimi ticket",
+};
+
+// Stessa forma dei link in components/nav-links.tsx: scope in minuscolo,
+// la pagina tickets lo riporta maiuscolo con toUpperCase().
+function counterHref(scope: TicketScope, filter: AlertFilterKey): string {
+    return `/tickets?scope=${scope.toLowerCase()}&filter=${filter}`;
+}
+
 export default function DashboardPage() {
     const ability = useAbility();
-    const { data, loading } = useQuery(GET_DASHBOARD);
+    const { data } = useQuery(GET_DASHBOARD);
     const { unread, notifications, openUnread, openNotification } = useTicketNotifications();
 
     const canReadStats = ability.can("read", "TicketStats");
@@ -39,12 +52,11 @@ export default function DashboardPage() {
     const counterGroups: CounterGroup[] =
         dashboard?.counterGroups.map((group) => ({
             title: TICKET_SCOPE_CONFIG[group.scope].label,
-            items: ALERT_DESCRIPTORS.map((d) => ({
-                value: group.alerts[d.key],
-                label: d.label,
-                tone: d.tone,
-                href: counterHref(group.scope, d.filter),
+            alerts: TICKET_ALERTS.map((def) => ({
+                def,
+                value: group.alerts[def.key],
             })),
+            href: (def) => counterHref(group.scope, def.filterKey),
         })) ?? [];
 
     const lists: { title: string; tickets: TicketItem[] }[] =
@@ -53,18 +65,10 @@ export default function DashboardPage() {
             tickets: list.tickets.map((t) => ({
                 id: t.id,
                 title: t.title,
-                date: formatDate(t.createdAt),
-                status: TICKET_STATUS_LABEL[t.status],
+                date: fmt(t.createdAt),
+                status: TICKET_STATUS_CONFIG[t.status].label,
             })),
         })) ?? [];
-
-    if (loading && !dashboard) {
-        return (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
 
     return (
         <Box
@@ -115,7 +119,10 @@ export default function DashboardPage() {
                     </Stack>
                 </Stack>
 
-                <Counters groups={counterGroups} />
+                <Counters
+                    groups={counterGroups}
+                    size={counterGroups.length > 1 ? "compact" : "regular"}
+                />
 
                 <Box
                     sx={{
@@ -126,7 +133,11 @@ export default function DashboardPage() {
                         gap: 3,
                         gridTemplateColumns: {
                             xs: "minmax(0, 1fr)",
-                            md: lists.length > 1 ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
+                            // Una colonna per lista, invece del fisso a 2: il
+                            // technician ne riceve 3 (MINE, poi le due di
+                            // ASSIGNED_TO_ME) e la terza andava a capo.
+                            // Math.max perché lists è vuota durante il loading.
+                            md: `repeat(${Math.max(lists.length, 1)}, minmax(0, 1fr))`,
                         },
                         alignContent: "start",
                         alignItems: "start",

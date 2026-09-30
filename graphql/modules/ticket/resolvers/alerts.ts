@@ -1,7 +1,6 @@
 // modules/ticket/resolvers/alerts.ts
 
-import { getPrisma } from "@/lib/prisma/index";
-import type { Prisma } from "@/app/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/app/generated/prisma/client";
 import { accessibleBy } from "@casl/prisma";
 import { buildScopeWhere, buildTicketWhere } from "./where";
 import type { TicketScope } from "@/graphql-generated/schema";
@@ -14,13 +13,17 @@ import { assertCanReadTicketScope } from "@/lib/casl/abilities/ticket-scope/guar
  *
  * Vive qui perché è condiviso: lo usa sia la query ticketAlerts sia la
  * dashboard, così i due non possono divergere.
+ *
+ * Il client arriva dall'esterno (context.prisma) perché questa funzione gira
+ * una volta per scope: se risolvesse il branch da sé, la dashboard la
+ * chiamerebbe fino a quattro volte a richiesta.
  */
 export async function countTicketAlerts(
   scope: TicketScope,
-  session: AccessTokenPayload
+  session: AccessTokenPayload,
+  prisma: PrismaClient
 ) {
   const ability = defineAbility(session);
-  const prisma = await getPrisma();
 
   assertCanReadTicketScope(ability, scope);
 

@@ -24,13 +24,6 @@ export const GET_DASHBOARD = graphql(`
           dueDate
         }
       }
-      notifications {
-        id
-        type
-        updatedAt
-        ticketId
-        actor
-      }
     }
   }
 `);

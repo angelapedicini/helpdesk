@@ -192,6 +192,27 @@ model Ticket {
   reopenCount         Int                  @default(0)
   reopenReason        String?
   ticketNotifications TicketNotification[]
+
+  // --- Indici delle liste della dashboard ---
+  // Ogni lista e' ORDER BY ... LIMIT 3: senza indice Postgres deve
+  // ordinare l'intera tabella per restituire 3 righe. Con l'indice
+  // composite la scansione si ferma dopo 3 righe.
+  // Sullo scope MINE e' anche la base dei contatori.
+  @@index([createdById, createdAt])
+  @@index([assignedToId, createdAt])
+  // ASC NULLS LAST coincide con l'ordine di default dei NULL in Postgres,
+  // quindi l'indice soddisfa anche l'ordinamento per scadenza.
+  @@index([assignedToId, dueDate])
+  @@index([ticketDepartment, createdAt])
+  @@index([createdAt])
+  // --- Indici dei contatori di alerta ---
+  // Valgono soprattutto per lo scope ALL (SYSTEM_ADMIN), che non ha
+  // filtro di reparto: la finestra temporale da' il range scan.
+  // NOT IN ('CLOSED','REFUSED') non e sfruttabile su un indice, quindi
+  // la parte "data scaduta in arrivo" resta comunque filtrata a valle.
+  @@index([dueFirstResponse])
+  @@index([dueDate])
+  @@index([status])
 }
 
 model TicketHistory {
@@ -264,9 +285,9 @@ model TicketReadState {
   ticketId          Int
   lastReadMessageId Int?
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticket          Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  updatedAt       DateTime       @updatedAt
   lastReadMessage TicketMessage? @relation(fields: [lastReadMessageId], references: [id])
 
   @@id([userId, ticketId])

@@ -61,7 +61,6 @@ export type Customer = typeof Customer[keyof typeof Customer];
 export type Dashboard = {
   __typename?: 'Dashboard';
   counterGroups: Array<DashboardCounterGroup>;
-  notifications: Array<DashboardNotification>;
   ticketLists: Array<DashboardTicketList>;
 };
 
@@ -80,28 +79,10 @@ export const DashboardList = {
 } as const;
 
 export type DashboardList = typeof DashboardList[keyof typeof DashboardList];
-export type DashboardNotification = {
-  __typename?: 'DashboardNotification';
-  actor?: Maybe<Scalars['String']['output']>;
-  id: Scalars['Int']['output'];
-  ticketId: Scalars['Int']['output'];
-  type: TicketNotificationType;
-  updatedAt: Scalars['Date']['output'];
-};
-
-export type DashboardTicket = {
-  __typename?: 'DashboardTicket';
-  createdAt: Scalars['Date']['output'];
-  dueDate?: Maybe<Scalars['Date']['output']>;
-  id: Scalars['Int']['output'];
-  status: TicketStatus;
-  title: Scalars['String']['output'];
-};
-
 export type DashboardTicketList = {
   __typename?: 'DashboardTicketList';
   list: DashboardList;
-  tickets: Array<DashboardTicket>;
+  tickets: Array<TicketInfo>;
 };
 
 export const Department = {
@@ -615,6 +596,15 @@ export type TicketItSpecific = {
   __typename?: 'TicketITSpecific';
   hardwareType?: Maybe<HardwareType>;
   software?: Maybe<Software>;
+};
+
+export type TicketInfo = {
+  __typename?: 'TicketInfo';
+  createdAt: Scalars['Date']['output'];
+  dueDate?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['Int']['output'];
+  status: TicketStatus;
+  title: Scalars['String']['output'];
 };
 
 export type TicketInput = {

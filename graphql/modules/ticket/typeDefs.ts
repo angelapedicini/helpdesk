@@ -33,6 +33,14 @@ export const ticketTypeDefs = `#graphql
     ALL
   }
 
+  type TicketInfo {
+    id: Int!
+    title: String!
+    status: TicketStatus!
+    createdAt: Date!
+    dueDate: Date
+  }
+
   type Ticket {
     id: Int!
     title: String!

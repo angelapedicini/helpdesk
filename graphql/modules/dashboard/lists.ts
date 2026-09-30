@@ -16,14 +16,6 @@ export type DashboardListDef = {
   orderBy: Prisma.TicketOrderByWithRelationInput;
 };
 
-export const dashboardListValues = [
-  "RECENT_CREATED",
-  "RECENT_ASSIGNED",
-  "UPCOMING_DEADLINES",
-  "RECENT_DEPARTMENT",
-  "RECENT_ALL",
-] as const satisfies readonly DashboardList[];
-
 export const DASHBOARD_LISTS: DashboardListDef[] = [
   {
     list: "RECENT_CREATED",

@@ -1,6 +1,5 @@
-"use client";
+﻿"use client";
 
-import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -20,6 +19,10 @@ import { GET_CATEGORIES } from "@/apollo-client/queries/ticket-category/ticket-c
 
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
+import {
+    TICKET_ALERTS,
+    type AlertFilterKey,
+} from "@/components/enums/ticket-alert.config";
 
 import {
     TicketPriority,
@@ -42,6 +45,14 @@ import {
 } from "@/lib/validators/ticket-detail.schema";
 import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
 
+// Le checkbox riprendono il nome dell'alert dalla config condivisa invece di
+// riscriverlo: la copy del form non puÃ² divergere da quella delle card.
+// "Solo" Ã¨ un'affordance del form, quindi sta qui e non nella config.
+const alertCheckboxLabel = (filterKey: AlertFilterKey): string =>
+    `Solo ${
+        TICKET_ALERTS.find((def) => def.filterKey === filterKey)!.label
+            .toLowerCase()
+    }`;
 
 type FilterTicketFormProps = {
     onApply: (filter: FilterTicketOutput) => void;
@@ -65,13 +76,11 @@ export default function FilterTicketForm({
         formState: { errors, isSubmitting },
     } = useForm<FilterTicketInput, unknown, FilterTicketOutput>({
         resolver: zodResolver(FilterTicketSchema),
+        // I defaultValues si leggono solo al mount. La pagina rimonta il form
+        // cambiando key quando cambia il filtro, quindi qui arrivano sempre
+        // aggiornati: dopo un reset questo è {} e i checkbox partono spenti.
         defaultValues: defaultValues ?? {},
     });
-
-    useEffect(() => {
-        // mai reset(undefined): significherebbe "torna ai vecchi default"
-        reset(defaultValues ?? {});
-    }, [defaultValues, reset]);
 
     const handleReset = () => {
         reset({});        // vuoto esplicito, e diventa il nuovo default
@@ -251,7 +260,7 @@ export default function FilterTicketForm({
                                             }
                                         />
                                     }
-                                    label="Solo ticket scaduti"
+                                    label={alertCheckboxLabel("overdue")}
                                 />
                             )}
                         />
@@ -295,7 +304,7 @@ export default function FilterTicketForm({
                                             }
                                         />
                                     }
-                                    label="Solo riaperti"
+                                    label={alertCheckboxLabel("reopened")}
                                 />
                             )}
                         />
@@ -317,7 +326,7 @@ export default function FilterTicketForm({
                                             }
                                         />
                                     }
-                                    label="Solo prima risposta scaduta"
+                                    label={alertCheckboxLabel("firstResponseOverdue")}
                                 />
                             )}
                         />
@@ -339,7 +348,7 @@ export default function FilterTicketForm({
                                             }
                                         />
                                     }
-                                    label="Solo prima risposta in scadenza (3 gg)"
+                                    label={alertCheckboxLabel("firstResponseDueSoon")}
                                 />
                             )}
                         />
@@ -361,7 +370,7 @@ export default function FilterTicketForm({
                                             }
                                         />
                                     }
-                                    label="Solo scadenze entro 3 gg"
+                                    label={alertCheckboxLabel("dueDateDueSoon")}
                                 />
                             )}
                         />

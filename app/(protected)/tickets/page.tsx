@@ -11,7 +11,7 @@ import FiltersSidebar from "@/components/filters-sidebar";
 import FilterTicketForm from "@/components/forms/ticket/filter-ticket";
 import Modal from "@/components/modal";
 import SureForm from "@/components/forms/sure-form";
-import { useFilterState } from "@/components/hooks/use-filter-state";
+import { useTicketFilterState } from "@/components/hooks/use-ticket-filter-state";
 import { useModalState } from "@/components/hooks/use-modal-state";
 import { useSortState } from "@/components/hooks/use-sort-state";
 import {
@@ -22,7 +22,7 @@ import {
 import { GET_TICKETS, Ticket, ticketSortFieldMap, TICKET_ALERTS } from "@/apollo-client/queries/ticket/ticket.queries";
 import { DELETE_TICKET } from "@/apollo-client/queries/ticket/ticket.mutation";
 import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination";
-import { FilterTicketInput, FilterTicketOutput } from "@/lib/validators/ticket-detail.schema";
+import { FilterTicketInput } from "@/lib/validators/ticket-detail.schema";
 import { useFragment } from "@/graphql-generated";
 import { getTicketOverdueTooltip, isTicketOverdue } from "@/lib/ticket/expired-status";
 import EnhancedTable from "@/components/table";
@@ -56,7 +56,9 @@ export default function TicketsPage() {
     // FILTRI
     // --------------------------------
 
-    const ticketFilters = useFilterState<FilterTicketOutput>();
+    // formKey va passata come key a FilterTicketForm: senza, il form resta
+    // allineato solo al mount e un reset non gli spegne i checkbox.
+    const ticketFilters = useTicketFilterState();
 
     // --------------------------------
     // SORT
@@ -170,7 +172,7 @@ export default function TicketsPage() {
 
     return (
         <Box sx={{ mt: 3, mx: 2 }}>
-            <Stack direction="row" sx={{ alignItems: "center", mb: 3 }}>
+            <Stack direction="row" sx={{ alignItems: "center", mb: 1 }}>
                 <IconButton onClick={ticketFilters.open} aria-label="Filtri">
                     <Badge
                         badgeContent={ticketFilters.activeCount}
@@ -228,7 +230,7 @@ export default function TicketsPage() {
                         Filtri ticket
                     </Typography>
 
-                    <FilterTicketForm onApply={ticketFilters.apply} onReset={ticketFilters.reset} scope={scope} enabled={ticketFilters.isOpen} defaultValues={ticketFilters.filter as FilterTicketInput} />
+                    <FilterTicketForm key={ticketFilters.formKey} onApply={ticketFilters.apply} onReset={ticketFilters.reset} scope={scope} enabled={ticketFilters.isOpen} defaultValues={ticketFilters.filter as FilterTicketInput} />
                 </Box>
             </FiltersSidebar>
 

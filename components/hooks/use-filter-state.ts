@@ -3,8 +3,15 @@
 
 import { useState, useCallback } from "react";
 
-export function useFilterState<TFilter extends Record<string, unknown>>() {
-  const [filter, setFilter] = useState<TFilter | undefined>(undefined);
+/**
+ * `initial` serve alla pagina ticket, che avvia il filtro da ?filter=...
+ * (il link delle card contatore della dashboard). Senza, quel parametro
+ * arriverebbe in pagina e verrebbe ignorato.
+ */
+export function useFilterState<TFilter extends Record<string, unknown>>(
+  initial?: TFilter
+) {
+  const [filter, setFilter] = useState<TFilter | undefined>(initial);
   const [isOpen, setIsOpen] = useState(false);
 
   const activeCount = filter

@@ -105,6 +105,6 @@ export const ticketQueries = {
     const session = context.requireSession();
     const scope: TicketScope = args.scope ?? "ASSIGNED_TO_ME";
 
-    return countTicketAlerts(scope, session);
+    return countTicketAlerts(scope, session, context.prisma);
   },
 };
