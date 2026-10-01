@@ -9,6 +9,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 
 import type { HeadCell, RowBase } from "@/components/table";
+import { Divider } from "@mui/material";
 
 interface CardListProps<T extends RowBase> {
     rows: T[];
@@ -100,6 +101,7 @@ export default function CardList<T extends RowBase>({
                                     className={getCellClassName?.(row, subtitleCell.id)}
                                 >
                                     {subtitleCell.label}: {renderValue(subtitleCell, row)}
+
                                 </Typography>
                             )}
 
@@ -111,6 +113,8 @@ export default function CardList<T extends RowBase>({
                                     sx={{ fontWeight: 600, wordBreak: "break-word" }}
                                 >
                                     {renderValue(titleCell, row)}
+                                    <Divider />
+
                                 </Typography>
                             )}
 
@@ -123,7 +127,7 @@ export default function CardList<T extends RowBase>({
                                     alignItems: "center",
                                 }}
                             >
-                                {bodyCells.map((cell) => (
+                                {bodyCells.map((cell, index) => (
                                     <React.Fragment key={String(cell.id)}>
                                         <Typography variant="body2" color="text.secondary">
                                             {cell.label}
@@ -134,6 +138,11 @@ export default function CardList<T extends RowBase>({
                                         >
                                             {renderValue(cell, row)}
                                         </Box>
+
+                                        {/* Riga sotto la coppia, a tutta larghezza. Non dopo l'ultima. */}
+                                        {index < bodyCells.length - 1 && (
+                                            <Divider sx={{ gridColumn: "1 / -1" }} />
+                                        )}
                                     </React.Fragment>
                                 ))}
                             </Box>

@@ -40,7 +40,7 @@ export type { AlertValue, CounterGroup };
  * "row" = numero ed etichetta affiancati: comodo in una barra filtri.
  *
  * Con "column", su mobile (sotto md) le card diventano una lista verticale:
- * una per riga, con numero ed etichetta affiancati.
+ * una per riga, a tutta larghezza, con numero ed etichetta affiancati.
  *
  * È un asse separato da size perché la dashboard usa "compact" anche a due
  * gruppi, e lì la card deve restare in colonna.
@@ -69,7 +69,8 @@ function AlertCard({
     const isRow = layout === "row";
 
     const boxSx = {
-        p: compact ? 1 : 1.5,
+        // In compact su mobile il padding è ancora più stretto.
+        p: compact ? { xs: 0.75, md: 1 } : 1.5,
         display: "flex",
         // In "row" resta sempre affiancato. In "column" lo è solo su mobile,
         // dove la card è una riga di lista; da md numero sopra, etichetta sotto.
@@ -90,7 +91,12 @@ function AlertCard({
                 sx={{
                     fontWeight: 600,
                     lineHeight: 1.1,
-                    fontSize: compact ? (isRow ? "1.5rem" : "1.6rem") : undefined,
+                    // In compact su mobile il numero è più piccolo.
+                    fontSize: compact
+                        ? isRow
+                            ? "1.5rem"
+                            : { xs: "1.25rem", md: "1.6rem" }
+                        : undefined,
                     color: value > 0 && def.tone ? `${def.tone}.main` : value > 0 ? "text.primary" : "text.disabled",
                 }}
             >
@@ -101,6 +107,7 @@ function AlertCard({
                 color="text.secondary"
                 sx={{
                     lineHeight: 1.2,
+                    fontSize: compact ? { xs: "0.8125rem", md: "0.875rem" } : undefined,
                     // Mai a capo in riga: altrimenti una card diventa più
                     // alta delle altre.
                     whiteSpace: isRow ? "nowrap" : undefined,
@@ -181,11 +188,11 @@ export default function Counters({
                         <Box
                             sx={{
                                 display: "grid",
-                                gap: compact ? 1 : 1.5,
+                                gap: compact ? { xs: 0.75, md: 1 } : 1.5,
                                 alignContent: "start",
                                 alignItems: "start",
                                 gridTemplateColumns: {
-                                    // Layout "column" (dashboard): una card per riga su mobile.
+                                    // Layout "column": una card per riga su mobile.
                                     // Layout "row" (barra filtri): resta a 2 colonne.
                                     xs: layout === "column" ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
                                     md: `repeat(${g.alerts.length}, minmax(0, 1fr))`,

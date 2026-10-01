@@ -123,7 +123,20 @@ export function createTicketHeadCells({
         },
     ];
 
-    if (scope === "MINE" || scope === "DEPARTMENT") {
+
+    if (scope === "ASSIGNED_TO_ME" || scope === "DEPARTMENT" || scope === "ALL") {
+        headCells.push({
+            id: "createdBy",
+            label: "Creato da",
+            sortable: true,
+            render: (ticket) =>
+                ticket.createdBy
+                    ? `${ticket.createdBy.firstName} ${ticket.createdBy.lastName}`
+                    : "Non assegnato",
+        });
+    }
+
+    if (scope === "MINE" || scope === "DEPARTMENT" || scope === "ALL") {
         headCells.push({
             id: "assignedTo",
             label: "Assegnato a",
@@ -135,17 +148,6 @@ export function createTicketHeadCells({
         });
     }
 
-    if (scope === "ASSIGNED_TO_ME" || scope === "DEPARTMENT") {
-        headCells.push({
-            id: "createdBy",
-            label: "Creato da",
-            sortable: true,
-            render: (ticket) =>
-                ticket.createdBy
-                    ? `${ticket.createdBy.firstName} ${ticket.createdBy.lastName}`
-                    : "Non assegnato",
-        });
-    }
 
     return headCells;
 }

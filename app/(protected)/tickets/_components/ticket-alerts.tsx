@@ -2,6 +2,8 @@
 "use client";
 
 import { Box, Button, Stack } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import type { TicketAlerts } from "@/graphql-generated/schema";
 import { TICKET_ALERTS } from "@/components/enums/ticket-alert.config";
 import Counters, { type CounterGroup } from "@/components/counters/counters";
@@ -14,6 +16,9 @@ import type { FilterTicketOutput } from "@/lib/validators/ticket-detail.schema";
  * accende e spegne il filtro sulla lista che si ha sotto. Sia la label sia il
  * colore arrivano da components/enums/ticket-alert.config, quindi le due pagine
  * non possono divergere.
+ *
+ * Su desktop sono in riga (barra filtri sopra la tabella). Su mobile diventano
+ * una lista a tutta larghezza, una card per riga (layout "column").
  */
 export default function TicketAlerts({
     alerts,
@@ -28,6 +33,10 @@ export default function TicketAlerts({
     onApply: (filter: FilterTicketOutput) => void;
     onReset: () => void;
 }) {
+    // Stesso breakpoint della pagina ticket (tabella -> card).
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"), { noSsr: true });
+
     const activeCount = filter
         ? Object.values(filter).filter((v) => v !== undefined).length
         : 0;
@@ -58,16 +67,30 @@ export default function TicketAlerts({
         <Stack
             direction={{ xs: "column", md: "row" }}
             spacing={1}
-            sx={{ alignItems: "end", mb: 2 }}
+            sx={{
+                // Su mobile "stretch" fa occupare tutta la larghezza; con "end"
+                // il blocco dei contatori si restringeva al suo contenuto.
+                alignItems: { xs: "stretch", md: "end" },
+                mb: 2,
+            }}
         >
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Counters groups={groups} size="compact" layout="row" />
+            <Box sx={{ flex: { md: 1 }, minWidth: 0 }}>
+                <Counters
+                    groups={groups}
+                    size="compact"
+                    layout={isMobile ? "column" : "row"}
+                />
             </Box>
 
             {/* Sempre visibile: quando non c'è nulla da spegnere resta grigio.
                 Sparire e ricomparire a ogni filtro sposta il bottone sotto gli
                 occhi mentre lo stai usando. */}
-            <Button size="small" onClick={onReset} disabled={activeCount === 0} sx={{ flexShrink: 0 }}>
+            <Button
+                size="small"
+                onClick={onReset}
+                disabled={activeCount === 0}
+                sx={{ flexShrink: 0, alignSelf: { xs: "flex-end", md: "auto" } }}
+            >
                 Reset filtri
             </Button>
         </Stack>
