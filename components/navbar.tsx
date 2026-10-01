@@ -140,7 +140,7 @@ export default function Navbar({ links }: { links: NavLinkItem[] }) {
         width={320}
       >
         <Box sx={{ p: 2 }}>
-          <EasyLoginForm stacked defaultDepartment={user.department} defaultEmail={user.email} />
+          <EasyLoginForm stacked defaultDepartment={user.department} defaultEmail={user.email} onSubmitted={() => setLoginOpen(false)} />
         </Box>
       </NavSidebar>
     </>

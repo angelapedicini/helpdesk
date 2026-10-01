@@ -39,6 +39,9 @@ export type { AlertValue, CounterGroup };
  * "column" = numero sopra, etichetta sotto: comodo in un pannello.
  * "row" = numero ed etichetta affiancati: comodo in una barra filtri.
  *
+ * Con "column", su mobile (sotto md) le card diventano una lista verticale:
+ * una per riga, con numero ed etichetta affiancati.
+ *
  * È un asse separato da size perché la dashboard usa "compact" anche a due
  * gruppi, e lì la card deve restare in colonna.
  */
@@ -68,14 +71,16 @@ function AlertCard({
     const boxSx = {
         p: compact ? 1 : 1.5,
         display: "flex",
-        flexDirection: isRow ? "row" : "column",
-        // In riga il numero e l'etichetta si allineano sulla baseline, così il
-        // numero grande non sembra sospeso sopra il testo.
-        alignItems: isRow ? "baseline" : "flex-start",
+        // In "row" resta sempre affiancato. In "column" lo è solo su mobile,
+        // dove la card è una riga di lista; da md numero sopra, etichetta sotto.
+        flexDirection: isRow ? "row" : { xs: "row", md: "column" },
+        // Affiancati: baseline, così il numero grande non sembra sospeso sopra
+        // il testo. In colonna: tutto a sinistra.
+        alignItems: isRow ? "baseline" : { xs: "baseline", md: "flex-start" },
         // Il contenuto parte sempre dall'alto / da sinistra, mai centrato.
         justifyContent: "flex-start",
         minWidth: 0,
-        ...(isRow && { gap: 1 }),
+        gap: isRow ? 1 : { xs: 1.5, md: 0 },
     } as const;
 
     const content = (
@@ -110,8 +115,9 @@ function AlertCard({
         <Card
             variant="outlined"
             sx={{
-                // Tetto all'altezza della singola card.
-                maxHeight: compact ? 90 : 120,
+                // Tetto all'altezza solo da md. Su mobile nessun tetto: la card
+                // prende l'altezza del contenuto, quindi il testo non si taglia.
+                maxHeight: { xs: "none", md: compact ? 90 : 120 },
                 // Stato attivo: bordo e fondo colorati, così si distingue
                 // dal semplice fatto che il valore sia diverso da zero.
                 ...(active && {
@@ -179,8 +185,10 @@ export default function Counters({
                                 alignContent: "start",
                                 alignItems: "start",
                                 gridTemplateColumns: {
-                                    xs: "repeat(2, 1fr)",
-                                    md: `repeat(${g.alerts.length}, 1fr)`,
+                                    // Layout "column" (dashboard): una card per riga su mobile.
+                                    // Layout "row" (barra filtri): resta a 2 colonne.
+                                    xs: layout === "column" ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
+                                    md: `repeat(${g.alerts.length}, minmax(0, 1fr))`,
                                 },
                             }}
                         >

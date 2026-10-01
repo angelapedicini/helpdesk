@@ -149,7 +149,7 @@ export default function TicketMessagesPage() {
                 // con 100vh il campo di input finirebbe sotto la barra.
                 height: {
                     xs: `calc(100dvh - ${MOBILE_NAVBAR_HEIGHT}px)`,
-                    md: "calc(100vh - 96px)",
+                    md: "90vh",
                 },
                 display: "flex",
                 flexDirection: "column",

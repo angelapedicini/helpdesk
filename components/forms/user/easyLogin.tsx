@@ -28,9 +28,10 @@ interface EasyLoginFormProps {
     defaultDepartment?: Department;
     defaultEmail?: string;
     stacked?: boolean;
+    onSubmitted?: () => void;
 }
 
-export default function EasyLoginForm({ defaultDepartment, defaultEmail, stacked }: EasyLoginFormProps) {
+export default function EasyLoginForm({ defaultDepartment, defaultEmail, stacked, onSubmitted }: EasyLoginFormProps) {
     const router = useRouter();
 
     const [selectedDepartment, setSelectedDepartment] = useState<Department | undefined>(
@@ -104,6 +105,7 @@ export default function EasyLoginForm({ defaultDepartment, defaultEmail, stacked
 
     const handleLoginSubmit = (values: EasyLogin) => {
         login({ variables: { input: { email: values.email } } });
+        onSubmitted?.();
     };
 
     return (
@@ -123,7 +125,7 @@ export default function EasyLoginForm({ defaultDepartment, defaultEmail, stacked
                 <AccountCircleIcon />
             </IconButton>
 
-{/* Step 1: Department */}
+            {/* Step 1: Department */}
             <Controller
                 name="department"
                 control={depControl}
