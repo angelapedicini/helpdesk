@@ -5,12 +5,13 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import { useQuery } from "@apollo/client/react";
+import { useApolloClient, useQuery } from "@apollo/client/react";
 import CreateTicket from "@/components/forms/ticket/create-ticket";
 import { DepartmentEnum } from "@/lib/validators/enums.schema";
 import { GET_CATEGORY_BY_ID } from "@/apollo-client/queries/ticket-category/ticket-category.queries";
 
 export default function Page() {
+  const client = useApolloClient();
   const params = useParams();
   const departmentParam = params.department;
 
@@ -21,6 +22,7 @@ export default function Page() {
   const presetDepartment = parsedDepartment.success ? parsedDepartment.data : undefined;
 
   const categoryId = categoryIdParam !== undefined ? Number(categoryIdParam) : NaN;
+
   const hasCategoryId = !Number.isNaN(categoryId);
 
   const { data } = useQuery(GET_CATEGORY_BY_ID, {
@@ -47,7 +49,9 @@ export default function Page() {
       <CreateTicket
         department={presetDepartment}
         category={category}
-        onSubmit={async (values) => {
+        onSubmit={async () => {
+          client.cache.evict({ fieldName: "dashboard" });
+          client.cache.gc();
         }}
       />
     </Box>

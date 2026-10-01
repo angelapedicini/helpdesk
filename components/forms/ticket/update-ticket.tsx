@@ -414,6 +414,7 @@ export default function TicketDetailForm({
         update(cache) {
             cache.evict({ fieldName: "tickets" });
             cache.evict({ fieldName: "ticketHistoryByTicketId" });
+            cache.evict({ fieldName: "dashboard" });
             cache.gc();
         },
     });

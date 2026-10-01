@@ -6,6 +6,7 @@ export const NAV_NOTIFICATIONS = graphql(`
     unreadTicketMessages {
       ticketId
       count
+      lastMessageAt
     }
     ticketNotifications {
       id

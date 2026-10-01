@@ -67,15 +67,13 @@ function AlertCard({
 
     const boxSx = {
         p: compact ? 1 : 1.5,
-        height: "100%",
         display: "flex",
         flexDirection: isRow ? "row" : "column",
         // In riga il numero e l'etichetta si allineano sulla baseline, così il
         // numero grande non sembra sospeso sopra il testo.
         alignItems: isRow ? "baseline" : "flex-start",
-        // In colonna "center" è solo l'altezza. In riga diventerebbe un
-        // centraggio orizzontale: il testo deve partire da sinistra.
-        justifyContent: isRow ? "flex-start" : "center",
+        // Il contenuto parte sempre dall'alto / da sinistra, mai centrato.
+        justifyContent: "flex-start",
         minWidth: 0,
         ...(isRow && { gap: 1 }),
     } as const;
@@ -98,8 +96,8 @@ function AlertCard({
                 color="text.secondary"
                 sx={{
                     lineHeight: 1.2,
-                    // Mai a capo: altrimenti una card più alta delle altre e
-                    // le righe della griglia non coincidono più.
+                    // Mai a capo in riga: altrimenti una card diventa più
+                    // alta delle altre.
                     whiteSpace: isRow ? "nowrap" : undefined,
                 }}
             >
@@ -112,7 +110,8 @@ function AlertCard({
         <Card
             variant="outlined"
             sx={{
-                minHeight: 0,
+                // Tetto all'altezza della singola card.
+                maxHeight: compact ? 90 : 120,
                 // Stato attivo: bordo e fondo colorati, così si distingue
                 // dal semplice fatto che il valore sia diverso da zero.
                 ...(active && {
@@ -144,9 +143,9 @@ export default function Counters({
 }: {
     groups: CounterGroup[];
     /**
-     * "regular" = numero h4 e padding largo: un pannello con un solo gruppo,
-     * a tutta altezza. "compact" = 1.6rem e padding stretto: due gruppi da
-     * schiacciare, oppure una barra filtri sopra una tabella.
+     * "regular" = numero h4 e padding largo: un pannello con un solo gruppo.
+     * "compact" = 1.6rem e padding stretto: due gruppi, oppure una barra
+     * filtri sopra una tabella.
      *
      * È esplicito e non derivato dal numero di gruppi perché la pagina ticket
      * ha un solo gruppo e lo vuole comunque piccolo.
@@ -157,52 +156,50 @@ export default function Counters({
     const compact = size === "compact";
 
     return (
-            <Stack spacing={compact ? 1 : 2.5} sx={{ flex: 1, minHeight: 0 }}>
-                {groups.map((g) => {
-                    const isToggle = "onToggle" in g;
-                    const title = g.title;
+        <Stack spacing={compact ? 1 : 2}>
+            {groups.map((g) => {
+                const isToggle = "onToggle" in g;
 
-                    return (
-                        <Box key={title ?? "alerts"} sx={{ flex: { md: 1 }, minHeight: 0, display: "flex", flexDirection: "column" }}>
-                            {title && (
-                                <Typography
-                                    variant={compact ? "body2" : "subtitle1"}
-                                    component="h2"
-                                    sx={{ mb: compact ? 0.5 : 1.5, fontWeight: 600, lineHeight: 1.3 }}
-                                >
-                                    {title}
-                                </Typography>
-                            )}
-
-                            <Box
-                                sx={{
-                                    display: "grid",
-                                    gap: compact ? 1 : 1.5,
-                                    gridTemplateColumns: { xs: "repeat(2, 1fr)", md: `repeat(${g.alerts.length}, 1fr)` },
-                                    gridAutoRows: { md: "1fr" },
-                                    flex: { md: 1 },
-                                    minHeight: 0,
-                                }}
+                return (
+                    <Box key={g.title ?? "alerts"}>
+                        {g.title && (
+                            <Typography
+                                variant={compact ? "body2" : "subtitle1"}
+                                component="h2"
+                                sx={{ mb: compact ? 0.5 : 1.5, fontWeight: 600, lineHeight: 1.3 }}
                             >
-                                {g.alerts.map((alert) => (
-                                    <AlertCard
-                                        key={alert.def.key}
-                                        alert={alert}
-                                        size={size}
-                                        layout={layout}
-                                        active={
-                                            isToggle &&
-                                            g.activeFilterKey === alert.def.filterKey
-                                        }
-                                        href={isToggle ? undefined : g.href(alert.def)}
-                                        onToggle={isToggle ? () => g.onToggle(alert.def) : undefined}
-                                        disabled={isToggle ? g.disabled : undefined}
-                                    />
-                                ))}
-                            </Box>
+                                {g.title}
+                            </Typography>
+                        )}
+
+                        <Box
+                            sx={{
+                                display: "grid",
+                                gap: compact ? 1 : 1.5,
+                                alignContent: "start",
+                                alignItems: "start",
+                                gridTemplateColumns: {
+                                    xs: "repeat(2, 1fr)",
+                                    md: `repeat(${g.alerts.length}, 1fr)`,
+                                },
+                            }}
+                        >
+                            {g.alerts.map((alert) => (
+                                <AlertCard
+                                    key={alert.def.key}
+                                    alert={alert}
+                                    size={size}
+                                    layout={layout}
+                                    active={isToggle && g.activeFilterKey === alert.def.filterKey}
+                                    href={isToggle ? undefined : g.href(alert.def)}
+                                    onToggle={isToggle ? () => g.onToggle(alert.def) : undefined}
+                                    disabled={isToggle ? g.disabled : undefined}
+                                />
+                            ))}
                         </Box>
-                    );
-                })}
-            </Stack>
+                    </Box>
+                );
+            })}
+        </Stack>
     );
 }

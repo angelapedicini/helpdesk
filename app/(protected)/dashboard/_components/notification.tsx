@@ -8,6 +8,7 @@ import Typography from "@mui/material/Typography";
 import type { ResultOf } from "@graphql-typed-document-node/core";
 
 import { NAV_NOTIFICATIONS } from "@/apollo-client/queries/ticket-notification/ticket-notification.queries";
+import { fmtRelative } from "@/lib/helper/formt-helpers";
 
 type NavNotificationsData = ResultOf<typeof NAV_NOTIFICATIONS>;
 export type UnreadTicketMessage = NavNotificationsData["unreadTicketMessages"][number];
@@ -50,7 +51,10 @@ export default function TicketNotificationsList({
                     <ListSubheader sx={{ fontWeight: 700, lineHeight: "32px" }}>Messaggi non letti</ListSubheader>
                     {unread.map((u) => (
                         <ListItemButton key={`unread-${u.ticketId}`} onClick={() => onOpenUnread?.(u.ticketId)}>
-                            <ListItemText primary={`Ticket #${u.ticketId} — ${u.count} nuovi messaggi`} />
+                            <ListItemText
+                                primary={`Ticket #${u.ticketId} — ${u.count} nuovi messaggi`}
+                                secondary={fmtRelative(u.lastMessageAt)}
+                            />
                         </ListItemButton>
                     ))}
                 </>
@@ -61,7 +65,10 @@ export default function TicketNotificationsList({
                     <ListSubheader sx={{ fontWeight: 700, lineHeight: "32px" }}>Notifiche</ListSubheader>
                     {notifications.map((n) => (
                         <ListItemButton key={n.id} onClick={() => onOpenNotification?.(n.ticket.id)}>
-                            <ListItemText primary={`Ticket #${n.ticket.id} — ${TICKET_NOTIFICATION_LABELS[n.type]}`} />
+                            <ListItemText
+                                primary={`Ticket #${n.ticket.id} — ${TICKET_NOTIFICATION_LABELS[n.type]}`}
+                                secondary={fmtRelative(n.updatedAt)}
+                            />
                         </ListItemButton>
                     ))}
                 </>

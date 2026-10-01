@@ -10,7 +10,7 @@ import {
 } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { addBusinessDays } from "date-fns";
-import "dotenv/config";
+// import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { autoAssign } from "../lib/ticket/autoAssign";
 import { computeDueDate } from "../lib/ticket/dueDate";
@@ -21,7 +21,7 @@ const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
 });
 
-const prisma = new PrismaClient({ adapter });
+export const prisma = new PrismaClient({ adapter });
 
 const DEPARTMENT_CATEGORIES: Record<Department, string[]> = {
   IT: ["Hardware", "Bug", "Sistemi e accessi"],
@@ -211,6 +211,8 @@ function humanizeEnum(value: string): string {
     .join(" ");
 }
 
+
+
 /*
  * Costruisce il nested-create Prisma per il "ticket specific" coerente
  * con il campo specifico richiesto dalla categoria, più un'etichetta
@@ -357,8 +359,18 @@ function daysFromNow(days: number): Date {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 }
 
-function computeDueWorkDate(dueFirstResponse: Date): Date {
-  return addBusinessDays(dueFirstResponse, randomInt(3, 7));
+const MIN_WORK_BUSINESS_DAYS = 3;
+
+// dueDate = dueFirstResponse + almeno 3 giorni lavorativi.
+// `businessDays` opzionale per i casi speciali che devono avere un valore preciso.
+function computeDueWorkDate(
+  dueFirstResponse: Date,
+  businessDays: number = randomInt(MIN_WORK_BUSINESS_DAYS, 7)
+): Date {
+  return addBusinessDays(
+    dueFirstResponse,
+    Math.max(businessDays, MIN_WORK_BUSINESS_DAYS)
+  );
 }
 
 // --- SPLIT UTENTI PER STATO ---
@@ -493,7 +505,7 @@ async function createHistoryRecords(
 
 /*
  * Step "ASSIGNED": nasce alla creazione del ticket. Porta il
- * dueFirstResponse e il dueDate effettivi del ticket (gli ASSIGNED
+ * dueFirstResponse e il dueDate effettivi del ticket 
  * normali hanno dueDate null, quindi resta coerente anche lì).
  */
 function assignedStepFor(ticket: TicketRecord): HistoryStep {
@@ -505,7 +517,7 @@ function assignedStepFor(ticket: TicketRecord): HistoryStep {
     assignedToId: ticket.assignedToId,
     closingMessage: null,
     dueFirstResponse: ticket.dueFirstResponse,
-    dueDate: ticket.dueDate,
+    dueDate: null,
     closedAt: null,
   };
 }
@@ -1003,7 +1015,7 @@ async function createLateFirstResponseTicket(
   const priority = pickRandom(PRIORITIES) as TicketPriority;
   const createdAt = daysAgo(5);
   const dueFirstResponse = daysAgo(3);
-  const dueDate = daysFromNow(2);
+  const dueDate = computeDueWorkDate(dueFirstResponse, 5);
   const inProgressAt = daysAgo(2);
 
   const { category, specificData, specificLabel, ticketCase } = pickCategoryWithSpecific(
@@ -1058,17 +1070,17 @@ async function createLateFirstResponseTicket(
   return ticket;
 }
 
-async function createLateClosedTicket(
+async function createInProgressOverdueDueDateTicket(
   author: AuthorRecord,
   categoriesByDept: Record<Department, CategoryRecord[]>,
   techniciansByDept: Record<Department, TechnicianRecord[]>,
   specificSeedRef: { value: number }
 ) {
   const priority = pickRandom(PRIORITIES) as TicketPriority;
-  const createdAt = daysAgo(CLOSED_DAYS_BACK);
-  const dueFirstResponse = computeDueDate(priority, createdAt);
-  const dueDate = daysAgo(15);
-  const closedAt = daysAgo(3);
+  const createdAt = daysAgo(15);
+  const dueFirstResponse = daysAgo(10);
+  const dueDate = daysAgo(1); // 9 giorni dopo dueFirstResponse, già scaduta
+  const inProgressAt = daysAgo(9);
 
   const { category, specificData, specificLabel, ticketCase } = pickCategoryWithSpecific(
     author.department,
@@ -1087,24 +1099,37 @@ async function createLateClosedTicket(
     data: {
       title: ticketCase.title,
       description: ticketCase.description,
-      status: "CLOSED",
+      status: "IN_PROGRESS",
       priority,
       categoryId: category.id,
       createdById: author.id,
       assignedToId,
       lastUpdatedById: assignedToId,
-      closingMessage: ticketCase.closingMessage,
+      closingMessage: null,
       sourceDepartmentForUser: author.department,
       ticketDepartment: category.department,
       dueFirstResponse,
       dueDate,
-      closedAt,
+      closedAt: null,
       createdAt,
       ...specificData,
     },
   });
 
-  await createTicketHistoryChain(ticket, specificLabel);
+  await createHistoryRecords(ticket, specificLabel, [
+    assignedStepFor(ticket),
+    {
+      status: "IN_PROGRESS",
+      createdAt: inProgressAt,
+      lastUpdatedById: assignedToId,
+      categoryId: category.id,
+      assignedToId,
+      closingMessage: null,
+      dueFirstResponse,
+      dueDate,
+      closedAt: null,
+    },
+  ]);
 
   return ticket;
 }
@@ -1243,56 +1268,6 @@ async function createAssignedOverdueFirstResponseTicket(
   return ticket;
 }
 
-async function createAssignedOverdueDueDateTicket(
-  author: AuthorRecord,
-  categoriesByDept: Record<Department, CategoryRecord[]>,
-  techniciansByDept: Record<Department, TechnicianRecord[]>,
-  specificSeedRef: { value: number }
-) {
-  const priority = pickRandom(PRIORITIES) as TicketPriority;
-  const createdAt = daysAgo(10);
-  const dueFirstResponse = computeDueDate(priority, createdAt);
-  const dueDate = daysAgo(1);
-
-  const { category, specificData, specificLabel, ticketCase } = pickCategoryWithSpecific(
-    author.department,
-    categoriesByDept,
-    specificSeedRef
-  );
-
-  const assignedToId = await assignTechnician(
-    category.id,
-    author.id,
-    author.department,
-    techniciansByDept
-  );
-
-  const ticket = await prisma.ticket.create({
-    data: {
-      title: ticketCase.title,
-      description: ticketCase.description,
-      status: "ASSIGNED",
-      priority,
-      categoryId: category.id,
-      createdById: author.id,
-      assignedToId,
-      lastUpdatedById: author.id,
-      closingMessage: null,
-      sourceDepartmentForUser: author.department,
-      ticketDepartment: category.department,
-      dueFirstResponse,
-      dueDate,
-      closedAt: null,
-      createdAt,
-      ...specificData,
-    },
-  });
-
-  await createTicketHistoryChain(ticket, specificLabel);
-
-  return ticket;
-}
-
 async function createSpecialCase(
   caseId: SpecialCaseId,
   author: AuthorRecord,
@@ -1303,14 +1278,12 @@ async function createSpecialCase(
   switch (caseId) {
     case 1:
       return createLateFirstResponseTicket(author, categoriesByDept, techniciansByDept, specificSeedRef);
-    case 2:
-      return createLateClosedTicket(author, categoriesByDept, techniciansByDept, specificSeedRef);
     case 3:
       return createEscalatedDueDateTicket(author, categoriesByDept, techniciansByDept, specificSeedRef);
     case 4:
       return createAssignedOverdueFirstResponseTicket(author, categoriesByDept, techniciansByDept, specificSeedRef);
     case 5:
-      return createAssignedOverdueDueDateTicket(author, categoriesByDept, techniciansByDept, specificSeedRef);
+      return createInProgressOverdueDueDateTicket(author, categoriesByDept, techniciansByDept, specificSeedRef);
   }
 }
 
@@ -1395,7 +1368,8 @@ async function createTicketsForAllUsers(
 
 // --- MAIN ---
 
-export async function main() {
+// export async function main() {
+export async function runSeed() {
   /*
    * Pulizia database.
    *
@@ -1776,11 +1750,11 @@ export async function main() {
   );
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// main()
+// .catch((error) => {
+//   console.error(error);
+//   process.exit(1);
+// })
+// .finally(async () => {
+//   await prisma.$disconnect();
+// });

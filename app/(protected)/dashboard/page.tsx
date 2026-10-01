@@ -24,6 +24,8 @@ import TicketNotificationsList from "./_components/notification";
 
 const PAGE_HEIGHT = "90vh";
 const SIDEBAR_WIDTH = 320;
+// Header + gap + due sezioni devono stare nei 90vh della pagina: 40vh l'una.
+const SECTION_MAX_HEIGHT = "40vh";
 
 // La copy della dashboard sta qui. Il backend dice solo QUALI gruppi e QUALI
 // liste esistono, mai con quali titoli: i testi restano nel frontend.
@@ -97,11 +99,22 @@ export default function DashboardPage() {
                 </Paper>
             </Box>
 
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, minHeight: 0 }}>
+            {/* Colonna destra: header | counters | liste.
+                alignContent: "start" fa partire le righe dall'alto con l'altezza
+                del loro contenuto, invece di stirarle per riempire i 90vh. */}
+            <Box
+                sx={{
+                    display: "grid",
+                    gap: 3,
+                    minWidth: 0,
+                    minHeight: 0,
+                    alignContent: "start",
+                }}
+            >
                 <Stack
                     direction={{ xs: "column", sm: "row" }}
                     spacing={1.5}
-                    sx={{ alignItems: { sm: "center" }, justifyContent: "space-between", flexShrink: 0 }}
+                    sx={{ alignItems: { sm: "center" }, justifyContent: "space-between" }}
                 >
                     <Typography variant="h5" component="h1">
                         Dashboard
@@ -119,28 +132,35 @@ export default function DashboardPage() {
                     </Stack>
                 </Stack>
 
-                <Counters
-                    groups={counterGroups}
-                    size={counterGroups.length > 1 ? "compact" : "regular"}
-                />
-
+                {/* Sezione 1: counters */}
                 <Box
                     sx={{
-                        flex: { md: 1 },
-                        minHeight: 0,
-                        overflowY: { md: "auto" },
+                        maxHeight: { md: SECTION_MAX_HEIGHT },
+                        overflowY: "auto",
+                        alignSelf: "start",
+                    }}
+                >
+                    <Counters
+                        groups={counterGroups}
+                        size={counterGroups.length > 1 ? "compact" : "regular"}
+                    />
+                </Box>
+
+                {/* Sezione 2: liste ticket, una colonna per lista.
+                    Math.max perché lists è vuota durante il loading. */}
+                <Box
+                    sx={{
+                        maxHeight: { md: SECTION_MAX_HEIGHT },
+                        overflowY: "auto",
+                        alignSelf: "start",
                         display: "grid",
                         gap: 3,
-                        gridTemplateColumns: {
-                            xs: "minmax(0, 1fr)",
-                            // Una colonna per lista, invece del fisso a 2: il
-                            // technician ne riceve 3 (MINE, poi le due di
-                            // ASSIGNED_TO_ME) e la terza andava a capo.
-                            // Math.max perché lists è vuota durante il loading.
-                            md: `repeat(${Math.max(lists.length, 1)}, minmax(0, 1fr))`,
-                        },
                         alignContent: "start",
                         alignItems: "start",
+                        gridTemplateColumns: {
+                            xs: "minmax(0, 1fr)",
+                            md: `repeat(${Math.max(lists.length, 1)}, minmax(0, 1fr))`,
+                        },
                     }}
                 >
                     {lists.map((l) => (

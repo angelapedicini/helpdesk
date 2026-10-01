@@ -61,15 +61,18 @@ export const ticketReadStateQueries = {
 
         const ticketIds = accessibleTickets.map((t) => t.id);
 
-        // Per ogni ticket: messaggi non miei con id oltre l'ultimo letto.
+// Per ogni ticket: messaggi non miei con id oltre l'ultimo letto.
         // Se non esiste ancora TicketReadState per quel ticket,
         // lastReadMessageId è NULL e vengono considerati tutti i messaggi altrui.
+        // MAX(createdAt) è l'arrivo dell'ultimo di quei messaggi: è quello che
+        // serve mostrare, non l'aggiornamento del read state.
         const rows = await prisma.$queryRaw<
-            { ticketId: number; count: bigint }[]
+            { ticketId: number; count: bigint; lastMessageAt: Date }[]
         >`
             SELECT
                 tm."ticketId" AS "ticketId",
-                COUNT(*) AS "count"
+                COUNT(*) AS "count",
+                MAX(tm."createdAt") AS "lastMessageAt"
             FROM "TicketMessage" tm
             LEFT JOIN "TicketReadState" trs
                 ON trs."ticketId" = tm."ticketId"
@@ -86,6 +89,7 @@ export const ticketReadStateQueries = {
         return rows.map((r) => ({
             ticketId: r.ticketId,
             count: Number(r.count),
+            lastMessageAt: r.lastMessageAt,
         }));
     },
 };

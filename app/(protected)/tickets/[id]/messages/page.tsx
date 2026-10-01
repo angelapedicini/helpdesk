@@ -22,6 +22,9 @@ import { NAV_NOTIFICATIONS } from "@/apollo-client/queries/ticket-notification/t
 
 const PAGE_SIZE = 20;
 
+// Altezza della navbar su mobile: se la tua è diversa, cambia solo questo valore.
+const MOBILE_NAVBAR_HEIGHT = 56;
+
 export default function TicketMessagesPage() {
     const { id } = useParams();
     const ticketId = typeof id === "string" ? Number(id) : NaN;
@@ -134,16 +137,39 @@ export default function TicketMessagesPage() {
     return (
         <Box
             sx={{
-                width: "50vw",
+                // Mobile: tutta la larghezza e tutta l'altezza sotto la navbar.
+                // Desktop (md+): identico a prima.
+                width: { xs: "100%", md: "50vw" },
                 mx: "auto",
-                mt: 3,
-                height: "calc(100vh - 96px)",
+                mt: { xs: 0, md: 3 },
+                px: { xs: 1.5, md: 0 },
+                pt: { xs: 1.5, md: 0 },
+                boxSizing: "border-box",
+                // dvh segue la barra del browser mobile che appare/scompare;
+                // con 100vh il campo di input finirebbe sotto la barra.
+                height: {
+                    xs: `calc(100dvh - ${MOBILE_NAVBAR_HEIGHT}px)`,
+                    md: "calc(100vh - 96px)",
+                },
                 display: "flex",
                 flexDirection: "column",
             }}
         >
-            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 2, flexShrink: 0 }}>
-                <Typography variant="h5">
+            <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mb: { xs: 1, md: 2 },
+                    flexShrink: 0,
+                }}
+            >
+                <Typography
+                    variant="h5"
+                    noWrap
+                    sx={{ minWidth: 0, fontSize: { xs: "1.15rem", md: undefined } }}
+                >
                     Messaggi ticket #{ticketId}
                 </Typography>
 
@@ -166,7 +192,16 @@ export default function TicketMessagesPage() {
                 />
             </Box>
 
-            <Stack direction="row" spacing={1} sx={{ mt: 2, flexShrink: 0 }}>
+            <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                    mt: { xs: 1, md: 2 },
+                    // Su iPhone con la barra home in fondo, l'input non deve finirci sotto.
+                    pb: { xs: "env(safe-area-inset-bottom, 0px)", md: 0 },
+                    flexShrink: 0,
+                }}
+            >
                 <TicketMessageForm
                     ticketId={ticketId}
                     pageSize={PAGE_SIZE}

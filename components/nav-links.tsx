@@ -76,14 +76,14 @@ export function buildNavLinks(session: AccessTokenPayload): NavLinkItem[] {
   }
 
   links.push({
-    label: "I miei ticket cancellati",
+    label: "I miei ticket eliminati",
     href: "/tickets-deleted?scope=mine",
     icon: <DataObjectIcon />,
   });
 
   if (canSeeScope("ASSIGNED_TO_ME")) {
     links.push({
-      label: "Ticket assegnati a me cancellati",
+      label: "Ticket assegnati a me eliminati",
       href: "/tickets-deleted?scope=assigned_to_me",
       icon: <DataObjectIcon />,
     });
@@ -91,7 +91,7 @@ export function buildNavLinks(session: AccessTokenPayload): NavLinkItem[] {
 
   if (canSeeScope("DEPARTMENT")) {
     links.push({
-      label: "Ticket del dipartimento cancellati",
+      label: "Ticket del dipartimento eliminati",
       href: "/tickets-deleted?scope=department",
       icon: <DataObjectIcon />,
     });

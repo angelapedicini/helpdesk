@@ -786,6 +786,7 @@ export type TicketSupportSpecific = {
 export type TicketUnreadCount = {
   __typename?: 'TicketUnreadCount';
   count: Scalars['Int']['output'];
+  lastMessageAt: Scalars['Date']['output'];
   ticketId: Scalars['Int']['output'];
 };
 

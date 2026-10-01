@@ -13,12 +13,7 @@ import { ADD_USER_SPECIALIZATION } from "@/apollo-client/queries/user-specializa
 import FormLayout from "../form-layout";
 
 // stile campi di sola lettura: testo in primary invece del grigio sbiadito di default MUI
-const readOnlyFieldSx = {
-    "& .MuiInputBase-input.Mui-disabled": {
-        WebkitTextFillColor: "var(--mui-palette-primary-main)",
-        color: "primary.main",
-    },
-};
+
 
 type AddUserSpecializationFormProps = {
     userId: number;
@@ -100,7 +95,6 @@ export default function AddUserSpecializationForm({
                     value={fullName}
                     disabled
                     fullWidth
-                    sx={readOnlyFieldSx}
                 />
 
                 <AppSelect

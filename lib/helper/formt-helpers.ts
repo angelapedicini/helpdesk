@@ -1,7 +1,17 @@
 import { randomUUID } from "crypto";
+import { formatDistanceToNow } from "date-fns";
+import { it } from "date-fns/locale";
 
 export function fmt(date: Date | string) {
   return new Date(date).toLocaleDateString("it-IT");
+}
+
+/**
+ * "5 min fa", "3 ore fa": quando serve capire da quanto, non il giorno.
+ * fmt va bene per una data in elenco, non per un arrivo appena successo.
+ */
+export function fmtRelative(date: Date | string) {
+  return formatDistanceToNow(new Date(date), { addSuffix: true, locale: it });
 }
 
 export function formatMonth(date: Date): string {
