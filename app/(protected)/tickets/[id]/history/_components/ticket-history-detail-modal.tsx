@@ -236,19 +236,6 @@ export default function TicketHistoryDetailModal({
             />
 
             <TextField
-                label="Descrizione"
-                value={displayValue(row.description)}
-                fullWidth
-                multiline
-                minRows={3}
-                disabled
-                sx={{
-                    gridColumn: { xs: "1", md: "1 / -1" },
-                    ...highlightSx("description"),
-                }}
-            />
-
-            <TextField
                 label="Motivo riapertura"
                 value={displayValue(row.reopenReason)}
                 fullWidth

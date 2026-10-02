@@ -9,7 +9,7 @@ import { useTheme } from "@mui/material/styles";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import FiltersSidebar from "@/components/filters-sidebar";
 import FilterTicketForm from "@/components/forms/ticket/filter-ticket";
-import QuickUpdateTicketForm from "@/components/forms/ticket/quick-update-ticket";
+import TicketDetailForm from "@/components/forms/ticket/update-ticket";
 import Modal from "@/components/modal";
 import SureForm from "@/components/forms/sure-form";
 import { useTicketFilterState } from "@/components/hooks/use-ticket-filter-state";
@@ -256,12 +256,13 @@ export default function TicketsPage() {
                 onClose={quickUpdateModal.close}
             >
                 {quickUpdateModal.value && (
-                    <QuickUpdateTicketForm
+                    <TicketDetailForm
                         // il ticket è riletto a ogni apertura: dopo una
                         // modifica riuscita la lista si ricarica e il
                         // form non deve mostrare i valori precedenti
                         key={quickUpdateModal.value.id}
                         ticket={quickUpdateModal.value}
+                        variant="quick"
                         onSubmit={quickUpdateModal.close}
                     />
                 )}

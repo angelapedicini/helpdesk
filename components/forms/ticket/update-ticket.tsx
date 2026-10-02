@@ -41,7 +41,7 @@ import { SpecificFieldInput } from "../inputs/specific-field-input";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import FormLayout from "../form-layout";
 import { toCalendarUTCDate, toPickerValue } from "@/lib/helper/formt-helpers";
-import { useTicketAllowedStatuses, useTicketAssigneeBrowseMode, useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/hook-permission";
+import { useTicketAllowedStatuses, useTicketAssigneeBrowseMode, useTicketUpdatePermissions, type TicketFieldPermissions } from "@/lib/casl/abilities/ticket/hook-permission";
 import { SOLE_SPECIALIST_CATEGORY_IDS, USERS_SPEC_BY_CATID } from "@/apollo-client/queries/user-specialization/user-specialization.queries";
 import { computeDueDate, computeDueWorkDate } from "@/lib/ticket/dueDate";
 
@@ -49,6 +49,15 @@ import { computeDueDate, computeDueWorkDate } from "@/lib/ticket/dueDate";
 type TicketDetailFormProps = {
     ticket: TicketFieldsFragment;
     header?: ReactNode;
+    /**
+     * "full" = form completo della pagina di dettaglio, dove i campi non
+     * modificabili restano visibili ma disabilitati.
+     * "quick" = form della modale in lista, che mostra solo i campi
+     * modificabili e nient'altro.
+     * I due usi condividono default, validazione, query e submit: cambia solo
+     * la resa dei campi.
+     */
+    variant?: "full" | "quick";
     onSubmit: (
         values: UpdateTicketOutput
     ) => void | Promise<void>;
@@ -87,9 +96,25 @@ function mapTicketToFormValues(
     };
 }
 
+// Il default arriva dal fragment come stringa ISO, mentre i values validati
+// da zod sono già Date (lo schema usa z.coerce.date(), che tipizza l'input
+// come unknown). Senza normalizzare, una scadenza mai toccata risulterebbe
+// "modificata": verrebbe inviata nell'input e il backend risponderebbe
+// FORBIDDEN, perché su un ticket non ancora in lavorazione nessun ruolo può
+// modificare dueDate.
+function sameDate(a: unknown, b: unknown): boolean {
+    if (a === undefined || a === null) return b === undefined || b === null;
+    if (b === undefined || b === null) return false;
+    return (
+        new Date(a as string | Date).getTime() ===
+        new Date(b as string | Date).getTime()
+    );
+}
+
 export default function TicketDetailForm({
     ticket,
     header,
+    variant = "full",
     onSubmit,
 }: TicketDetailFormProps) {
     const { registerReset, resetAll } = useResetRegistry();
@@ -101,6 +126,21 @@ export default function TicketDetailForm({
 
     const { fields: fieldPermissions, hasAnyEditableField } =
         useTicketUpdatePermissions(ticket);
+
+    const isQuick = variant === "quick";
+
+    /*
+     * Unica differenza fra i due usi del form: nel quick form i campi non
+     * modificabili non vengono renderizzati, nel form completo sono mostrati
+     * ma disabilitati. La decisione arriva dalla stessa sorgente
+     * (fieldPermissions, cioè ability.can("update", subject, field)), cambia
+     * solo la conseguenza.
+     */
+    const renderField = (key: keyof TicketFieldPermissions) =>
+        !isQuick || fieldPermissions[key];
+
+    const isDisabled = (key: keyof TicketFieldPermissions) =>
+        !isQuick && !fieldPermissions[key];
 
     // Label iniziale per il campo "Tecnico assegnato"
     const assignedToInitialLabel = ticket.assignedTo
@@ -466,7 +506,7 @@ export default function TicketDetailForm({
             changedValues.closingMessage = values.closingMessage;
         }
 
-        if (values.dueDate !== defaultValuesOutput.dueDate) {
+        if (!sameDate(values.dueDate, defaultValuesOutput.dueDate)) {
             changedValues.dueDate = values.dueDate;
         }
 
@@ -544,17 +584,31 @@ export default function TicketDetailForm({
             >
                 {header}
 
-                <Box
-                    sx={{
-                        display: "grid",
-                        gridTemplateColumns: {
-                            xs: "1fr",
-                            md: "1fr 1fr",
-                        },
-                        gap: 3,
-                    }}
-                >
+                {/* Nel quick form, se l'utente non può toccare nulla, il form
+                    si sostituisce con un avviso: non ha senso elencare campi
+                    assenti. Nel form completo i campi restano visibili in
+                    sola lettura, quindi l'avviso non ci va. */}
+                {isQuick && !hasAnyEditableField ? (
+                    <Alert severity="info">
+                        Non ci sono campi che puoi modificare su questo ticket.
+                    </Alert>
+                ) : (
+                    <Box
+                        sx={{
+                            display: "grid",
+                            // nel quick form una sola colonna: la modale è
+                            // maxWidth="sm", due colonne sarebbero troppo strette
+                            gridTemplateColumns: isQuick
+                                ? "1fr"
+                                : { xs: "1fr", md: "1fr 1fr" },
+                            gap: 3,
+                        }}
+                    >
 
+                {/* Anteprima read-only: ha senso solo dove la scadenza è
+                    ricalcolata dal backend a ogni update, cioè nel form completo.
+                    Nel quick form non si mostra nulla che non sia modificabile. */}
+                {!isQuick && (
                 <TextField
                     label="Prima risposta entro"
                     value={
@@ -575,119 +629,120 @@ export default function TicketDetailForm({
                             : undefined
                     }
                 />
+                )}
 
 
-                <Controller
-                    name="dueDate"
-                    control={control}
-                    disabled={!fieldPermissions.dueDate}
-                    render={({ field }) => (
-                        <DatePicker
-                            label="Scadenza"
-                            value={toPickerValue(field.value)}
-                            onChange={(date) => {
-                                dueDateManuallyEditedRef.current = true;
-                                field.onChange(toCalendarUTCDate(date));
-                            }}
-                            disabled={!fieldPermissions.dueDate}
-                            slotProps={{
-                                textField: {
-                                    error: !!errors.dueDate,
-                                    helperText: errors.dueDate?.message,
-                                },
-                            }}
-                        />
-                    )}
-                />
-
-                <AppSelect
-                    name="categoryId"
-                    label="Categoria"
-                    control={control}
-                    options={categoryOptions}
-                    disabled={!fieldPermissions.categoryId}
-                />
-
-                <SpecificFieldInput
-                    specificField={selectedCategory?.specificField}
-                    control={control}
-                    error={errors.specificValue?.message}
-                    disabled={!fieldPermissions.specificValue}
-                />
-
-                <AppSelect
-                    name="priority"
-                    label="Priorità"
-                    control={control}
-                    options={priorityOptions}
-                    disabled={!fieldPermissions.priority}
-                />
-
-                {assigneeBrowseMode === "list" ? (
-                    <AppSelect
-                        name="assignedToId"
-                        label="Tecnico assegnato"
+                {renderField("dueDate") && (
+                    <Controller
+                        name="dueDate"
                         control={control}
-                        options={deptUserOptions}
-                        disabled={!fieldPermissions.assignedToId || loadingDeptUsers}
-                    />
-                ) : (
-                    <SearchInput
-                        name="assignedToId"
-                        label="Tecnico assegnato"
-                        control={control}
-                        onSearch={handleSearchUsers}
-                        loading={loadingUsers}
-                        initialLabel={assignedToInitialLabel}
-                        disabled={!fieldPermissions.assignedToId}
-                        registerReset={registerReset}
+                        disabled={isDisabled("dueDate")}
+                        render={({ field }) => (
+                            <DatePicker
+                                label="Scadenza"
+                                value={toPickerValue(field.value)}
+                                onChange={(date) => {
+                                    dueDateManuallyEditedRef.current = true;
+                                    field.onChange(toCalendarUTCDate(date));
+                                }}
+                                disabled={isDisabled("dueDate")}
+                                slotProps={{
+                                    textField: {
+                                        error: !!errors.dueDate,
+                                        helperText: errors.dueDate?.message,
+                                    },
+                                }}
+                            />
+                        )}
                     />
                 )}
-                <AppSelect
-                    name="status"
-                    label="Status"
-                    control={control}
-                    options={statusOptions}
-                    disabled={!fieldPermissions.status}
-                />
+
+                {renderField("categoryId") && (
+                    <AppSelect
+                        name="categoryId"
+                        label="Categoria"
+                        control={control}
+                        options={categoryOptions}
+                        disabled={isDisabled("categoryId")}
+                    />
+                )}
+
+                {renderField("specificValue") && (
+                    <SpecificFieldInput
+                        specificField={selectedCategory?.specificField}
+                        control={control}
+                        error={errors.specificValue?.message}
+                        disabled={isDisabled("specificValue")}
+                    />
+                )}
+
+                {renderField("priority") && (
+                    <AppSelect
+                        name="priority"
+                        label="Priorità"
+                        control={control}
+                        options={priorityOptions}
+                        disabled={isDisabled("priority")}
+                    />
+                )}
+
+                {renderField("assignedToId") && (
+                    assigneeBrowseMode === "list" ? (
+                        <AppSelect
+                            name="assignedToId"
+                            label="Tecnico assegnato"
+                            control={control}
+                            options={deptUserOptions}
+                            disabled={isDisabled("assignedToId") || loadingDeptUsers}
+                        />
+                    ) : (
+                        <SearchInput
+                            name="assignedToId"
+                            label="Tecnico assegnato"
+                            control={control}
+                            onSearch={handleSearchUsers}
+                            loading={loadingUsers}
+                            initialLabel={assignedToInitialLabel}
+                            disabled={isDisabled("assignedToId")}
+                            registerReset={registerReset}
+                        />
+                    )
+                )}
+
+                {renderField("status") && (
+                    <AppSelect
+                        name="status"
+                        label="Status"
+                        control={control}
+                        options={statusOptions}
+                        disabled={isDisabled("status")}
+                    />
+                )}
 
 
 
-                <TextField
-                    {...register("title")}
-                    label="Titolo"
-                    fullWidth
-                    disabled={!fieldPermissions.title}
-                    error={!!errors.title}
-                    helperText={errors.title?.message}
-                />
 
-                <TextField
-                    {...register("description")}
-                    label="Descrizione"
-                    fullWidth
-                    multiline
-                    minRows={3}
-                    disabled={!fieldPermissions.description}
-                    error={!!errors.description}
-                    helperText={errors.description?.message}
-                    sx={{
-                        gridColumn: {
-                            md: "1 / -1",
-                        },
-                    }}
-                />
-
-                {showClosingMessage && (
+                {renderField("title") && (
                     <TextField
-                        {...register("closingMessage")}
-                        label="Messaggio di chiusura"
+                        {...register("title")}
+                        label="Titolo"
+                        fullWidth
+                        disabled={isDisabled("title")}
+                        error={!!errors.title}
+                        helperText={errors.title?.message}
+                    />
+                )}
+
+                {renderField("description") && (
+                    <TextField
+                        {...register("description")}
+                        label="Descrizione"
                         fullWidth
                         multiline
                         minRows={3}
-                        error={!!errors.closingMessage}
-                        helperText={errors.closingMessage?.message}
-                        disabled={!fieldPermissions.closingMessage}
+                        disabled={isDisabled("description")}
+                        error={!!errors.description}
+                        helperText={errors.description?.message}
                         sx={{
                             gridColumn: {
                                 md: "1 / -1",
@@ -696,7 +751,25 @@ export default function TicketDetailForm({
                     />
                 )}
 
-                {showReopenReason && (
+                {showClosingMessage && renderField("closingMessage") && (
+                    <TextField
+                        {...register("closingMessage")}
+                        label="Messaggio di chiusura"
+                        fullWidth
+                        multiline
+                        minRows={3}
+                        error={!!errors.closingMessage}
+                        helperText={errors.closingMessage?.message}
+                        disabled={isDisabled("closingMessage")}
+                        sx={{
+                            gridColumn: {
+                                md: "1 / -1",
+                            },
+                        }}
+                    />
+                )}
+
+                {showReopenReason && renderField("reopenReason") && (
                     <TextField
                         {...register("reopenReason")}
                         label="Motivo della riapertura"
@@ -705,18 +778,20 @@ export default function TicketDetailForm({
                         minRows={2}
                         error={!!errors.reopenReason}
                         helperText={errors.reopenReason?.message}
+                        disabled={isDisabled("reopenReason")}
                         sx={{ gridColumn: { md: "1 / -1" } }}
                     />
                 )}
 
                 {isSoleSpecialist && createdBy && (
                     <Alert severity="info" sx={{ gridColumn: { md: "1 / -1" } }}>
-                        {`${createdBy.firstName} ${createdBy.lastName}`} è l'unico tecnico con
+                        {`${createdBy.firstName} ${createdBy.lastName}`} è l&apos;unico tecnico con
                         questa specializzazione: il ticket verrà assegnato automaticamente a
                         lui/lei al salvataggio.
                     </Alert>
                 )}
-                </Box>
+                    </Box>
+                )}
             </FormLayout>
         </Box>
     );
