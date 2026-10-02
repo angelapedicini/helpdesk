@@ -9,6 +9,7 @@ import { useTheme } from "@mui/material/styles";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import FiltersSidebar from "@/components/filters-sidebar";
 import FilterTicketForm from "@/components/forms/ticket/filter-ticket";
+import QuickUpdateTicketForm from "@/components/forms/ticket/quick-update-ticket";
 import Modal from "@/components/modal";
 import SureForm from "@/components/forms/sure-form";
 import { useTicketFilterState } from "@/components/hooks/use-ticket-filter-state";
@@ -126,6 +127,12 @@ export default function TicketsPage() {
     };
 
     // --------------------------------
+    // QUICK UPDATE MODAL
+    // --------------------------------
+
+    const quickUpdateModal = useModalState<TicketFieldsFragment>();
+
+    // --------------------------------
     // ACTIONS
     // --------------------------------
 
@@ -145,12 +152,17 @@ export default function TicketsPage() {
         deleteModal.open(ticket);
     };
 
+    const handleQuickUpdate = (ticket: TicketFieldsFragment) => {
+        quickUpdateModal.open(ticket);
+    };
+
     // NEW: azioni condivise tra tabella e card
     const renderActions = (ticket: TicketFieldsFragment) => (
         <TicketRowActions
             ticket={ticket}
             scope={scope}
             onOpen={handleOpen}
+            onQuickUpdate={handleQuickUpdate}
             onHistory={handleHistory}
             onDelete={handleDelete}
             onMessage={handleMessage}
@@ -219,7 +231,7 @@ export default function TicketsPage() {
                     getRowClassName={getRowClassName}
                     getRowTooltip={getTicketOverdueTooltip}
                     maxHeight={"70vh"}
-                    actionsWidth="195px"
+                    actionsWidth="240px"
                     actions={renderActions}
                 />
             )}
@@ -236,6 +248,23 @@ export default function TicketsPage() {
 
             <Modal title="Elimina Ticket" isOpen={deleteModal.isOpen} onClose={deleteModal.close}>
                 <SureForm testo="eliminare" onConfirm={handleConfirmDelete} onCancel={deleteModal.close} />
+            </Modal>
+
+            <Modal
+                title="Modifica rapida ticket"
+                isOpen={quickUpdateModal.isOpen}
+                onClose={quickUpdateModal.close}
+            >
+                {quickUpdateModal.value && (
+                    <QuickUpdateTicketForm
+                        // il ticket è riletto a ogni apertura: dopo una
+                        // modifica riuscita la lista si ricarica e il
+                        // form non deve mostrare i valori precedenti
+                        key={quickUpdateModal.value.id}
+                        ticket={quickUpdateModal.value}
+                        onSubmit={quickUpdateModal.close}
+                    />
+                )}
             </Modal>
         </Box>
     );

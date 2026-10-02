@@ -19,6 +19,7 @@ const TICKET_EDITABLE_FIELDS = [
   "dueDate",
   "closingMessage",
   "specificValue",
+  "reopenReason",
 ] as const;
 
 export type TicketFieldPermissions = Record<

@@ -7,15 +7,17 @@ import Tooltip from "@mui/material/Tooltip";
 import DeleteIcon from "@mui/icons-material/Delete";
 import HistoryIcon from "@mui/icons-material/History";
 import EditSquareIcon from '@mui/icons-material/EditSquare';
+import EditIcon from '@mui/icons-material/Edit';
 import MessageIcon from '@mui/icons-material/Message';
 
 import type { TicketFieldsFragment, TicketScope } from "@/graphql-generated/graphql";
-import { useTicketDeletePermission } from "@/lib/casl/abilities/ticket/hook-permission";
+import { useTicketDeletePermission, useTicketUpdatePermissions } from "@/lib/casl/abilities/ticket/hook-permission";
 
 interface TicketRowActionsProps {
     ticket: TicketFieldsFragment;
     scope: TicketScope;
     onOpen?: (ticket: TicketFieldsFragment) => void;
+    onQuickUpdate?: (ticket: TicketFieldsFragment) => void;
     onHistory?: (ticket: TicketFieldsFragment) => void;
     onDelete?: (ticket: TicketFieldsFragment) => void;
     onMessage?: (ticket: TicketFieldsFragment) => void;
@@ -25,11 +27,13 @@ export default function TicketRowActions({
     ticket,
     scope,
     onOpen,
+    onQuickUpdate,
     onHistory,
     onDelete,
     onMessage,
 }: TicketRowActionsProps) {
     const canDelete = useTicketDeletePermission(ticket);
+    const { hasAnyEditableField } = useTicketUpdatePermissions(ticket);
 
     return (
         <>
@@ -37,6 +41,14 @@ export default function TicketRowActions({
                 <Tooltip title="Apri ticket" arrow>
                     <IconButton color="primary" onClick={() => onOpen(ticket)} aria-label="Apri ticket">
                         <EditSquareIcon />
+                    </IconButton>
+                </Tooltip>
+            )}
+
+            {onQuickUpdate && hasAnyEditableField && (
+                <Tooltip title="Modifica rapida" arrow>
+                    <IconButton color="success" onClick={() => onQuickUpdate(ticket)} aria-label="Modifica rapida">
+                        <EditIcon />
                     </IconButton>
                 </Tooltip>
             )}

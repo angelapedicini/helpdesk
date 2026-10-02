@@ -178,10 +178,14 @@ export function defineAbilityForTicket(user: AccessTokenPayload): TicketAbility 
       status: "OPEN",
     });
 
-    // L'admin non può intervenire sullo stato di un ticket
-    // che è già IN_PROGRESS o CLOSED.
+    // L'admin non può intervenire sullo stato di un ticket già IN_PROGRESS.
+    // CLOSED è escluso di proposito: è lo stato da cui creatore e assegnatario
+    // possono riaprire (regola comune più sopra), e un blocco su CLOSED la
+    // annullerebbe, lasciando morta la transizione CLOSED -> REOPENED.
+    // Nondimeno nessuna regola "can" concede lo status su IN_PROGRESS all'admin,
+    // quindi questo "cannot" resta comunque esplicito.
     cannot("update", "Ticket", ["status"], {
-      status: { in: ["IN_PROGRESS", "CLOSED"] },
+      status: "IN_PROGRESS",
     }).because(
       "The admin cannot act on a ticket that is already in progress",
     );
