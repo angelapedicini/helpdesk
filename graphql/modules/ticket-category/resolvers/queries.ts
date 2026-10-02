@@ -1,4 +1,3 @@
-import { getPrisma } from "@/lib/prisma/index";
 import type { GraphQLContext } from "@/graphql/context";
 import { Department } from "@/app/generated/prisma/enums";
 import {
@@ -16,7 +15,7 @@ export const categoryQueries = {
     context: GraphQLContext
   ) => {
     const session = context.requireSession();
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
     const ability = defineAbility(session);
 
     const includeDisabled = args.includeDisabled === true;
@@ -52,7 +51,7 @@ export const categoryQueries = {
     context: GraphQLContext
   ) => {
     const session = context.requireSession();
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
     const ability = defineAbility(session);
 
     const category = await prisma.ticketCategory.findUnique({
@@ -94,7 +93,7 @@ export const categoryQueries = {
     const session = context.requireSession();
     const ability = defineAbility(session);
     assertCategoryManagerForDepartment(ability, session.department);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     // L'ADMIN vede solo i grant delle categorie del proprio reparto;
     // SYSTEM_ADMIN li vede tutti.

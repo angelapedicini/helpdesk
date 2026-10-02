@@ -1,4 +1,3 @@
-import { getPrisma } from "@/lib/prisma/index";
 import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql/error";
 import { accessibleBy } from "@casl/prisma";
@@ -20,7 +19,7 @@ export const ticketAdminNotificationMutations = {
             userId: session.userId,
             ticketId: args.ticketId,
         });
-        const prisma = await getPrisma();
+        const prisma = context.prisma;
 
 
         // Solo ticket leggibili dall'utente (admin: solo del proprio reparto).
@@ -62,7 +61,7 @@ export const ticketAdminNotificationMutations = {
             userId: session.userId,
             ticketId: args.ticketId,
         });
-        const prisma = await getPrisma();
+        const prisma = context.prisma;
 
 
         const existing = await prisma.ticketAdminNotificationSubscription.findUnique({

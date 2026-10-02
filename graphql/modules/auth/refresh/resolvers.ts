@@ -1,6 +1,6 @@
 // modules/auth/refresh/resolvers.ts
 import { GraphQLError } from "graphql";
-import { getPrisma } from "@/lib/prisma/index";
+import type { GraphQLContext } from "@/graphql/context";
 import { verifyRefreshToken, signAccessToken, signRefreshToken, buildAccessTokenPayload } from "@/lib/auth/jwt";
 import { setAuthCookies, getRefreshToken, clearAuthCookies } from "@/lib/auth/cookies";
 
@@ -24,7 +24,11 @@ function conflict(message: string) {
 
 export const refreshResolvers = {
   Mutation: {
-    refreshToken: async () => {
+    refreshToken: async (
+      _parent: unknown,
+      _args: unknown,
+      context: GraphQLContext
+    ) => {
       const refreshToken = await getRefreshToken();
 
       if (!refreshToken) {
@@ -41,7 +45,7 @@ export const refreshResolvers = {
         throw unauthenticated("Refresh token non valido");
       }
 
-      const prisma = await getPrisma();
+      const prisma = context.prisma;
       const storedToken = await prisma.refreshToken.findUnique({
         where: { token: refreshToken },
         include: { user: true },

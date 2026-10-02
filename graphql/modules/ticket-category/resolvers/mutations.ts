@@ -15,7 +15,6 @@ import {
 } from "@/lib/validators/category.schema";
 import type { Department, Role } from "@/lib/validators/enums.schema";
 import { getSpecificFieldsForDepartment } from "@/lib/config/ticket-specific-field.config";
-import { getPrisma } from "@/lib/prisma/index";
 import type { PrismaClient } from "@/app/generated/prisma/client";
 
 type TicketCategoryAccessClient = Pick<PrismaClient, "ticketCategoryAccess">;
@@ -130,7 +129,7 @@ export const categoryMutations = {
     const session = context.requireSession();
     const ability = defineAbility(session);
 
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const input = parseOrThrow(CreateTicketCategorySchema, args.input);
 
@@ -170,7 +169,7 @@ export const categoryMutations = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const input = parseOrThrow(UpdateTicketCategorySchema, args.input);
 
@@ -213,7 +212,7 @@ export const categoryMutations = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const input = parseOrThrow(UpdateCategorySchema, args.input);
 
@@ -278,7 +277,7 @@ export const categoryMutations = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const existing = await prisma.ticketCategory.findUnique({
       where: { id: args.id },
@@ -304,7 +303,7 @@ export const categoryMutations = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const existing = await prisma.ticketCategory.findUnique({
       where: { id: args.id },
@@ -330,7 +329,7 @@ export const categoryMutations = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const input = parseOrThrow(CreateTicketCategoryAccessSchema, args.input);
 
@@ -367,7 +366,7 @@ export const categoryMutations = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const existing = await prisma.ticketCategoryAccess.findUnique({
       where: { id: args.id },
@@ -402,7 +401,7 @@ export const categoryMutations = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const existing = await prisma.ticketCategoryAccess.findUnique({
       where: { id: args.id },

@@ -1,5 +1,4 @@
 // graphql/modules/ticket-message/resolvers/mutations.ts
-import { getPrisma } from "@/lib/prisma/index";
 import type { GraphQLContext } from "@/graphql/context";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { GraphQLError } from "graphql/error";
@@ -18,7 +17,7 @@ export const ticketMessageMutations = {
     ) => {
         const session = context.requireSession();
         const ability = defineAbility(session);
-        const prisma = await getPrisma();
+        const prisma = context.prisma;
 
         // Stesso schema del form: trim, non vuoto, lunghezza massima.
         // ticketId non fa parte dello schema, resta quello tipizzato da GraphQL (Int!).
@@ -85,7 +84,7 @@ export const ticketMessageMutations = {
     ) => {
         const session = context.requireSession();
         const ability = defineAbility(session);
-        const prisma = await getPrisma();
+        const prisma = context.prisma;
 
         const existing = await prisma.ticketMessage.findUnique({
             where: { id: args.id },

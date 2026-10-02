@@ -1,4 +1,3 @@
-import { getPrisma } from "@/lib/prisma/index";
 import type { GraphQLContext } from "@/graphql/context";
 import { Department, Role } from "@/app/generated/prisma/enums";
 import { Prisma } from "@/app/generated/prisma/client";
@@ -7,7 +6,7 @@ import { GraphQLError } from "graphql";
 export const userQueries = {
   me: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
     const session = context.requireSession();
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
 
     return prisma.user.findUnique({
@@ -45,7 +44,7 @@ export const userQueries = {
     // Chi deve amministrare utenti non usa questa query, ma usersForManagement,
     // che ha regole di visibilità proprie e separate.
     const session = context.requireSession();
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const { search, role, department, categoryId, restrictToDepartment } = args;
 
@@ -133,7 +132,7 @@ export const userQueries = {
     context: GraphQLContext
   ) => {
     const session = context.requireSession();
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const { search, userId, role, department, categoryId } = args;
 
@@ -214,7 +213,7 @@ export const userQueries = {
     context: GraphQLContext
   ) => {
     const session = context.requireSession();
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const users = await prisma.user.findMany({
       where: { department: args.department },

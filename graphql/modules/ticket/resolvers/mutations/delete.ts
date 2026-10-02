@@ -1,5 +1,4 @@
 // modules/ticket/resolvers/mutations/delete.ts
-import { getPrisma } from "@/lib/prisma/index";
 import { buildTicketHistoryData } from "@/lib/ticket/history";
 import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql/error";
@@ -14,7 +13,7 @@ export async function deleteTicket(
 ) {
   const session = context.requireSession();
   const ability = defineAbility(session);
-  const prisma = await getPrisma();
+  const prisma = context.prisma;
 
   // Gli include servono a buildTicketHistoryData (category, utenti) e a leggere
   // il valore specifico da salvare in history. La cancellazione delle righe

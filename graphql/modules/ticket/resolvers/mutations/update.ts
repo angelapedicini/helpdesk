@@ -1,5 +1,4 @@
 // modules/ticket/resolvers/mutations/update.ts
-import { getPrisma } from "@/lib/prisma/index";
 import { buildTicketHistoryData } from "@/lib/ticket/history";
 import { syncTicketNotifications } from "@/lib/ticket/notification";
 import type { GraphQLContext } from "@/graphql/context";
@@ -24,7 +23,7 @@ export async function updateTicket(
   // ============================================================
   const session = context.requireSession();
   const ability = defineAbility(session);
-  const prisma = await getPrisma();
+  const prisma = context.prisma;
 
   const input = parseOrThrow(UpdateTicketSchema, args.input);
 

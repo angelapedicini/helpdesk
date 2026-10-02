@@ -1,4 +1,3 @@
-import { getPrisma } from "@/lib/prisma/index";
 import type { GraphQLContext } from "@/graphql/context";
 import { assertCanReadTicketNotification } from "@/lib/casl/abilities/ticket-notification/guards";
 import { defineAbility } from "@/lib/casl/defineAbility";
@@ -15,7 +14,7 @@ export const ticketAdminNotificationQueries = {
             userId: session.userId,
             ticketId: args.ticketId,
         });
-        const prisma = await getPrisma();
+        const prisma = context.prisma;
 
 
         return prisma.ticketAdminNotificationSubscription.findUnique({

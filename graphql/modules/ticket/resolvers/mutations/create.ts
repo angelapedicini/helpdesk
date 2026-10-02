@@ -9,7 +9,6 @@ import { assertCanCreateTicket } from "@/lib/casl/abilities/ticket/guards";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { getAllowedCategories } from "@/lib/casl/abilities/category/guards";
 import { getSpecificMapping } from "@/graphql/modules/ticket/resolvers/mutations/specific-field-config";
-import { getPrisma } from "@/lib/prisma/index";
 import { buildTicketHistoryData } from "@/lib/ticket/history";
 import { syncTicketNotifications } from "@/lib/ticket/notification";
 import { parseOrThrow } from "@/graphql/validate";
@@ -22,7 +21,7 @@ export async function createTicket(
   const session = context.requireSession();
   const ability = defineAbility(session);
   const input = parseOrThrow(CreateTicketSchema, args.input);
-  const prisma = await getPrisma();
+  const prisma = context.prisma;
 
   //controllo su categorie in cui user ha accesso e può creare ticket
   const category =

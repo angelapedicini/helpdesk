@@ -1,5 +1,3 @@
-import { getPrisma } from "@/lib/prisma/index";
-
 import type { AccessTokenPayload } from "@/lib/auth/jwt";
 import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql/error";
@@ -7,8 +5,7 @@ import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanManageSpecialization } from "@/lib/casl/abilities/user/guards";
 import { parseOrThrow } from "@/graphql/validate";
 import { CreateUserSpecSchema } from "@/lib/validators/userSpec.schema";
-
-type PrismaClient = Awaited<ReturnType<typeof getPrisma>>;
+import type { PrismaClient } from "@/app/generated/prisma/client";
 
 async function assertTargetCanBeManaged(
   prisma: PrismaClient,
@@ -37,7 +34,7 @@ async function assertTargetCanBeManaged(
   });
 }
 
-export const userSpecMutations = {
+export const userSpecializationMutations = {
   removeUserSpecialization: async (
     _parent: unknown,
     args: { input: { userId: number; categoryId: number } },
@@ -45,7 +42,7 @@ export const userSpecMutations = {
   ) => {
     const session = context.requireSession();
     const { userId, categoryId } = parseOrThrow(CreateUserSpecSchema, args.input);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
 
     await assertTargetCanBeManaged(prisma, session, userId);
@@ -72,7 +69,7 @@ export const userSpecMutations = {
   ) => {
     const session = context.requireSession();
      const { userId, categoryId } = parseOrThrow(CreateUserSpecSchema, args.input);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
 
     await assertTargetCanBeManaged(prisma, session, userId);

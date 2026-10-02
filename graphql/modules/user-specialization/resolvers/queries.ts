@@ -1,18 +1,17 @@
-import { getPrisma } from "@/lib/prisma/index";
 import { Department } from "@/app/generated/prisma/enums";
 import type { GraphQLContext } from "@/graphql/context";
 import { Prisma } from "@/app/generated/prisma/client";
 import { defineAbility } from "@/lib/casl/defineAbility";
 
 
-export const userSpecQueries = {
+export const userSpecializationQueries = {
     soleSpecialistCategoryIds: async (
         _parent: unknown,
         args: { department: Department; userId?: number },
         context: GraphQLContext
     ) => {
         const session = context.requireSession();
-        const prisma = await getPrisma();
+        const prisma = context.prisma;
 
 
         const targetUserId = args.userId ?? session.userId;
@@ -61,7 +60,7 @@ export const userSpecQueries = {
         context: GraphQLContext
     ) => {
         const session = context.requireSession();
-        const prisma = await getPrisma();
+        const prisma = context.prisma;
 
 
         const { categoryId, search } = args;

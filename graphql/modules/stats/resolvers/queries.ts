@@ -1,5 +1,4 @@
 // modules/stats/resolvers/queries.ts
-import { getPrisma } from "@/lib/prisma/index";
 import { Department } from "@/app/generated/prisma/enums";
 import type { GraphQLContext } from "@/graphql/context";
 import { Prisma } from "@/app/generated/prisma/client";
@@ -14,7 +13,7 @@ export const statQueries = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     if (ability.cannot("read", "TicketStats")) {
       throw new GraphQLError("Access denied", {
@@ -158,7 +157,7 @@ export const statQueries = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     if (ability.cannot("read", "TicketStats")) {
       throw new GraphQLError("Access denied", {

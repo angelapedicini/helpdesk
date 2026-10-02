@@ -1,4 +1,3 @@
-import { getPrisma } from "@/lib/prisma/index";
 import { Prisma } from "@/app/generated/prisma/client";
 import type { GraphQLContext } from "@/graphql/context";
 import { defineAbility } from "@/lib/casl/defineAbility";
@@ -8,7 +7,7 @@ export const ticketReadStateQueries = {
     unreadTicketMessages: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
         const session = context.requireSession();
         const ability = defineAbility(session);
-        const prisma = await getPrisma();
+        const prisma = context.prisma;
 
 
         // Ticket accessibili in lettura:

@@ -1,4 +1,4 @@
-import { getPrisma } from "@/lib/prisma/index";
+import type { GraphQLContext } from "@/graphql/context";
 import { RegisterSchema } from "@/lib/validators/auth.schema";
 import { GraphQLError } from "graphql";
 import bcrypt from "bcryptjs";
@@ -7,7 +7,11 @@ const SALT_ROUNDS = 10;
 
 export const registerResolvers = {
   Mutation: {
-    createUser: async (_parent: unknown, args: { input: unknown }) => {
+    createUser: async (
+      _parent: unknown,
+      args: { input: unknown },
+      context: GraphQLContext
+    ) => {
       const result = RegisterSchema.safeParse(args.input);
 
       if (!result.success) {
@@ -21,8 +25,7 @@ export const registerResolvers = {
 
       const input = result.data;
 
-      const prisma = await getPrisma();
-
+      const prisma = context.prisma;
 
       const existing = await prisma.user.findUnique({
         where: { email: input.email },

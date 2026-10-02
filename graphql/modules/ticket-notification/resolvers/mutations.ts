@@ -1,4 +1,3 @@
-import { getPrisma } from "@/lib/prisma/index";
 import type { GraphQLContext } from "@/graphql/context";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { accessibleBy } from "@casl/prisma";
@@ -14,7 +13,7 @@ export const ticketNotificationMutations = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const result = await prisma.ticketNotification.deleteMany({
       where: {

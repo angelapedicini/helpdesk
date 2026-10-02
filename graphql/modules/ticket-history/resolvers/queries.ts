@@ -1,4 +1,3 @@
-import { getPrisma } from "@/lib/prisma/index";
 import type { GraphQLContext } from "@/graphql/context";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
 import {
@@ -17,7 +16,7 @@ export const ticketHistoryQueries = {
     context: GraphQLContext
   ) => {
     const session = context.requireSession();
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
 
     const where: Prisma.TicketHistoryWhereInput = {
@@ -50,7 +49,7 @@ export const ticketHistoryQueries = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const existing = await prisma.ticketHistory.findFirst({
       where: { originalTicketId: args.ticketId },
@@ -98,7 +97,7 @@ export const ticketHistoryQueries = {
   ) => {
     const session = context.requireSession();
     const scope: TicketScope = args.scope ?? "MINE";
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
 
     const where: Prisma.TicketHistoryWhereInput = {

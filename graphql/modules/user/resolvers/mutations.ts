@@ -5,7 +5,6 @@ import { defineAbility } from "@/lib/casl/defineAbility";
 import { assertCanUpdateUserRole } from "@/lib/casl/abilities/user/guards";
 import { assertAllowedRoleTransition } from "@/lib/user/roleTransitions";
 import { UpdateUserRoleSchema } from "@/lib/validators/user.schema";
-import { getPrisma } from "@/lib/prisma/index";
 import { parseOrThrow } from "@/graphql/validate";
 
 const USER_SELECT = {
@@ -25,7 +24,7 @@ export const userMutations = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const input = parseOrThrow(UpdateUserRoleSchema, args.input);
 

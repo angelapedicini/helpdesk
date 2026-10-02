@@ -56,7 +56,7 @@
 // };
 
 // modules/auth/login/resolvers.ts
-import { getPrisma } from "@/lib/prisma/index";
+import type { GraphQLContext } from "@/graphql/context";
 import { GraphQLError } from "graphql";
 import bcrypt from "bcryptjs";
 import { buildAccessTokenPayload, signAccessToken, signRefreshToken } from "@/lib/auth/jwt";
@@ -65,7 +65,11 @@ import { EasyLoginSchema } from "@/lib/validators/auth.schema";
 
 export const loginResolvers = {
   Mutation: {
-    login: async (_parent: unknown, args: { input: unknown }) => {
+    login: async (
+      _parent: unknown,
+      args: { input: unknown },
+      context: GraphQLContext
+    ) => {
       const result = EasyLoginSchema.safeParse(args.input);
 
       if (!result.success) {
@@ -86,7 +90,7 @@ export const loginResolvers = {
         });
       }
 
-      const prisma = await getPrisma();
+      const prisma = context.prisma;
 
       const existing = await prisma.user.findUnique({
         where: { email: input.email },

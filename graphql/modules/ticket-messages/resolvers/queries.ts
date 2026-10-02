@@ -1,4 +1,3 @@
-import { getPrisma } from "@/lib/prisma/index";
 import type { GraphQLContext } from "@/graphql/context";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
 import { defineAbility } from "@/lib/casl/defineAbility";
@@ -12,7 +11,7 @@ export const ticketMessageQueries = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
 
     // la visibilità dei messaggi dipende esclusivamente da quella

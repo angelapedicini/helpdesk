@@ -1,8 +1,7 @@
-import { userSpecMutations } from "./resolvers/mutations";
-import { userSpecQueries } from "./resolvers/queries";
-
+import { userSpecializationMutations } from "./resolvers/mutations";
+import { userSpecializationQueries } from "./resolvers/queries";
 
 export const userSpecializationResolvers = {
-    Query: userSpecQueries,
-    Mutation: userSpecMutations,
+    Query: userSpecializationQueries,
+    Mutation: userSpecializationMutations,
 };

@@ -1,4 +1,3 @@
-import { getPrisma } from "@/lib/prisma/index";
 import type { GraphQLContext } from "@/graphql/context";
 import { defineAbility } from "@/lib/casl/defineAbility";
 import { accessibleBy } from "@casl/prisma";
@@ -18,7 +17,7 @@ export const ticketReadStateMutations = {
             time: new Date().toISOString(),
         });
         const ability = defineAbility(session);
-        const prisma = await getPrisma();
+        const prisma = context.prisma;
 
 
         // stessa regola di visibilità usata in ticketMessageQueries.messages

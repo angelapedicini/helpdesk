@@ -1,5 +1,4 @@
 // modules/ticket/resolvers/queries.ts
-import { getPrisma } from "@/lib/prisma/index";
 import type { GraphQLContext } from "@/graphql/context";
 import { paginateByCursor } from "@/graphql/pagination/pagination";
 import type { Prisma } from "@/app/generated/prisma/client";
@@ -39,7 +38,7 @@ export const ticketQueries = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const filter = parseOrThrow(FilterTicketSchema, stripNulls(args.filter));
 
@@ -79,7 +78,7 @@ export const ticketQueries = {
   ) => {
     const session = context.requireSession();
     const ability = defineAbility(session);
-    const prisma = await getPrisma();
+    const prisma = context.prisma;
 
     const existing = await prisma.ticket.findUnique({
       where: { id: args.id },
