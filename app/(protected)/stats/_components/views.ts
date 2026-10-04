@@ -1,19 +1,21 @@
 import type { DocumentNode } from "graphql";
 import type { z } from "zod";
-import type { HeadCell } from "@/components/table";
+import type { GridColDef } from "@mui/x-data-grid";
 
-import { TICKET_STATS_BY_DEPARTMENT_QUERY } from "@/apollo-client/queries/stats/stats.queries";
-import { TICKET_STATS_BY_TECHNICIAN_QUERY } from "@/apollo-client/queries/stats/stats.queries";
+import {
+    TICKET_STATS_BY_DEPARTMENT_QUERY,
+    TICKET_STATS_BY_TECHNICIAN_QUERY,
+} from "@/apollo-client/queries/stats/stats.queries";
 import { NewSchema, TechnicianSchema } from "@/lib/validators/stat.schema";
 
 import {
     buildDepartmentStatsRows,
-    departmentStatsHeadCells,
+    departmentStatsColumns,
     departmentStatsTotal,
 } from "./department-stats-columns";
 import {
     buildTechnicianStatsRows,
-    technicianStatsHeadCells,
+    technicianStatsColumns,
     technicianStatsTotal,
 } from "./technician-stats-columns";
 
@@ -23,7 +25,8 @@ export type StatsViewConfig = {
     query: DocumentNode;
     select: (data: any) => any[];
     buildRows: (source: any[]) => any[];
-    headCells: readonly HeadCell<any>[];
+    // colonne condivise da DataGrid (desktop) e CardList (mobile)
+    columns: GridColDef<any>[];
     total: (source: any[]) => number;
     schema: z.ZodObject<Record<string, z.ZodType>>;
     chartHeight: number | `${number}vh`;
@@ -47,7 +50,7 @@ export const STATS_VIEWS: StatsViewConfig[] = [
         label: "Totali ticket",
         query: TICKET_STATS_BY_DEPARTMENT_QUERY,
         select: (data) => data?.ticketStatsByDepartment ?? [],
-        headCells: departmentStatsHeadCells,
+        columns: departmentStatsColumns,
         buildRows: buildDepartmentStatsRows,
         total: departmentStatsTotal,
         schema: NewSchema,
@@ -70,7 +73,7 @@ export const STATS_VIEWS: StatsViewConfig[] = [
         label: "Carico per tecnico",
         query: TICKET_STATS_BY_TECHNICIAN_QUERY,
         select: (data) => data?.ticketStatsByTechnician ?? [],
-        headCells: technicianStatsHeadCells,
+        columns: technicianStatsColumns,
         buildRows: buildTechnicianStatsRows,
         total: technicianStatsTotal,
         schema: TechnicianSchema,

@@ -7,6 +7,8 @@ export function makeConnectionTypeDefs(typeName: string) {
     }
 
     type ${typeName}Connection {
+      # nullable: valorizzato solo dalle connection che passano "count"
+      totalCount: Int
       edges: [${typeName}Edge!]!
       pageInfo: PageInfo!
     }

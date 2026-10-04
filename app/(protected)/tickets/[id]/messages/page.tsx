@@ -23,7 +23,7 @@ import { NAV_NOTIFICATIONS } from "@/apollo-client/queries/ticket-notification/t
 const PAGE_SIZE = 20;
 
 // Altezza della navbar su mobile: se la tua è diversa, cambia solo questo valore.
-const MOBILE_NAVBAR_HEIGHT = 56;
+const MOBILE_NAVBAR_HEIGHT = 80;
 
 export default function TicketMessagesPage() {
     const { id } = useParams();

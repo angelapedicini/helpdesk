@@ -1,114 +1,193 @@
-// lib/ticket/column.def.tsx (o dove si trova)
 "use client";
 
+import type { ElementType, ReactNode } from "react";
 import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import type { GridCellParams, GridColDef } from "@mui/x-data-grid";
 
-import { TicketHistoryByTicketIdQuery } from "@/graphql-generated/graphql";
+import type { TicketHistoryFieldsFragment } from "@/graphql-generated/graphql";
 
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
-import { HeadCell } from "@/components/table";
-import type { TicketHistoryFieldsFragment } from "@/graphql-generated/graphql";
+import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
 
 export type TicketHistoryRow = TicketHistoryFieldsFragment;
+type Row = TicketHistoryRow;
 
-// Nessun ChangedFields/highlight qui: l'evidenziazione ora è delegata
-// interamente a getCellClassName sulla EnhancedTable (classe CSS
-// "highlighted-cell" già definita nel tema), non più a uno stile inline.
-export function createTicketHistoryHeadCells(): HeadCell<TicketHistoryRow>[] {
+type TicketHistoryColumnsOptions = {
+    renderActions: (row: Row) => ReactNode;
+    // classe CSS per la cella (riga + campo), es. "highlighted-cell"
+    getCellClassName: (row: Row, field: string) => string | undefined;
+};
+
+// Icona + etichetta colorata, usata da stato / priorità / dipartimento
+function IconLabel({
+    icon: Icon,
+    color,
+    label,
+}: {
+    icon: ElementType;
+    color: string;
+    label: string;
+}) {
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                height: "100%",
+                minWidth: 0,
+            }}
+        >
+            <Icon sx={{ color, fontSize: 20, flexShrink: 0 }} />
+            <Typography component="span" noWrap sx={{ color, minWidth: 0 }}>
+                {label}
+            </Typography>
+        </Box>
+    );
+}
+
+const toDate = (value?: string | null) => (value ? new Date(value) : null);
+
+const formatDate = (value: Date | null) =>
+    value ? value.toLocaleDateString("it-IT") : "-";
+
+const personName = (
+    user: { firstName: string; lastName: string } | null | undefined,
+    fallback: string
+) => (user ? `${user.firstName} ${user.lastName}` : fallback);
+
+// I `field` devono coincidere con i nomi restituiti da diffTicketHistory,
+// altrimenti l'evidenziazione delle celle modificate non funziona.
+// Le stesse colonne sono usate dal DataGrid (desktop) e dalla CardList (mobile).
+export function createTicketHistoryColumns({
+    renderActions,
+    getCellClassName,
+}: TicketHistoryColumnsOptions): GridColDef<Row>[] {
+    // Lo storico non è ordinabile né filtrabile: l'ordine è deciso dal BE
+    // (updatedAt desc) e il filtro del grid agirebbe solo sulle righe già
+    // caricate, dando risultati fuorvianti.
+    const base: Partial<GridColDef<Row>> = {
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        cellClassName: (params: GridCellParams<Row>) =>
+            getCellClassName(params.row, params.field) ?? "",
+    };
+
     return [
-
-        { id: "title", label: "Titolo", sortable: false, width: 15 },
-
+        { ...base, field: "title", headerName: "Titolo", flex: 2, minWidth: 120 },
         {
-            id: "status",
-            label: "Stato",
-            sortable: false,
-            render: (row) => {
-                const config = TICKET_STATUS_CONFIG[row.status];
-                const Icon = config.icon;
+            ...base,
+            field: "status",
+            headerName: "Stato",
+            flex: 1,
+            minWidth: 100,
+            renderCell: (params) => {
+                const config = TICKET_STATUS_CONFIG[params.row.status];
                 return (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Icon sx={{ color: config.color, fontSize: 20 }} />
-                        {config.label}
-                    </Box>
+                    <IconLabel icon={config.icon} color={config.color} label={config.label} />
                 );
             },
         },
-
         {
-            id: "priority",
-            label: "Priorità",
-            sortable: false,
-            render: (row) => {
-                const config = TICKET_PRIORITY_CONFIG[row.priority];
-                const Icon = config.icon;
+            ...base,
+            field: "priority",
+            headerName: "Priorità",
+            flex: 1,
+            minWidth: 90,
+            renderCell: (params) => {
+                const config = TICKET_PRIORITY_CONFIG[params.row.priority];
                 return (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Icon sx={{ color: config.color, fontSize: 20 }} />
-                        {config.label}
-                    </Box>
+                    <IconLabel icon={config.icon} color={config.color} label={config.label} />
                 );
             },
         },
-
         {
-            id: "category",
-            label: "Categoria",
-            sortable: false,
-            render: (row) => (row.category ? row.category.name : "Nessuna categoria"),
+            ...base,
+            field: "category",
+            headerName: "Categoria",
+            flex: 1,
+            minWidth: 90,
+            valueGetter: (_value, row) => row.category?.name ?? "Nessuna categoria",
         },
-
-
-        { id: "ticketDepartment", label: "Dipartimento ticket", sortable: false },
-
         {
-            id: "createdBy",
-            label: "Creato da",
-            sortable: false,
-            render: (row) =>
-                row.createdBy ? `${row.createdBy.firstName} ${row.createdBy.lastName}` : "-",
+            ...base,
+            field: "ticketDepartment",
+            headerName: "Dipartimento ticket",
+            flex: 1,
+            minWidth: 100,
+            renderCell: (params) => {
+                const config = DEPARTMENT_CONFIG[params.row.ticketDepartment];
+                if (!config) return params.row.ticketDepartment;
+                return (
+                    <IconLabel icon={config.icon} color={config.color} label={config.label} />
+                );
+            },
         },
-
         {
-            id: "assignedTo",
-            label: "Assegnato a",
-            sortable: false,
-            render: (row) =>
-                row.assignedTo
-                    ? `${row.assignedTo.firstName} ${row.assignedTo.lastName}`
-                    : "Non assegnato",
+            ...base,
+            field: "createdBy",
+            headerName: "Creato da",
+            flex: 1,
+            minWidth: 90,
+            valueGetter: (_value, row) => personName(row.createdBy, "-"),
         },
-
         {
-            id: "lastUpdatedBy",
-            label: "Ultimo aggiornamento di",
-            sortable: false,
-            render: (row) =>
-                row.lastUpdatedBy
-                    ? `${row.lastUpdatedBy.firstName} ${row.lastUpdatedBy.lastName}`
-                    : "-",
+            ...base,
+            field: "assignedTo",
+            headerName: "Assegnato a",
+            flex: 1,
+            minWidth: 90,
+            valueGetter: (_value, row) => personName(row.assignedTo, "Non assegnato"),
         },
-
         {
-            id: "updatedAt",
-            label: "Snapshot",
-            sortable: false,
-            render: (row) => new Date(row.updatedAt).toLocaleDateString("it-IT"),
+            ...base,
+            field: "lastUpdatedBy",
+            headerName: "Ultimo aggiornamento di",
+            flex: 1,
+            minWidth: 90,
+            valueGetter: (_value, row) => personName(row.lastUpdatedBy, "-"),
         },
-
         {
-            id: "dueDate",
-            label: "Entro",
-            sortable: false,
-            render: (row) => (row.dueDate ? new Date(row.dueDate).toLocaleDateString("it-IT") : "-"),
+            ...base,
+            field: "updatedAt",
+            headerName: "Snapshot",
+            type: "date",
+            flex: 1,
+            minWidth: 90,
+            valueGetter: (value) => toDate(value),
+            valueFormatter: formatDate,
         },
-
         {
-            id: "closedAt",
-            label: "Chiuso il",
-            sortable: false,
-            render: (row) => (row.closedAt ? new Date(row.closedAt).toLocaleDateString("it-IT") : "-"),
+            ...base,
+            field: "dueDate",
+            headerName: "Entro",
+            type: "date",
+            flex: 1,
+            minWidth: 80,
+            valueGetter: (value) => toDate(value),
+            valueFormatter: formatDate,
+        },
+        {
+            ...base,
+            field: "closedAt",
+            headerName: "Chiuso il",
+            type: "date",
+            flex: 1,
+            minWidth: 80,
+            valueGetter: (value) => toDate(value),
+            valueFormatter: formatDate,
+        },
+        {
+            ...base,
+            field: "actions",
+            headerName: "Azioni",
+            width: 80,
+            align: "center",
+            headerAlign: "center",
+            renderCell: (params) => renderActions(params.row),
         },
     ];
 }

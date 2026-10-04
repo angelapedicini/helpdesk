@@ -1,8 +1,7 @@
 "use client";
 
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import { HeadCell } from "@/components/table";
+import type { GridColDef } from "@mui/x-data-grid";
+
 import { TechnicianStats } from "@/lib/validators/stat.schema";
 import type { TicketStatsByTechnicianQuery } from "@/graphql-generated/graphql";
 
@@ -28,62 +27,38 @@ export function technicianStatsTotal(
     return source.reduce((sum, row) => sum + row.total, 0);
 }
 
-export const technicianStatsHeadCells: HeadCell<TechnicianStatsRow>[] = [
+// Dati completi sul client: ordinamento e filtri nativi del grid attivi.
+// Le stesse colonne sono usate dal DataGrid (desktop) e dalla CardList (mobile).
+const base: Partial<GridColDef<TechnicianStatsRow>> = {
+    flex: 1,
+    minWidth: 90,
+};
+
+// numeri: tipo "number" per ordine e filtri corretti, allineati a sinistra
+// come le altre tabelle
+const numeric: Partial<GridColDef<TechnicianStatsRow>> = {
+    ...base,
+    type: "number",
+    align: "left",
+    headerAlign: "left",
+};
+
+export const technicianStatsColumns: GridColDef<TechnicianStatsRow>[] = [
+    // il nome del tecnico sta in `label`; `technicianId` è già l'id della riga
+    { ...base, field: "label", headerName: "Tecnico", flex: 2, minWidth: 120 },
+    { ...numeric, field: "total", headerName: "Totale" },
+    { ...numeric, field: "open", headerName: "Open" },
+    { ...numeric, field: "assigned", headerName: "Assegnati" },
+    { ...numeric, field: "inProgress", headerName: "In lavorazione" },
+    { ...numeric, field: "closed", headerName: "Chiusi" },
+    { ...numeric, field: "refused", headerName: "Rifiutati" },
+    { ...numeric, field: "firstResponseLate", headerName: "Prima risposta in ritardo" },
+    { ...numeric, field: "dueDateLate", headerName: "Chiusi oltre dueDate" },
     {
-        id: "technicianId",
-        label: "Tecnico",
-        sortable: false,
-        render: (row) => (
-            <Typography variant="body2" noWrap>
-                {row.label}
-            </Typography>
-        ),
-    },
-    {
-        id: "total",
-        label: "Totale",
-        sortable: false,
-    },
-    {
-        id: "open",
-        label: "Open",
-        sortable: false,
-    },
-    {
-        id: "assigned",
-        label: "Assegnati",
-        sortable: false,
-    },
-    {
-        id: "inProgress",
-        label: "In lavorazione",
-        sortable: false,
-    },
-    {
-        id: "closed",
-        label: "Chiusi",
-        sortable: false,
-    },
-    {
-        id: "refused",
-        label: "Rifiutati",
-        sortable: false,
-    },
-    {
-        id: "firstResponseLate",
-        label: "Prima risposta in ritardo",
-        sortable: false,
-    },
-    {
-        id: "dueDateLate",
-        label: "Chiusi oltre dueDate",
-        sortable: false,
-    },
-    {
-        id: "average",
-        label: "Tempo medio risoluzione",
-        sortable: false,
-        render: (row) =>
-            row.average > 0 ? `${row.average.toFixed(1)} ore` : "n/d",
+        ...numeric,
+        field: "average",
+        headerName: "Tempo medio risoluzione",
+        valueFormatter: (value: number) =>
+            value > 0 ? `${value.toFixed(1)} ore` : "n/d",
     },
 ];

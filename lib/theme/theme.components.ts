@@ -3,6 +3,54 @@
 import type { Components, Theme } from "@mui/material/styles";
 import type { } from "@mui/x-date-pickers/themeAugmentation";
 
+// Definito a parte: finché i tipi di MUI X non agganciano `MuiDataGrid` a
+// Components<Theme>, uno spread evita l'errore sulle proprietà extra.
+const dataGridComponents = {
+    MuiDataGrid: {
+        styleOverrides: {
+            root: ({ theme }: { theme: Theme }) => ({
+                "--DataGrid-t-header-background-base": theme.palette.background.subtle,
+
+                "& .MuiDataGrid-columnHeaders, & .MuiDataGrid-columnHeader, & .MuiDataGrid-filler, & .MuiDataGrid-scrollbarFiller": {
+                    backgroundColor: theme.palette.background.subtle,
+                },
+
+                // Righe scadute
+                "& .MuiDataGrid-row.error-row": {
+                    backgroundColor: theme.palette.ui.errorRow,
+                },
+
+                // L'hover resta rosso (più scuro) invece di tornare al grigio dell'hover standard
+                "& .MuiDataGrid-row.error-row:hover, & .MuiDataGrid-row.error-row.Mui-hovered": {
+                    backgroundColor: theme.palette.ui.errorRowHover,
+                },
+                // Separatore di colonna (maniglia di resize): colore primary del tema
+                "& .MuiDataGrid-columnSeparator, & .MuiDataGrid-iconSeparator": {
+                    color: theme.palette.primary.main,
+                    "--DataGrid-t-color-border-base": theme.palette.primary.main,
+                },
+
+                // Mentre ci passi sopra o lo trascini
+                "& .MuiDataGrid-columnSeparator--resizable:hover, & .MuiDataGrid-columnSeparator--resizing": {
+                    color: theme.palette.primary.main,
+                },
+
+                // Celle modificate rispetto allo snapshot precedente (storico ticket)
+                "& .MuiDataGrid-cell.highlighted-cell": {
+                    backgroundColor: theme.palette.ui.highlightedCell,
+                },
+
+                // Su hover riga il grid applica il suo grigio: lo ricopro
+                // perché la cella evidenziata resti gialla
+                "& .MuiDataGrid-row:hover .MuiDataGrid-cell.highlighted-cell, & .MuiDataGrid-row.Mui-hovered .MuiDataGrid-cell.highlighted-cell": {
+                    backgroundColor: theme.palette.ui.highlightedCell,
+                },
+
+            }),
+        },
+    },
+};
+
 export const sharedComponents: Components<Theme> = {
     // -------------------------------------------------------------------------
     // CSS BASELINE
@@ -140,6 +188,7 @@ export const sharedComponents: Components<Theme> = {
             }),
         },
     },
+
 
 
 
@@ -401,5 +450,7 @@ export const sharedComponents: Components<Theme> = {
             }),
         },
     },
+
+    ...dataGridComponents,
 
 };

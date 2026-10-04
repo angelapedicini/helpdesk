@@ -1,153 +1,188 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import type { GridColDef } from "@mui/x-data-grid";
 
-
-import {
+import type {
     TicketFieldsFragment,
     TicketScope,
-    TicketSortField,
 } from "@/graphql-generated/graphql";
 
 import { TICKET_PRIORITY_CONFIG } from "@/components/enums/ticket-priority.config";
 import { TICKET_STATUS_CONFIG } from "@/components/enums/ticket-status-icon";
 import { DEPARTMENT_CONFIG } from "@/components/enums/department.config";
-import { HeadCell } from "@/components/table";
 
-type TicketHeadCellsOptions = {
+type Row = TicketFieldsFragment;
+
+type TicketColumnsOptions = {
     scope: TicketScope;
+    renderActions: (ticket: Row) => ReactNode;
 };
 
-export function createTicketHeadCells({
+// Icona + etichetta colorata, usata da stato / priorità / dipartimento
+function IconLabel({
+    icon: Icon,
+    color,
+    label,
+}: {
+    icon: React.ElementType;
+    color: string;
+    label: string;
+}) {
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                height: "100%",
+                minWidth: 0,
+            }}
+        >
+            <Icon sx={{ color, fontSize: 20, flexShrink: 0 }} />
+            <Typography component="span" noWrap sx={{ color, minWidth: 0 }}>
+                {label}
+            </Typography>
+        </Box>
+    );
+}
+
+const formatDate = (value: Date | null) =>
+    value ? value.toLocaleDateString("it-IT") : "-";
+
+const toDate = (value?: string | null) => (value ? new Date(value) : null);
+
+const fullName = (user?: { firstName: string; lastName: string } | null) =>
+    user ? `${user.firstName} ${user.lastName}` : "Non assegnato";
+
+// Larghezze: ogni colonna ha un "peso" (flex) con cui si divide lo spazio
+// disponibile e un minWidth sotto cui non si restringe. Lo scroll orizzontale
+// compare solo se la somma dei minWidth supera la larghezza del contenitore.
+// Id e azioni restano a larghezza fissa.
+// Le stesse colonne sono usate dal DataGrid (desktop) e dalla CardList (mobile).
+export function createTicketColumns({
     scope,
-}: TicketHeadCellsOptions): HeadCell<TicketFieldsFragment>[] {
-    const headCells: HeadCell<TicketFieldsFragment>[] = [
-        { id: "id", label: "ID", width: "75px" },
-        { id: "title", label: "Titolo" },
+    renderActions,
+}: TicketColumnsOptions): GridColDef<Row>[] {
+    const columns: GridColDef<Row>[] = [
+        { field: "id", headerName: "ID", width: 70 },
+        { field: "title", headerName: "Titolo", flex: 2, minWidth: 120 },
         {
-            id: "status",
-            label: "Stato",
-            render: (ticket) => {
-                const config = TICKET_STATUS_CONFIG[ticket.status];
-                const Icon = config.icon;
-
+            field: "status",
+            headerName: "Stato",
+            flex: 1,
+            minWidth: 100,
+            renderCell: (params) => {
+                const config = TICKET_STATUS_CONFIG[params.row.status];
                 return (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Icon sx={{ color: config.color, fontSize: 20 }} />
-                        <Typography component="span" sx={{ color: config.color }}>
-                            {config.label}
-                        </Typography>
-                    </Box>
-                );
-            },
-        },
-
-        {
-            id: "priority",
-            label: "Priorità",
-            render: (ticket) => {
-                const config = TICKET_PRIORITY_CONFIG[ticket.priority];
-                const Icon = config.icon;
-
-                return (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Icon sx={{ color: config.color, fontSize: 20 }} />
-                        <Typography component="span" sx={{ color: config.color }}>
-                            {config.label}
-                        </Typography>
-                    </Box>
+                    <IconLabel icon={config.icon} color={config.color} label={config.label} />
                 );
             },
         },
         {
-            id: "ticketDepartment",
-            label: "Dipartimento",
-            render: (ticket) => {
-                const config = DEPARTMENT_CONFIG[ticket.ticketDepartment];
-                if (!config) return ticket.ticketDepartment;
-                const Icon = config.icon;
+            field: "priority",
+            headerName: "Priorità",
+            flex: 1,
+            minWidth: 90,
+            renderCell: (params) => {
+                const config = TICKET_PRIORITY_CONFIG[params.row.priority];
                 return (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Icon sx={{ color: config.color, fontSize: 20 }} />
-                        <Typography component="span" sx={{ color: config.color }}>
-                            {config.label}
-                        </Typography>
-                    </Box>
+                    <IconLabel icon={config.icon} color={config.color} label={config.label} />
                 );
             },
         },
         {
-            id: "category",
-            label: "Categoria",
-            sortable: true,
-            render: (ticket) =>
-                ticket.category ? ticket.category.name : "-",
+            field: "ticketDepartment",
+            headerName: "Dipartimento",
+            flex: 1,
+            minWidth: 100,
+            renderCell: (params) => {
+                const config = DEPARTMENT_CONFIG[params.row.ticketDepartment];
+                if (!config) return params.row.ticketDepartment;
+                return (
+                    <IconLabel icon={config.icon} color={config.color} label={config.label} />
+                );
+            },
         },
         {
-            id: "specificData",
-            label: "Specifica",
+            field: "category",
+            headerName: "Categoria",
+            flex: 1,
+            minWidth: 90,
+            valueGetter: (_value, row) => row.category?.name ?? "-",
+        },
+        {
+            field: "specificData",
+            headerName: "Specifica",
+            flex: 1,
+            minWidth: 90,
             sortable: false,
-            render: (ticket) => {
-                if (!ticket.specificData) return "-";
-                const { __typename, ...fields } = ticket.specificData;
+            valueGetter: (_value, row) => {
+                if (!row.specificData) return "-";
+                const { __typename, ...fields } = row.specificData;
                 return Object.values(fields).filter(Boolean).join(" / ") || "-";
             },
         },
         {
-            id: "dueFirstResponse",
-            label: "Revisione iniziale entro",
-            sortable: true,
-            render: (ticket) =>
-                ticket.dueFirstResponse
-                    ? new Date(ticket.dueFirstResponse).toLocaleDateString("it-IT")
-                    : "-",
+            field: "dueFirstResponse",
+            headerName: "Revisione iniziale entro",
+            type: "date",
+            flex: 1,
+            minWidth: 90,
+            valueGetter: (value) => toDate(value),
+            valueFormatter: formatDate,
         },
         {
-            id: "updatedAt",
-            label: "Ultimo aggiornament",
-            sortable: true,
-            render: (ticket) =>
-                ticket.updatedAt
-                    ? new Date(ticket.updatedAt).toLocaleDateString("it-IT")
-                    : "-",
+            field: "updatedAt",
+            headerName: "Ultimo aggiornamento",
+            type: "date",
+            flex: 1,
+            minWidth: 90,
+            valueGetter: (value) => toDate(value),
+            valueFormatter: formatDate,
         },
         {
-            id: "dueDate",
-            label: "Entro",
-            sortable: true,
-            render: (ticket) =>
-                ticket.dueDate
-                    ? new Date(ticket.dueDate).toLocaleDateString("it-IT")
-                    : "-",
+            field: "dueDate",
+            headerName: "Entro",
+            type: "date",
+            flex: 1,
+            minWidth: 80,
+            valueGetter: (value) => toDate(value),
+            valueFormatter: formatDate,
         },
     ];
 
-
     if (scope === "ASSIGNED_TO_ME" || scope === "DEPARTMENT" || scope === "ALL") {
-        headCells.push({
-            id: "createdBy",
-            label: "Creato da",
-            sortable: true,
-            render: (ticket) =>
-                ticket.createdBy
-                    ? `${ticket.createdBy.firstName} ${ticket.createdBy.lastName}`
-                    : "Non assegnato",
+        columns.push({
+            field: "createdBy",
+            headerName: "Creato da",
+            flex: 1,
+            minWidth: 90,
+            valueGetter: (_value, row) => fullName(row.createdBy),
         });
     }
 
     if (scope === "MINE" || scope === "DEPARTMENT" || scope === "ALL") {
-        headCells.push({
-            id: "assignedTo",
-            label: "Assegnato a",
-            sortable: true,
-            render: (ticket) =>
-                ticket.assignedTo
-                    ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
-                    : "Non assegnato",
+        columns.push({
+            field: "assignedTo",
+            headerName: "Assegnato a",
+            flex: 1,
+            minWidth: 90,
+            valueGetter: (_value, row) => fullName(row.assignedTo),
         });
     }
 
+    columns.push({
+        field: "actions",
+        headerName: "Azioni",
+        width: 240,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        renderCell: (params) => renderActions(params.row),
+    });
 
-    return headCells;
+    return columns;
 }

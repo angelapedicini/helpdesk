@@ -3,6 +3,7 @@
 import { createTheme, type Theme } from "@mui/material/styles";
 import { sharedComponents } from "./theme.components";
 
+
 const shadows = [
   "none",
   "0px 1px 2px rgba(0,0,0,0.2)",
@@ -31,7 +32,7 @@ export const darkTheme = createTheme({
     background: {
       default: "#111827",
       paper: "#1f2937",
-      subtle: "#16202e",
+      subtle: "#1b2838",
     },
 
     text: {

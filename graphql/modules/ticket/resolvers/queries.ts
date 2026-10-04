@@ -50,6 +50,8 @@ export const ticketQueries = {
 
     const scope: TicketScope = args.scope ?? "MINE";
 
+    // Stesso where per lista e conteggio: permessi (CASL) + scope + filtri.
+    // Se divergessero, totalCount non corrisponderebbe ai ticket mostrati.
     const where: Prisma.TicketWhereInput = {
       AND: [
         accessibleBy(ability, "read").ofType("Ticket"),
@@ -66,8 +68,11 @@ export const ticketQueries = {
           cursor,
           where,
           include: TICKET_INCLUDE,
-          orderBy,
+          // id come ultimo criterio: il cursore è l'id, quindi l'ordine deve
+          // essere totale anche quando si ordina per campi non univoci
+          orderBy: [...(Array.isArray(orderBy) ? orderBy : [orderBy]), { id: "asc" }],
         }),
+      count: () => prisma.ticket.count({ where }),
     });
   },
 

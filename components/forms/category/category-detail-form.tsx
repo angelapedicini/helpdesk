@@ -237,6 +237,7 @@ export default function CategoryDetailForm({
             }}
         >
             <FormLayout
+            maxHeight={"77vh"}
                 actions={
                     <>
                         <Button
@@ -254,105 +255,105 @@ export default function CategoryDetailForm({
                     </>
                 }
             >
-            <Box
-                sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                        xs: "1fr",
-                        md: "1fr 1fr",
-                    },
-                    gap: 3,
-                }}
-            >
-                <TextField
-                    {...register("name")}
-                    label="Nome"
-                    fullWidth
-                    error={!!errors.name}
-                    helperText={errors.name?.message}
-                />
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                            xs: "1fr",
+                            md: "1fr 1fr",
+                        },
+                        gap: 3,
+                    }}
+                >
+                    <TextField
+                        {...register("name")}
+                        label="Nome"
+                        fullWidth
+                        error={!!errors.name}
+                        helperText={errors.name?.message}
+                    />
 
-                <TextField
-                    label="Dipartimento"
-                    value={
-                        DEPARTMENT_CONFIG[category.department]?.label ??
-                        category.department
-                    }
-                    fullWidth
-                    disabled
-                />
+                    <TextField
+                        label="Dipartimento"
+                        value={
+                            DEPARTMENT_CONFIG[category.department]?.label ??
+                            category.department
+                        }
+                        fullWidth
+                        disabled
+                    />
 
-                <AppSelect
-                    name="specificField"
-                    label="Campo specifico"
-                    control={control}
-                    options={specificFieldOptions}
-                />
+                    <AppSelect
+                        name="specificField"
+                        label="Campo specifico"
+                        control={control}
+                        options={specificFieldOptions}
+                    />
 
-                <TextField
-                    label="Stato"
-                    value={category.disabled ? "Disabilitata" : "Attiva"}
-                    fullWidth
-                    disabled
-                />
-            </Box>
+                    <TextField
+                        label="Stato"
+                        value={category.disabled ? "Disabilitata" : "Attiva"}
+                        fullWidth
+                        disabled
+                    />
+                </Box>
 
-            <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
-                Accessi per dipartimento
-            </Typography>
-
-            {allAccessSelected && (
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    “Tutti i reparti” ha la precedenza sugli accessi specifici,
-                    che verranno scartati al salvataggio. Per impostare un solo dipartimento seleziona prima nessun accesso nella casella tutti i reparti
+                <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+                    Accessi per dipartimento
                 </Typography>
-            )}
 
-            <Box
-                sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                        xs: "1fr",
-                        md: "200px 1fr",
-                    },
-                    gap: 3,
-                    alignItems: "center",
-                }}
-            >
-                {ACCESS_ROWS.map((row) => {
-                    const RowIcon = row.icon;
-                    return (
-                        <Fragment key={row.key}>
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 1,
-                                }}
-                            >
-                                {RowIcon && (
-                                    <RowIcon
-                                        sx={{
-                                            color:
-                                                row.color ?? "text.secondary",
-                                            fontSize: 20,
-                                        }}
-                                    />
-                                )}
-                                <Typography>{row.label}</Typography>
-                            </Box>
+                {allAccessSelected && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        “Tutti i reparti” ha la precedenza sugli accessi specifici,
+                        che verranno scartati al salvataggio. Per impostare un solo dipartimento seleziona prima nessun accesso nella casella tutti i reparti
+                    </Typography>
+                )}
 
-                            <AppSelect
-                                name={`access.${row.key}`}
-                                label="Ruolo minimo"
-                                control={control}
-                                options={minRoleOptions}
-                                disabled={allAccessSelected && row.key !== "ALL"}
-                            />
-                        </Fragment>
-                    );
-                })}
-            </Box>
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                            xs: "1fr",
+                            md: "200px 1fr",
+                        },
+                        gap: 3,
+                        alignItems: "center",
+                    }}
+                >
+                    {ACCESS_ROWS.map((row) => {
+                        const RowIcon = row.icon;
+                        return (
+                            <Fragment key={row.key}>
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 1,
+                                    }}
+                                >
+                                    {RowIcon && (
+                                        <RowIcon
+                                            sx={{
+                                                color:
+                                                    row.color ?? "text.secondary",
+                                                fontSize: 20,
+                                            }}
+                                        />
+                                    )}
+                                    <Typography>{row.label}</Typography>
+                                </Box>
+
+                                <AppSelect
+                                    name={`access.${row.key}`}
+                                    label="Ruolo minimo"
+                                    control={control}
+                                    options={minRoleOptions}
+                                    disabled={allAccessSelected && row.key !== "ALL"}
+                                />
+                            </Fragment>
+                        );
+                    })}
+                </Box>
 
             </FormLayout>
         </Box>

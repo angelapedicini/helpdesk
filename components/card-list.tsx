@@ -5,57 +5,115 @@ import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardActions from "@mui/material/CardActions";
 import CardContent from "@mui/material/CardContent";
+import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import type {
+    GridColDef,
+    GridRenderCellParams,
+    GridRowId,
+    GridValidRowModel,
+} from "@mui/x-data-grid";
 
-import type { HeadCell, RowBase } from "@/components/table";
-import { Divider } from "@mui/material";
+type CardListRow = GridValidRowModel & { id: GridRowId };
 
-interface CardListProps<T extends RowBase> {
+interface CardListProps<T extends CardListRow> {
     rows: T[];
-    headCells: readonly HeadCell<T>[];
+    /** Le stesse colonne passate al DataGrid. */
+    columns: GridColDef<T>[];
 
-    /** Colonna mostrata come titolo della card. */
-    titleKey?: keyof T;
-    /** Colonna mostrata sopra il titolo (es. ID). */
-    subtitleKey?: keyof T;
-    /** Colonne da non mostrare nel body della card. */
-    hiddenKeys?: (keyof T)[];
-
-    actions?: (row: T) => React.ReactNode;
+    /** field mostrato come titolo della card. */
+    titleKey?: string;
+    /** field mostrato sopra il titolo (es. id). */
+    subtitleKey?: string;
+    /** field da non mostrare nel body della card. */
+    hiddenKeys?: string[];
+    /** field della colonna azioni: il suo renderCell finisce in CardActions. */
+    actionsField?: string;
 
     hasNextPage?: boolean;
     onLoadMore?: () => void;
 
     getRowClassName?: (row: T) => string | undefined;
-    getCellClassName?: (row: T, headCellId: keyof T) => string | undefined;
     getRowTooltip?: (row: T) => string | undefined;
 }
 
-function renderValue<T>(cell: HeadCell<T>, row: T): React.ReactNode {
-    return cell.render ? cell.render(row) : String(row[cell.id]);
+// Fuori dal grid non c'è un apiRef: i getter/formatter delle colonne non lo
+// usano, quindi passo un valore finto.
+const NO_API = undefined as never;
+
+function buildParams<T extends CardListRow>(
+    col: GridColDef<T>,
+    row: T
+): GridRenderCellParams<T> {
+    const raw = (row as Record<string, unknown>)[col.field];
+    const value = col.valueGetter
+        ? col.valueGetter(raw as never, row, col, NO_API)
+        : raw;
+    const formattedValue = col.valueFormatter
+        ? col.valueFormatter(value as never, row, col, NO_API)
+        : value;
+
+    return {
+        id: row.id,
+        field: col.field,
+        row,
+        value,
+        formattedValue,
+        colDef: col,
+        api: NO_API,
+        cellMode: "view",
+        hasFocus: false,
+        isEditable: false,
+        tabIndex: -1,
+    } as unknown as GridRenderCellParams<T>;
 }
 
-export default function CardList<T extends RowBase>({
+function renderValue<T extends CardListRow>(
+    col: GridColDef<T>,
+    row: T
+): React.ReactNode {
+    const params = buildParams(col, row);
+
+    if (col.renderCell) return col.renderCell(params);
+
+    const shown = params.formattedValue ?? params.value;
+    return shown == null || shown === "" ? "-" : String(shown);
+}
+
+function getCellClass<T extends CardListRow>(
+    col: GridColDef<T>,
+    row: T
+): string | undefined {
+    const { cellClassName } = col;
+    if (!cellClassName) return undefined;
+    if (typeof cellClassName === "string") return cellClassName;
+    return cellClassName(buildParams(col, row) as never) || undefined;
+}
+
+export default function CardList<T extends CardListRow>({
     rows,
-    headCells,
+    columns,
     titleKey,
     subtitleKey,
     hiddenKeys = [],
-    actions,
+    actionsField = "actions",
     hasNextPage = false,
     onLoadMore,
     getRowClassName,
-    getCellClassName,
     getRowTooltip,
 }: CardListProps<T>) {
-    const titleCell = headCells.find((h) => h.id === titleKey);
-    const subtitleCell = headCells.find((h) => h.id === subtitleKey);
-    const bodyCells = headCells.filter(
-        (h) =>
-            h.id !== titleKey &&
-            h.id !== subtitleKey &&
-            !hiddenKeys.includes(h.id)
+    const labelOf = (c: GridColDef<T>) => c.headerName ?? c.field;
+
+    const titleCol = columns.find((c) => c.field === titleKey);
+    const subtitleCol = columns.find((c) => c.field === subtitleKey);
+    const actionsCol = columns.find((c) => c.field === actionsField);
+    const bodyCols = columns.filter(
+        (c) =>
+            c.field !== titleKey &&
+            c.field !== subtitleKey &&
+            c.field !== actionsField &&
+            !hiddenKeys.includes(c.field)
     );
 
     // --- Infinite scroll: sentinella in fondo alla lista ---
@@ -94,27 +152,25 @@ export default function CardList<T extends RowBase>({
                 const card = (
                     <Card variant="outlined" className={getRowClassName?.(row)}>
                         <CardContent sx={{ pb: 1 }}>
-                            {subtitleCell && (
+                            {subtitleCol && (
                                 <Typography
                                     variant="caption"
                                     color="text.secondary"
-                                    className={getCellClassName?.(row, subtitleCell.id)}
+                                    className={getCellClass(subtitleCol, row)}
                                 >
-                                    {subtitleCell.label}: {renderValue(subtitleCell, row)}
-
+                                    {labelOf(subtitleCol)}: {renderValue(subtitleCol, row)}
                                 </Typography>
                             )}
 
-                            {titleCell && (
+                            {titleCol && (
                                 <Typography
                                     variant="subtitle1"
                                     gutterBottom
-                                    className={getCellClassName?.(row, titleCell.id)}
+                                    className={getCellClass(titleCol, row)}
                                     sx={{ fontWeight: 600, wordBreak: "break-word" }}
                                 >
-                                    {renderValue(titleCell, row)}
+                                    {renderValue(titleCol, row)}
                                     <Divider />
-
                                 </Typography>
                             )}
 
@@ -127,20 +183,20 @@ export default function CardList<T extends RowBase>({
                                     alignItems: "center",
                                 }}
                             >
-                                {bodyCells.map((cell, index) => (
-                                    <React.Fragment key={String(cell.id)}>
+                                {bodyCols.map((col, index) => (
+                                    <React.Fragment key={col.field}>
                                         <Typography variant="body2" color="text.secondary">
-                                            {cell.label}
+                                            {labelOf(col)}
                                         </Typography>
                                         <Box
-                                            className={getCellClassName?.(row, cell.id)}
+                                            className={getCellClass(col, row)}
                                             sx={{ minWidth: 0, wordBreak: "break-word" }}
                                         >
-                                            {renderValue(cell, row)}
+                                            {renderValue(col, row)}
                                         </Box>
 
                                         {/* Riga sotto la coppia, a tutta larghezza. Non dopo l'ultima. */}
-                                        {index < bodyCells.length - 1 && (
+                                        {index < bodyCols.length - 1 && (
                                             <Divider sx={{ gridColumn: "1 / -1" }} />
                                         )}
                                     </React.Fragment>
@@ -148,9 +204,9 @@ export default function CardList<T extends RowBase>({
                             </Box>
                         </CardContent>
 
-                        {actions && (
+                        {actionsCol && (
                             <CardActions sx={{ justifyContent: "flex-end", pt: 0 }}>
-                                {actions(row)}
+                                {renderValue(actionsCol, row)}
                             </CardActions>
                         )}
                     </Card>

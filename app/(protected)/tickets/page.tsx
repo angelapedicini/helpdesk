@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
@@ -7,16 +8,18 @@ import { Badge, Box, IconButton, Stack, Typography } from "@mui/material";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import type { GridSortModel } from "@mui/x-data-grid";
 import FiltersSidebar from "@/components/filters-sidebar";
 import FilterTicketForm from "@/components/forms/ticket/filter-ticket";
 import TicketDetailForm from "@/components/forms/ticket/update-ticket";
 import Modal from "@/components/modal";
 import SureForm from "@/components/forms/sure-form";
+import ServerDataGrid from "@/components/server-data-grid";
 import { useTicketFilterState } from "@/components/hooks/use-ticket-filter-state";
 import { useModalState } from "@/components/hooks/use-modal-state";
-import { useSortState } from "@/components/hooks/use-sort-state";
 import {
     TicketFieldsFragmentDoc,
+    type SortDirection,
     type TicketFieldsFragment,
     type TicketScope,
 } from "@/graphql-generated/graphql";
@@ -26,13 +29,12 @@ import { useCursorPagination } from "@/apollo-client/hooks/use-cursor-pagination
 import { FilterTicketInput } from "@/lib/validators/ticket-detail.schema";
 import { useFragment } from "@/graphql-generated";
 import { getTicketOverdueTooltip, isTicketOverdue } from "@/lib/ticket/expired-status";
-import EnhancedTable from "@/components/table";
-import CardList from "@/components/card-list"; // NEW
-import { createTicketHeadCells } from "@/app/(protected)/tickets/_components/column.def";
+import CardList from "@/components/card-list";
 import TicketRowActions from "@/app/(protected)/tickets/_components/actions";
 import TicketAlerts from "@/app/(protected)/tickets/_components/ticket-alerts";
 import { TICKET_SCOPE_CONFIG } from "@/components/enums/ticket-scope.config";
 import { GET_DELETED_TICKETS } from "@/apollo-client/queries/ticket-history/ticket-history.queries";
+import { createTicketColumns } from "./_components/column.def";
 
 const PAGE_SIZE = 20;
 
@@ -42,7 +44,6 @@ export default function TicketsPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    // NEW: breakpoint mobile
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"), { noSsr: true });
 
@@ -62,11 +63,23 @@ export default function TicketsPage() {
     const ticketFilters = useTicketFilterState();
 
     // --------------------------------
-    // SORT
+    // SORT (lato server)
     // --------------------------------
 
-    const { order, orderBy, onRequestSort, sortDirection } =
-        useSortState<keyof TicketFieldsFragment>("updatedAt");
+    // Il default coincide con quello del backend (updatedAt desc), così
+    // intestazione e dati restano coerenti.
+    const [sortModel, setSortModel] = useState<GridSortModel>([
+        { field: "updatedAt", sort: "desc" },
+    ]);
+
+    const activeSort = sortModel[0];
+    const sortField = activeSort
+        ? ticketSortFieldMap[activeSort.field as keyof TicketFieldsFragment]
+        : undefined;
+
+    // SortDirection è un tipo (unione di stringhe), non un enum
+    const sortDirection: SortDirection =
+        activeSort?.sort === "asc" ? "ASC" : "DESC";
 
     // --------------------------------
     // QUERY
@@ -75,15 +88,15 @@ export default function TicketsPage() {
     const queryVariables = {
         first: PAGE_SIZE,
         after: null,
-        orderBy: {
-            field: ticketSortFieldMap[orderBy] ?? "ID",
-            direction: sortDirection,
-        },
+        orderBy:
+            activeSort && sortField
+                ? { field: sortField, direction: sortDirection }
+                : undefined,
         scope,
         filter: ticketFilters.filter,
     };
 
-    const { data, fetchMore } = useQuery(GET_TICKETS, {
+    const { data, fetchMore, loading } = useQuery(GET_TICKETS, {
         variables: queryVariables,
         notifyOnNetworkStatusChange: true,
     });
@@ -92,10 +105,20 @@ export default function TicketsPage() {
         variables: { scope },
     });
 
-    const tickets: Ticket[] = useFragment(
-        TicketFieldsFragmentDoc,
-        data?.tickets?.edges?.map((edge) => edge.node) ?? []
+    // array stabile: cambia solo quando cambiano i dati della query
+    const ticketNodes = useMemo(
+        () => data?.tickets?.edges?.map((edge) => edge.node) ?? [],
+        [data]
     );
+
+    const tickets: Ticket[] = useFragment(TicketFieldsFragmentDoc, ticketNodes);
+
+    // totalCount è OPZIONALE: finché la query/lo schema non lo espongono
+    // resta null e il footer mostra "N+". Il cast evita errori di tipo se il
+    // campo non è ancora nei tipi generati.
+    const totalCount =
+        (data?.tickets as { totalCount?: number | null } | undefined)?.totalCount ??
+        null;
 
     const { hasNextPage, loadMore } = useCursorPagination(
         data?.tickets?.pageInfo,
@@ -156,7 +179,7 @@ export default function TicketsPage() {
         quickUpdateModal.open(ticket);
     };
 
-    // NEW: azioni condivise tra tabella e card
+    // azioni condivise tra DataGrid (desktop) e card (mobile)
     const renderActions = (ticket: TicketFieldsFragment) => (
         <TicketRowActions
             ticket={ticket}
@@ -173,10 +196,24 @@ export default function TicketsPage() {
         isTicketOverdue(ticket) ? "error-row" : undefined;
 
     // --------------------------------
-    // COLUMNS
+    // COLUMNS (condivise tra DataGrid e CardList)
     // --------------------------------
 
-    const headCells = createTicketHeadCells({ scope });
+    // renderActions cambia a ogni render, quindi lo leggo da un ref sempre
+    // aggiornato: così `columns` resta stabile e il grid non si ricalcola.
+    const renderActionsRef = useRef(renderActions);
+    useEffect(() => {
+        renderActionsRef.current = renderActions;
+    });
+
+    const columns = useMemo(
+        () =>
+            createTicketColumns({
+                scope,
+                renderActions: (ticket) => renderActionsRef.current(ticket),
+            }),
+        [scope]
+    );
 
     // --------------------------------
     // RENDER
@@ -209,30 +246,29 @@ export default function TicketsPage() {
             {isMobile ? (
                 <CardList<TicketFieldsFragment>
                     rows={tickets}
-                    headCells={headCells}
+                    columns={columns}
                     titleKey="title"
                     subtitleKey="id"
                     hiddenKeys={["specificData"]}
-                    actions={renderActions}
                     hasNextPage={hasNextPage}
                     onLoadMore={loadMore}
                     getRowClassName={getRowClassName}
                     getRowTooltip={getTicketOverdueTooltip}
                 />
             ) : (
-                <EnhancedTable<TicketFieldsFragment>
+                <ServerDataGrid<TicketFieldsFragment>
                     rows={tickets}
-                    headCells={headCells}
-                    order={order}
-                    orderBy={orderBy}
-                    onRequestSort={onRequestSort}
+                    columns={columns}
+                    loading={loading}
                     hasNextPage={hasNextPage}
                     onLoadMore={loadMore}
+                    totalCount={totalCount}
+                    pageSize={PAGE_SIZE}
+                    sortModel={sortModel}
+                    onSortModelChange={setSortModel}
+                    resetKey={JSON.stringify([scope, ticketFilters.filter, sortModel])}
                     getRowClassName={getRowClassName}
-                    getRowTooltip={getTicketOverdueTooltip}
-                    maxHeight={"70vh"}
-                    actionsWidth="240px"
-                    actions={renderActions}
+                    
                 />
             )}
 

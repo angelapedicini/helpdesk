@@ -6,6 +6,9 @@ type PaginateOptions<TNode extends { id: number }> = {
     skip?: number;
     cursor?: { id: number };
   }) => Promise<TNode[]>;
+  // OPZIONALE: se non lo passi, totalCount resta null e non viene fatta
+  // nessuna query di conteggio. Le connection esistenti non cambiano.
+  count?: () => Promise<number>;
   defaultPageSize?: number;
 };
 
@@ -16,15 +19,19 @@ export async function paginateByCursor<TNode extends { id: number }>(
   const first = args.first ?? options.defaultPageSize ?? 20;
   const take = first + 1;
 
-  const items = await options.fetchPage({
-    take,
-    ...(args.after ? { cursor: { id: Number(args.after) }, skip: 1 } : {}),
-  });
+  const [items, totalCount] = await Promise.all([
+    options.fetchPage({
+      take,
+      ...(args.after ? { cursor: { id: Number(args.after) }, skip: 1 } : {}),
+    }),
+    options.count ? options.count() : Promise.resolve(null),
+  ]);
 
   const hasNextPage = items.length > first;
   const nodes = hasNextPage ? items.slice(0, first) : items;
 
   return {
+    totalCount,
     edges: nodes.map((node) => ({ node, cursor: String(node.id) })),
     pageInfo: {
       hasNextPage,

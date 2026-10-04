@@ -23,7 +23,7 @@ export default function FormLayout({
                 flexDirection: "column",
                 maxHeight,
                 width: "100%",
-                boxSizing: "border-box",
+                boxSizing: "border-box"
             }}
         >
             <Box

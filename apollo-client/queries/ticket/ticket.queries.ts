@@ -11,14 +11,15 @@ export const GET_TICKETS = graphql(`
     $scope: TicketScope
   ) {
     tickets(first: $first, after: $after, orderBy: $orderBy, filter: $filter, scope: $scope) {
-      edges {
-        cursor
-        node {
-          ...TicketFields
-        }
-      }
-      pageInfo { hasNextPage endCursor }
+  totalCount
+  edges {
+    cursor
+    node {
+      ...TicketFields
     }
+  }
+  pageInfo { hasNextPage endCursor }
+   }
   }
 `);
 
@@ -32,22 +33,22 @@ export type TicketNode = TicketConnection["edges"][number]["node"];
 export type Ticket = TicketFieldsFragment;
 
 export const ticketSortFieldMap: Partial<
-    Record<keyof TicketFieldsFragment, TicketSortField>
+  Record<keyof TicketFieldsFragment, TicketSortField>
 > = {
-    id: "ID",
-    title: "TITLE",
-    description: "DESCRIPTION",
-    status: "STATUS",
-    priority: "PRIORITY",
-    category: "CATEGORY",
-    ticketDepartment: "DEPARTMENT",
-    createdBy: "CREATED_BY",
-    assignedTo: "ASSIGNED_TO",
-    createdAt: "CREATED_AT",
-    updatedAt: "UPDATED_AT",
-    closedAt: "CLOSED_AT",
-    dueFirstResponse: "DUE_FIRST_RESPONSE",
-    dueDate: "DUE_DATE",
+  id: "ID",
+  title: "TITLE",
+  description: "DESCRIPTION",
+  status: "STATUS",
+  priority: "PRIORITY",
+  category: "CATEGORY",
+  ticketDepartment: "DEPARTMENT",
+  createdBy: "CREATED_BY",
+  assignedTo: "ASSIGNED_TO",
+  createdAt: "CREATED_AT",
+  updatedAt: "UPDATED_AT",
+  closedAt: "CLOSED_AT",
+  dueFirstResponse: "DUE_FIRST_RESPONSE",
+  dueDate: "DUE_DATE",
 };
 
 export const GET_TICKET_BY_ID = graphql(`

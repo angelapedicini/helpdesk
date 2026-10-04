@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -10,8 +10,8 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { useQuery } from "@apollo/client/react";
 
-import EnhancedTable from "@/components/table";
-import CardList from "@/components/card-list"; // NEW
+import ServerDataGrid from "@/components/server-data-grid";
+import CardList from "@/components/card-list";
 import DynamicChart from "@/components/dynamic-charts";
 import { useStatsPermissions } from "@/lib/casl/abilities/stats/hook-permission";
 
@@ -20,29 +20,27 @@ import { STATS_VIEWS } from "./_components/views";
 
 type DisplayMode = "table" | "chart";
 
+const PAGE_SIZE = 20;
+
 export default function TicketStatsPage() {
-    // NEW: breakpoint mobile
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"), { noSsr: true });
 
-    const [activeViewId, setActiveViewId] = useState(
-        STATS_VIEWS[0].id,
-    );
+    const [activeViewId, setActiveViewId] = useState(STATS_VIEWS[0].id);
     const [mode, setMode] = useState<DisplayMode>("table");
 
-    const activeView = STATS_VIEWS.find(
-        (view) => view.id === activeViewId,
-    ) ?? STATS_VIEWS[0];
+    const activeView =
+        STATS_VIEWS.find((view) => view.id === activeViewId) ?? STATS_VIEWS[0];
 
     const { canViewAllDepartments } = useStatsPermissions();
-    const viewLabels = activeView.viewLabels[
-        canViewAllDepartments ? "all" : "ownDepartment"
-    ];
+    const viewLabels =
+        activeView.viewLabels[canViewAllDepartments ? "all" : "ownDepartment"];
 
     const { data, loading, error } = useQuery(activeView.query);
 
-    const source = activeView.select(data);
-    const rows = activeView.buildRows(source);
+    // riferimenti stabili: cambiano solo con la vista o con i dati
+    const source = useMemo(() => activeView.select(data), [activeView, data]);
+    const rows = useMemo(() => activeView.buildRows(source), [activeView, source]);
     const total = activeView.total(source);
 
     return (
@@ -100,55 +98,42 @@ export default function TicketStatsPage() {
                             backgroundColor: "background.paper",
                         }}
                     >
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                        >
+                        <Typography variant="body2" color="text.secondary">
                             Totale ticket
                         </Typography>
 
-                        <Typography variant="h6">
-                            {total}
-                        </Typography>
+                        <Typography variant="h6">{total}</Typography>
                     </Box>
 
                     <ToggleButtonGroup
                         exclusive
                         size="small"
                         value={mode}
-                        onChange={(
-                            _event,
-                            nextMode: DisplayMode | null,
-                        ) => {
+                        onChange={(_event, nextMode: DisplayMode | null) => {
                             if (nextMode) setMode(nextMode);
                         }}
                     >
                         <ToggleButton value="table">
                             {isMobile ? "Card" : "Tabella"}
                         </ToggleButton>
-                        <ToggleButton value="chart">
-                            Grafico
-                        </ToggleButton>
+                        <ToggleButton value="chart">Grafico</ToggleButton>
                     </ToggleButtonGroup>
                 </Stack>
 
                 {/* Loading */}
                 {loading && (
-                    <Typography color="text.secondary">
-                        Caricamento...
-                    </Typography>
+                    <Typography color="text.secondary">Caricamento...</Typography>
                 )}
 
                 {/* Error */}
                 {error && (
-                    <Typography color="error">
-                        Errore: {error.message}
-                    </Typography>
+                    <Typography color="error">Errore: {error.message}</Typography>
                 )}
 
                 {/* Contenuto: tabella/card o grafico */}
-                {!loading && !error && (
-                    rows.length === 0 ? (
+                {!loading &&
+                    !error &&
+                    (rows.length === 0 ? (
                         <Box
                             sx={{
                                 p: 4,
@@ -164,13 +149,16 @@ export default function TicketStatsPage() {
                         isMobile ? (
                             <CardList
                                 rows={rows}
-                                headCells={activeView.headCells}
-                                titleKey={activeView.headCells[0]?.id}
+                                columns={activeView.columns}
+                                titleKey={activeView.columns[0]?.field}
                             />
                         ) : (
-                            <EnhancedTable
+                            <ServerDataGrid
                                 rows={rows}
-                                headCells={activeView.headCells}
+                                columns={activeView.columns}
+                                pageSize={PAGE_SIZE}
+                                sortingMode="client"
+                                resetKey={activeView.id}
                             />
                         )
                     ) : (
@@ -182,8 +170,7 @@ export default function TicketStatsPage() {
                                 height={activeView.chartHeight}
                             />
                         </Box>
-                    )
-                )}
+                    ))}
             </Box>
         </Box>
     );

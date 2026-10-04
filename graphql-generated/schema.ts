@@ -515,6 +515,7 @@ export type TicketConnection = {
   __typename?: 'TicketConnection';
   edges: Array<TicketEdge>;
   pageInfo: PageInfo;
+  totalCount?: Maybe<Scalars['Int']['output']>;
 };
 
 export type TicketEdge = {
@@ -582,6 +583,7 @@ export type TicketHistoryConnection = {
   __typename?: 'TicketHistoryConnection';
   edges: Array<TicketHistoryEdge>;
   pageInfo: PageInfo;
+  totalCount?: Maybe<Scalars['Int']['output']>;
 };
 
 export type TicketHistoryEdge = {
@@ -646,6 +648,7 @@ export type TicketMessageConnection = {
   __typename?: 'TicketMessageConnection';
   edges: Array<TicketMessageEdge>;
   pageInfo: PageInfo;
+  totalCount?: Maybe<Scalars['Int']['output']>;
 };
 
 export type TicketMessageEdge = {

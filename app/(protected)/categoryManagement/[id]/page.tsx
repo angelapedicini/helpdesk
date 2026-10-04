@@ -49,10 +49,15 @@ export default function Page() {
                 Categoria # {category.id} — {category.name}
             </Typography>
 
-            <CategoryDetailForm
-                category={category}
-                accesses={accessesData?.categoryAccesses ?? []}
-            />
+            <Box sx={{height: "77vh"}}>
+
+                <CategoryDetailForm
+                    category={category}
+                    accesses={accessesData?.categoryAccesses ?? []}
+                />
+
+            </Box>
+
         </Box>
     );
 }
