@@ -2,8 +2,9 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import type { Order } from "@/components/table";
 import type { SortDirection } from "@/graphql-generated/schema";
+
+export type Order = 'asc' | 'desc';
 
 interface SortState<K> {
     orderBy: K;

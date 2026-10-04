@@ -18,7 +18,6 @@
 // // TYPES
 // // --------------------------------
 
-// export type Order = 'asc' | 'desc';
 
 // export interface RowBase {
 //     id: number | string;
