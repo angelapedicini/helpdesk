@@ -27,7 +27,7 @@ import { ROLE_CONFIG } from "@/components/enums/role.config";
 interface EasyLoginFormProps {
     defaultDepartment?: Department;
     defaultEmail?: string;
-    stacked?: boolean;
+    stacked?: boolean;    
     onSubmitted?: () => void;
 }
 
