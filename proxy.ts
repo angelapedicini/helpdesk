@@ -68,6 +68,17 @@ const ROLE_PROTECTED_PATHS: { path: string; roles: string[] }[] = [
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+function appUrl(req: NextRequest, pathname: string) {
+  const url = req.nextUrl.clone(); // mantiene il basePath
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  if (forwardedHost) {
+    url.host = forwardedHost;
+    url.protocol = req.headers.get("x-forwarded-proto") ?? url.protocol;
+  }
+  url.pathname = pathname;
+  url.search = "";
+  return url;
+}
 
 function matchesPath(pathname: string, paths: string[]) {
   return paths.some((p) =>
@@ -85,7 +96,7 @@ function handleUnauthenticated(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith("/api")) {
     return NextResponse.json({ error: "Non autorizzato" }, { status: 401 });
   }
-  const homeUrl = new URL("/", req.url);
+  const homeUrl = appUrl(req, "/");
   homeUrl.searchParams.set("from", req.nextUrl.pathname);
   return NextResponse.redirect(homeUrl);
 }
@@ -94,7 +105,7 @@ function handleForbidden(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith("/api")) {
     return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }
-  return NextResponse.redirect(new URL("/dashboard", req.url));
+  return NextResponse.redirect(appUrl(req, "/dashboard"));
 }
 
 // ---------------------------------------------------------------------------

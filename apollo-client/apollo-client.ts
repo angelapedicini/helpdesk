@@ -9,6 +9,7 @@ import { relayStylePagination } from "@apollo/client/utilities";
 import { notificationLink } from "./apollo-links/notification-link";
 import { loadingLink } from "./apollo-links/loading-link";
 import { authRefreshLink } from "./apollo-links/auth-refresh-link";
+import { BASE_PATH } from "@/lib/base-path";
 
 /**
  * Campi Query paginati con cursor pagination
@@ -77,7 +78,7 @@ const queryFieldPolicies = {
 
 export function createApolloClient() {
   const httpLink = new HttpLink({
-    uri: "/api/graphql",
+    uri: `${BASE_PATH}/api/graphql`,
     credentials: "same-origin",
   });
 

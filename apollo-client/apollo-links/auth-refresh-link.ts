@@ -1,6 +1,7 @@
 // lib/apollo-client/auth-refresh-link.ts
 import { ApolloLink } from "@apollo/client";
 import { from, mergeMap } from "rxjs";
+import { BASE_PATH } from "@/lib/base-path";
 
 type GqlError = { extensions?: Record<string, unknown> };
 
@@ -24,7 +25,7 @@ function isUnauthenticated(errors?: readonly GqlError[]) {
 // Una singola chiamata alla mutation di refresh, con esito classificato.
 async function callRefresh(): Promise<RawOutcome> {
   try {
-    const res = await fetch("/api/graphql", {
+    const res = await fetch(`${BASE_PATH}/api/graphql`, {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
@@ -98,7 +99,7 @@ async function ensureFreshToken(): Promise<RefreshOutcome> {
 }
 
 function redirectToLogin() {
-  if (typeof window !== "undefined") window.location.href = "/";
+ if (typeof window !== "undefined") window.location.href = `${BASE_PATH}/`;
 }
 
 export const authRefreshLink = new ApolloLink((operation, forward) => {
