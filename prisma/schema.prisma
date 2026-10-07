@@ -213,6 +213,12 @@ model Ticket {
   @@index([dueFirstResponse])
   @@index([dueDate])
   @@index([status])
+  @@index([ticketDepartment, status])                // ticketStatsByDepartment
+  @@index([assignedToId, status])                     // ticketStatsByTechnician
+  @@index([categoryId, status])                       // ticketStatsByCategory (nuova)
+  @@index([status, closedAt, createdAt])              // media chiusure + filtri CLOSED
+  @@index([status, dueFirstResponse])                 // openAssignedLate
+  @@index([ticketDepartment, dueDate, closedAt])      // closedOnTime / dueDateLate
 }
 
 model TicketHistory {
@@ -261,6 +267,8 @@ model TicketHistory {
   @@index([status, deletedAt])
   @@index([ticketDepartment, deletedAt])
   @@index([deletedById])
+  @@index([originalTicketId, updatedAt])                    // DISTINCT ON per prima risposta
+  @@index([originalTicketId, assignedToId, updatedAt])      // ROW_NUMBER per tecnico
 }
 
 model TicketMessage {

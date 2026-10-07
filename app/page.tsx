@@ -68,7 +68,7 @@ export default function Page() {
         >
           Start Demo
         </Button>
-
+{/* 
         <Button
           variant="outlined"
           size="large"
@@ -76,7 +76,7 @@ export default function Page() {
           onClick={loginStatic}
         >
           Login Static
-        </Button>
+        </Button> */}
 
       </Box>
     </Box>

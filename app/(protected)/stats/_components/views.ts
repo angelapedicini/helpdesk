@@ -5,8 +5,9 @@ import type { GridColDef } from "@mui/x-data-grid";
 import {
     TICKET_STATS_BY_DEPARTMENT_QUERY,
     TICKET_STATS_BY_TECHNICIAN_QUERY,
+    TICKET_STATS_BY_CATEGORY_QUERY,
 } from "@/apollo-client/queries/stats/stats.queries";
-import { NewSchema, TechnicianSchema } from "@/lib/validators/stat.schema";
+import { NewSchema, TechnicianSchema, CategorySchema } from "@/lib/validators/stat.schema";
 
 import {
     buildDepartmentStatsRows,
@@ -18,6 +19,11 @@ import {
     technicianStatsColumns,
     technicianStatsTotal,
 } from "./technician-stats-columns";
+import {
+    buildCategoryStatsRows,
+    categoryStatsColumns,
+    categoryStatsTotal,
+} from "./category-stats-columns";
 
 export type StatsViewConfig = {
     id: string;
@@ -90,6 +96,31 @@ export const STATS_VIEWS: StatsViewConfig[] = [
                 media: "Media per tecnico",
                 stati: "Stati per tecnico",
                 ritardi: "Ritardi per tecnico",
+            },
+        },
+    },
+    {
+        id: "categories",
+        label: "Categorie più richieste",
+        query: TICKET_STATS_BY_CATEGORY_QUERY,
+        select: (data: any) => data?.ticketStatsByCategory ?? [],
+        columns: categoryStatsColumns,
+        buildRows: buildCategoryStatsRows,
+        total: categoryStatsTotal,
+        schema: CategorySchema,
+        chartHeight: chartHeigth,
+        viewLabels: {
+            all: {
+                totali: "Totali per categoria",
+                media: "Media per categoria",
+                stati: "Stati per categoria",
+                ritardi: "Ritardi per categoria",
+            },
+            ownDepartment: {
+                totali: "Totali per categoria",
+                media: "Media per categoria",
+                stati: "Stati per categoria",
+                ritardi: "Ritardi per categoria",
             },
         },
     },

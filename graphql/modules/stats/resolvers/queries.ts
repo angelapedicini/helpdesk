@@ -298,4 +298,139 @@ export const statQueries = {
       average: r.average ?? 0,
     }));
   },
+
+  ticketStatsByCategory: async (
+    _parent: unknown,
+    args: { department?: Department },
+    context: GraphQLContext
+  ) => {
+    const session = context.requireSession();
+    const ability = defineAbility(session);
+    const prisma = context.prisma;
+
+    if (ability.cannot("read", "TicketStats")) {
+      throw new GraphQLError("Access denied", {
+        extensions: { code: "FORBIDDEN" },
+      });
+    }
+
+    const departmentFilter = ability.can("readAll", "TicketStats")
+      ? args.department
+      : session.department;
+
+    const rows = await prisma.$queryRaw<
+      {
+        categoryId: number;
+        name: string;
+        department: Department;
+        total: bigint;
+        open: bigint;
+        assigned: bigint;
+        inProgress: bigint;
+        closed: bigint;
+        refused: bigint;
+        firstResponseLate: bigint;
+        dueDateLate: bigint;
+        closedOnTime: bigint;
+        openAssignedLate: bigint;
+        average: number | null;
+      }[]
+    >`
+    WITH first_response AS (
+      SELECT DISTINCT ON (h."originalTicketId")
+        h."originalTicketId",
+        h."dueFirstResponse",
+        h."updatedAt" AS "firstResponseAt"
+      FROM "TicketHistory" h
+      WHERE h.status NOT IN ('OPEN', 'ASSIGNED')
+      ORDER BY
+        h."originalTicketId",
+        h."updatedAt"
+    )
+
+    SELECT
+      c.id AS "categoryId",
+      c.name,
+      c.department,
+
+      COUNT(t.id) AS total,
+
+      COUNT(t.id) FILTER (WHERE t.status = 'OPEN') AS open,
+      COUNT(t.id) FILTER (WHERE t.status = 'ASSIGNED') AS assigned,
+      COUNT(t.id) FILTER (WHERE t.status = 'IN_PROGRESS') AS "inProgress",
+      COUNT(t.id) FILTER (WHERE t.status = 'CLOSED') AS closed,
+      COUNT(t.id) FILTER (WHERE t.status = 'REFUSED') AS refused,
+
+      -- Prima risposta oltre scadenza
+      COUNT(t.id) FILTER (
+        WHERE fr."dueFirstResponse" IS NOT NULL
+          AND fr."firstResponseAt" > fr."dueFirstResponse"
+      ) AS "firstResponseLate",
+
+      -- Chiusura oltre dueDate
+      COUNT(t.id) FILTER (
+        WHERE t.status = 'CLOSED'
+          AND t."dueDate" IS NOT NULL
+          AND t."closedAt" IS NOT NULL
+          AND t."closedAt" > t."dueDate"
+      ) AS "dueDateLate",
+
+      -- Chiusura nei tempi
+      COUNT(t.id) FILTER (
+        WHERE t.status = 'CLOSED'
+          AND t."dueDate" IS NOT NULL
+          AND t."closedAt" IS NOT NULL
+          AND t."closedAt" <= t."dueDate"
+      ) AS "closedOnTime",
+
+      -- OPEN/ASSIGNED oltre scadenza prima risposta
+      COUNT(t.id) FILTER (
+        WHERE t.status IN ('OPEN', 'ASSIGNED')
+          AND t."dueFirstResponse" < NOW()
+      ) AS "openAssignedLate",
+
+      -- Media ore chiusura
+      COALESCE(
+        AVG(
+          EXTRACT(EPOCH FROM (t."closedAt" - t."createdAt")) / 3600
+        ) FILTER (
+          WHERE t.status = 'CLOSED'
+            AND t."closedAt" IS NOT NULL
+        ),
+        0
+      ) AS average
+
+    FROM "TicketCategory" c
+
+    LEFT JOIN "Ticket" t
+      ON t."categoryId" = c.id
+
+    LEFT JOIN first_response fr
+      ON fr."originalTicketId" = t.id
+
+    WHERE 1=1
+      ${departmentFilter ? Prisma.sql`AND c.department = ${departmentFilter}::"Department"` : Prisma.empty}
+
+    GROUP BY c.id, c.name, c.department
+
+    ORDER BY total DESC, c.name
+  `;
+
+    return rows.map((r) => ({
+      categoryId: r.categoryId,
+      name: r.name,
+      department: r.department,
+      total: Number(r.total),
+      open: Number(r.open),
+      assigned: Number(r.assigned),
+      inProgress: Number(r.inProgress),
+      closed: Number(r.closed),
+      refused: Number(r.refused),
+      firstResponseLate: Number(r.firstResponseLate),
+      dueDateLate: Number(r.dueDateLate),
+      closedOnTime: Number(r.closedOnTime),
+      openAssignedLate: Number(r.openAssignedLate),
+      average: r.average ?? 0,
+    }));
+  },
 };

@@ -63,10 +63,10 @@ export default function TicketDetail({ ticket }: TicketDetailProps) {
                     />
 
                     <TextField
-                        label="Reparto (creatore)"
+                        label="Reparto (ticket)"
                         value={
-                            ticket.sourceDepartmentForUser
-                                ? (DEPARTMENT_CONFIG[ticket.sourceDepartmentForUser as Department]?.label ?? ticket.sourceDepartmentForUser)
+                            ticket.ticketDepartment
+                                ? (DEPARTMENT_CONFIG[ticket.ticketDepartment as Department]?.label ?? ticket.ticketDepartment)
                                 : ""
                         }
                         fullWidth

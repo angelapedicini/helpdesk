@@ -19,7 +19,6 @@ import { Department } from "@/graphql-generated/graphql";
 import { EasyLogin, EasyLoginDep, EasyLoginDepSchema, EasyLoginSchema } from "@/lib/validators/auth.schema";
 import { GET_USERS_BY_DEP_FOR_LOGIN } from "@/apollo-client/queries/user/user-queries";
 import { DepartmentEnum } from "@/lib/validators/enums.schema";
-import { ME_QUERY } from "@/apollo-client/queries/user/me";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { LOGIN } from "@/apollo-client/queries/auth/login/login.mutation";
 import { ROLE_CONFIG } from "@/components/enums/role.config";

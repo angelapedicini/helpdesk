@@ -37,3 +37,24 @@ export const TICKET_STATS_BY_TECHNICIAN_QUERY = graphql(`
     }
   }
 `);
+
+export const TICKET_STATS_BY_CATEGORY_QUERY = graphql(`
+  query TicketStatsByCategory {
+    ticketStatsByCategory {
+      categoryId
+      name
+      department
+      total
+      open
+      assigned
+      inProgress
+      closed
+      refused
+      firstResponseLate
+      dueDateLate
+      closedOnTime
+      openAssignedLate
+      average
+    }
+  }
+`);
