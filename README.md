@@ -139,6 +139,60 @@ flowchart TD
 
 [Approfondimento: Autenticazione](AGENTS.md#authentication) e codice in `graphql/context.ts`, `lib/auth/*`, `lib/apollo-client/auth-refresh-link.ts`.
 
+### Demo e branching Neon
+
+Ogni sessione demo vive su un **branch Neon dedicato**, creato al volo come copia **copy-on-write** del branch di produzione. La demo parte dai dati reali (utenti seedati inclusi), le modifiche fatte dentro non toccano la produzione, e il branch sparisce da solo alla scadenza grazie al TTL nativo di Neon.
+
+#### Ciclo di vita
+
+1. L'utente chiama la mutation `startDemo`.
+2. Se il cookie `helpdesk_demo_session_id` esiste ed è ancora valido in `DemoSession`, il branch esistente viene riusato (niente branch duplicati).
+3. Altrimenti `createDemoBranch()` (`lib/neon/neon.ts`) chiama l'API Neon V2: crea un branch figlio di `NEON_PARENT_BRANCH_ID` con `expires_at` tra 1 ora e un endpoint `read_write`. La response contiene già la connection string, non serve la seconda chiamata a `reveal_password`.
+4. Il resolver salva la riga su `DemoSession` (`neonBranchId`, `connectionString`, `expiresAt`) e scrive il cookie demo **prima di tornare**: in questo modo la chiamata a `Login` che arriva subito dopo viene già instradata sul branch giusto.
+5. Se il branch non si crea (errore Neon/API), `startDemo` lancia `GraphQLError` con `extensions.code: DEMO_BRANCH_FAILED`.
+
+La pulizia è affidata a Neon stesso (`expires_at`): alla scadenza il branch viene eliminato. `deleteBranch()` esiste per un eventuale delete esplicito (es. abbandono immediato, per liberare risorse prima dell'ora).
+
+#### Routing del client Prisma
+
+```mermaid
+flowchart LR
+  subgraph CL["Browser"]
+    M["startDemo<br/>mutation"] -->|1| API["resolver demo"]
+    CK["cookie demo session id"] --> REQ["login + query successive"]
+  end
+  subgraph NEON["Neon"]
+    PARENT["branch produzione<br/>(parent)"] -->|copy-on-write| B["branch demo<br/>expires_at +1h"]
+  end
+  API --> NEON
+  API -->|2 salva DemoSession| PDB["production DB<br/>DemoSession"]
+  PDB -->|3 setta cookie| CK
+  REQ -->|4| GP["getPrismaClient()"]
+  GP -->|cookie assente/scaduto| PROD["prodPrisma"]
+  GP -->|cookie valido| LOOK["lookup DemoSession<br/>(via prodPrisma)"]
+  LOOK --> GC["client Prisma demo<br/>cache LRU · max 20"]
+  GC -->|5 connessione| B
+  PROD -->|connessione| PARENT
+  classDef neon fill:#e8eaf6,stroke:#3949ab,color:#1a237e
+  class NEON,B,PARENT neon
+```
+
+`getPrisma()` (`lib/prisma/index.ts`) sceglie il percorso in base a `USE_NEON_BRANCHING`: se vale `false`, usa `getPrismaClient()` (`lib/prisma/demo-client.ts`), che risolve il branch giusto in base al cookie; altrimenti (o in sviluppo locale) usa sempre `staticPrismaClient`.
+
+Dettagli del routing:
+
+- **Cookie prima di tutto**: senza `helpdesk_demo_session_id` non viene interrogata `DemoSession` — il costo è solo una lettura di cookie per richiesta.
+- **Cache LRU**: i client Prisma dei branch demo vengono tenuti in cache (`Map` globale, max 20): al raggiungimento del limite si sfratta e disconnette il client meno usato di recente.
+- **Un solo client per richiesta**: nel context GraphQL (`graphql/context.ts`) il client si risolve una volta per richiesta, non per resolver. Così la lookup della sessione demo non si ripete e, soprattutto, tutti i resolver della stessa query parlano con lo stesso database anche se la cache sfrattasse il client a metà query.
+
+#### Variabili d'ambiente
+
+- `NEON_PROJECT_ID`, `NEON_API_KEY` — credenziali dell'API Neon V2.
+- `NEON_PARENT_BRANCH_ID` — branch di produzione da cui si diramano le demo.
+- `USE_NEON_BRANCHING=false` — attiva il routing sui branch demo. Se assente o con valore diverso, si usa sempre il client statico (sviluppo locale).
+
+Riferimenti: `graphql/modules/demo/resolvers.ts`, `lib/neon/neon.ts`, `lib/prisma/demo-client.ts`, `lib/prisma/index.ts`, `lib/auth/cookies.ts`, `prisma/schema.prisma` (`DemoSession`).
+
 ### Permessi (CASL)
 
 È un'unica **AppAbility** costruita da `defineAbility(session)`: ogni dominio (`ticket`, `user`, `category`, `ticket-notification`, `stats`, `ticket-history`, `ticket-scope`) dichiara proprie regole e subject; tutte vengono unite in un solo oggetto. 
