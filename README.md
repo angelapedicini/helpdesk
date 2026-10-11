@@ -21,18 +21,6 @@ reparto.
 - **Statistiche** per reparto.
 - **Autenticazione** con access token e refresh token.
 
-## Stack
-
-| Livello | Scelta |
-| --- | --- |
-| Frontend | Next.js 16 (App Router), React 19, TypeScript |
-| Interfaccia | Material UI 9, React Hook Form, Zod 4 |
-| Dati | Apollo Client 4, GraphQL 16, codegen per i tipi |
-| API | Apollo Server 5 su Next.js |
-| Database | PostgreSQL su Neon, Prisma 7 |
-| Permessi | CASL 7 con adapter Prisma |
-| Autenticazione | JWT con `jose`, password con `bcryptjs` |
-
 ## Struttura
 
 ```
@@ -42,7 +30,6 @@ apollo-client/  cache, link e query/mutation
 graphql/        schema, resolver e moduli di dominio
 lib/            logica di dominio, permessi CASL, validazione
 prisma/         schema e seed
-docs/           documentazione
 ```
 
 Il client Prisma non si genera in `node_modules` ma in `app/generated/prisma`,
@@ -61,53 +48,144 @@ npm run dev
 Servono le variabili d'ambiente per la connessione al database e per i segreti
 dell'autenticazione.
 
-## Documentazione
+## Panoramica tecnica (breve)
 
-### In breve
+### Stack
 
-La documentazione è in `docs/` ed è organizzata per **dominio di business**, non
-per file sorgente: ogni dominio (`ticket`, `category`, `user`, ...) ha la sua
-cartella in `docs/domains/` e i documenti che lo descrivono. I documenti che
-valgono per tutti i domini stanno in `docs/architecture/`, le guide di frontend
-nella root di `docs/`.
+- **[Next.js](https://nextjs.org/docs)** (App Router) — Struttura full-stack con route handler per GraphQL e layout protetti.
+- **[React](https://react.dev/)** + **[TypeScript](https://www.typescriptlang.org/docs/)** — Componenti e tipizzazione end-to-end.
+- **[Material UI (MUI)](https://mui.com/)** — Layout e componenti UI, senza Tailwind.
+- **[Apollo Client](https://www.apollographql.com/docs/react/)** — Gestione GraphQL e stato server sul frontend.
+- **[React Hook Form](https://react-hook-form.com/)** + **[Zod](https://zod.dev/)** — Form e validazione condivisa con backend.
+- **[GraphQL](https://graphql.org/learn/)** — Contratto tra frontend e backend.
+- **[Prisma](https://www.prisma.io/docs)** + **[Neon](https://neon.tech/docs/introduction)** — ORM e database PostgreSQL.
+- **[CASL](https://casl.js.org/v6/en/)** — Permessi basati su regole, riutilizzati frontend/backend.
+- **[jose](https://github.com/panva/jose)** — Firma e verifica JWT (access + refresh). 
 
-Le convenzioni generali del progetto — separazione dei layer, regole di GraphQL,
-gestione degli errori — non stanno qui: sono in [AGENTS.md](AGENTS.md) e valgono
-per tutto il repository.
+### GraphQL + Apollo Client
 
-I sorgenti restano la verità sul *come* una cosa è implementata. Questi
-documenti rispondono a *cosa si può fare*, *chi può farlo* e *perché è fatto
-così*.
+I componenti (`useQuery`/`useMutation`) non conoscono la rete: l'andata passa da **loadingLink** (alza il contatore globale per lo spinner), poi da **authRefreshLink** + **httpLink** verso `POST /api/graphql`. Il ritorno passa da **notificationLink** che traduce gli errori in italiano, mostra eventuale messaggio di successo per le mutation e fa proseguire i dati.
 
-### Architettura
+```mermaid
+flowchart LR
+  subgraph AC1["Apollo Client · andata"]
+    LL{"loading link"}
+    AR["authRefreshLink<br/>httpLink"]
+  end
+  subgraph GS["GraphQL Apollo Server"]
+    API["route.ts<br/>entrypoint"]
+    CTX["context<br/>requireSession()"]
+    BE["Apollo Server<br/>smista al resolver giusto"]
+    PRISMA["Prisma"]
+  end
+  subgraph AC2["Apollo Client · ritorno"]
+    NL{"notification link"}
+    Q{"ci sono errori?"}
+    EC["code → italiano"]
+    M{"mutation<br/>e non silent?"}
+    MS["successMessage"]
+  end
+  C1["Componente React<br/>useQuery / useMutation"] -->|1 richiesta| LL
+  LL --> AR
+  AR -->|2 POST /api/graphql| API
+  API --> CTX --> BE --> PRISMA
+  PRISMA <--> DB["Neon"]
+  BE2["Apollo Server"] -->|3 risposta| NL
+  NL --> Q
+  Q -->|sì| EC --> SN["notify()<br/>snackbar centralizzata"]
+  Q -->|no| M
+  M -->|sì| MS --> SN
+  M -->|"no · i dati"| C2["Componente React"]
+```
 
-- [CASL](docs/architecture/casl.md)
-- [Autenticazione](docs/architecture/auth.md)
-- [Data flow](docs/architecture/data-flow.md)
+**Note**: `loadingVar` gestisce il loader globale; `notificationLink` centralizza errori/success (nessun `try/catch` + `notify` nei componenti). 
 
-### Domini
+### Autenticazione
 
-Ogni dominio ha le sue regole in `lib/casl/abilities/<dominio>/` e le documenta
-nella cartella omonima. Il pattern è quello di
-[ticket](docs/domains/ticket/casl.md): `In breve`, file del dominio, tabelle
-`Ruolo × Azione`, e come le regole vengono fatte rispettare.
+Easylogin a credenziali preimpostate. Vengono emessi due JWT (**access** e **refresh**) con **segreti separati** e scritti in **cookie httpOnly** (`secure` solo in produzione, `sameSite: "lax"`). Il context verifica l'access token una volta sola; se scaduto/manomesso, **authRefreshLink** (Apollo) reagisce a `UNAUTHENTICATED` chiamando `RefreshToken`.
 
-- **ticket**
-  - [ciclo di vita](docs/domains/ticket/life-cycle.md)
-  - [regole CASL](docs/domains/ticket/casl.md)
-- **user**
-  - [regole CASL](docs/domains/user/casl.md)
-- **category**
-  - [regole CASL](docs/domains/category/casl.md)
-- **ticket-scope**
-  - [regole CASL](docs/domains/ticket-scope/casl.md)
-- **ticket-history**
-  - [regole CASL](docs/domains/ticket-history/casl.md)
-- **ticket-notification**
-  - [regole CASL](docs/domains/ticket-notification/casl.md)
-- **stats**
-  - [regole CASL](docs/domains/stats/casl.md)
+- Access: 10s, payload contiene `userId`, `role`, `department` (evita query DB ad ogni richiesta).
+- Refresh: 1 giorno, payload solo `userId`, salvato in tabella `RefreshToken` con stessa scadenza e `jti` univoco (rotazione + lock per evitare doppie rotazioni).
+- Esclusi dal ciclo di refresh: `RefreshToken`, `Login`, `Register`.
+- `REFRESH_CONFLICT`: token valido ma riga già ruotata — non sloggare; si ritenta con i nuovi cookie del vincitore.
+- `logout`: cancella **tutte** le sessioni dell'utente.
 
-### Guide
+#### Flusso normale
 
-- [Frontend](docs/frontend.md)
+```mermaid
+flowchart LR
+  U["easylogin"] --> A["access_token<br/>10 secondi"]
+  U --> R["refresh_token<br/>1 giorno"]
+  A --> C["cookie httpOnly<br/>due segreti jose"]
+  R --> C
+  C --> Q["browser manda cookie"]
+  Q --> S{"verifyAccessToken()"}
+  S -->|valido| D["context.session → ability → resolver → Prisma"]
+  S -->|scaduto/assente/manomesso| NA["GraphQLError UNAUTHENTICATED<br/>→ refresh via Apollo"]
+```
+
+#### Flusso refresh (Apollo authRefreshLink)
+
+```mermaid
+flowchart TD
+  NA["UNAUTHENTICATED"] --> RL["authRefreshLink chiama RefreshToken (no Apollo loop)"]
+  RL -->|success| RT["ritenta operazione originale"]
+  RL -->|REFRESH_CONFLICT| CF["attende 300ms e riprova 1 volta"]
+  CF -->|success| RT
+  CF -->|ancora conflict| L["redirect a /"]
+  RL -->|denied| L
+  RL -->|rete/500| K["restituisce errore originale, non sloggare"]
+```
+
+[Approfondimento: Autenticazione](AGENTS.md#authentication) e codice in `graphql/context.ts`, `lib/auth/*`, `lib/apollo-client/auth-refresh-link.ts`.
+
+### Permessi (CASL)
+
+È un'unica **AppAbility** costruita da `defineAbility(session)`: ogni dominio (`ticket`, `user`, `category`, `ticket-notification`, `stats`, `ticket-history`, `ticket-scope`) dichiara proprie regole e subject; tutte vengono unite in un solo oggetto. 
+
+- **Backend**: enforcement tramite `assertCan*` (`guards.ts`) o filtro con `accessibleBy()` per le liste (evita fetch+scarto). 
+- **Frontend**: le stesse regole serializzate vengono ricostruite in `AbilityProvider` e usate dagli hook di dominio solo per guidare UI (nascondere/disabilitare). La sicurezza resta sul backend.
+
+```mermaid
+flowchart TB
+  S["session"] --> D["defineAbility()"]
+  D --> R["7 domini → regole"]
+  R --> A["AppAbility unica"]
+  A -->|"resolver"| G["assertCan* / accessibleBy()"]
+  A -->|"UI"| L["layout → AbilityProvider → useAbility()"]
+```
+
+[CASL docs](https://casl.js.org/v6/en/guide/intro), implementazione in `lib/casl/defineAbility.ts` e `lib/casl/abilityContext.tsx`.
+
+### Ciclo di vita del Ticket
+
+Il backend decide l'assegnazione in creazione: se esiste un tecnico specialista nella categoria con meno ticket aperti → **ASSIGNED** (auto-assegnato), altrimenti **OPEN** (da assegnare). Lettura/modifica/cancellazione dipendono da **ruolo** + relazione (creatore/assegnatario) + **reparto**. Le transizioni di stato sono in `ALLOWED_STATUS_TRANSITIONS` (mappa), separate dai permessi CASL.
+
+```mermaid
+flowchart TB
+  START(["Creazione"]) --> BASE["campi + categoria"]
+  BASE --> S1["ASSIGNED<br/>auto-assegnato"] & S2["OPEN<br/>nessun specialista"]
+  S1 --> READ
+  S2 --> READ
+  READ -- EMPLOYEE --> R1["solo propri"]
+  READ -- TECHNICIAN --> R2["propri o assegnati"]
+  READ -- ADMIN --> R3["reparto + propri"]
+  READ -- SYSTEM_ADMIN --> R4["tutti"]
+  R2 --> INPROG["IN_PROGRESS<br/>tecnico prende in carico"]
+  INPROG --> CONS["chiude in CLOSED o riassegna"]
+  CONS --> CLOSED["CLOSED"] --> REOP["REOPENED<br/>creatore/assegnatario"]
+  S2 --> SPEC["ADMIN: assegna tecnico o cambia categoria → può tornare ad ASSIGNED;<br/>oppure REFUSED se non fondato"]
+  SPEC --> REF["REFUSED (finale)"]
+  classDef stato fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+  class S1,S2,INPROG,CLOSED,REOP,REF stato
+```
+
+Dettagli campo-per-campo: vedere `lib/casl/abilities/ticket/rules.ts`.
+
+### Errori, notifiche e loading
+
+- **Backend**: `GraphQLError` con **messaggio inglese** (dev/log) + `extensions.code` in `UPPER_SNAKE_CASE`. Mai testo italiano nel backend.
+- **Frontend (`notificationLink`)**: mappa `extensions.code` → **messaggio italiano** (`graphqlErrorMessages`), fallback a messaggio originale o generico. Anche errori HTTP mappati. 
+- **Success**: per mutation, se non `silent`, mostra `context.successMessage` (con placeholder sostituiti dai campi ritornati). 
+- **Side effects**: `FORBIDDEN`/403 → `redirectToDashboard()`; `UNAUTHENTICATED` gestito da `authRefreshLink` (refresh + retry, redirect a `/` solo se fallisce).
+- **Loading**: `loadingLink` incrementa/decrementa `loadingVar` (contatore globale). Il loader globale legge `loadingVar`; il `loading` locale Apollo resta per disabilitare singoli bottoni.
