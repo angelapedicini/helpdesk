@@ -4,10 +4,11 @@ import { runSeed } from "@/prisma/seed";
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  // Blocca l'esecuzione fuori da locale: senza segreto, chiunque potrebbe chiamarla
-  if (process.env.NODE_ENV === "production") {
-    return new Response("Not available", { status: 403 });
+export async function GET(request: Request) {
+  const authHeader = request.headers.get("authorization");
+
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response("Unauthorized", { status: 401 });
   }
 
   try {

@@ -1393,6 +1393,7 @@ export async function runSeed() {
     "UserPermission",
     "UserSpecialization",
     "RefreshToken",
+    "DemoSession",
     "User",
     "TicketCategory"
   RESTART IDENTITY

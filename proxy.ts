@@ -58,7 +58,7 @@ function checkRateLimit(ip: string): NextResponse | null {
 // Pubblici: accessibili senza cookie. /api/graphql resta pubblico perché
 // login/register/refresh sono mutation pubbliche; le altre sono protette
 // nei resolver tramite requireSession().
-const PUBLIC_PATHS = ["/", "/api/graphql"];
+const PUBLIC_PATHS = ["/", "/api/graphql", "/api/cron"];
 
 // Protetti per ruolo (controllo ottimistico, vedi sotto)
 const ROLE_PROTECTED_PATHS: { path: string; roles: string[] }[] = [
