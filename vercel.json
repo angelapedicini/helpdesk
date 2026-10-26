@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/reset",
-      "schedule": "0 3 * * 0"
+      "path": "/helpdesk/api/cron/reset",
+      "schedule": "0 12 * * 1"
     }
   ]
 }
