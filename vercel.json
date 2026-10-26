@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/helpdesk/api/cron/reset",
-      "schedule": "0 12 * * 1"
+      "schedule": "0 3 * * 0"
     }
   ]
 }
